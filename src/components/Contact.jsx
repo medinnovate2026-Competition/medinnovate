@@ -6,14 +6,14 @@ const contacts = [
 
 function Contact() {
   return (
-    <section id="contact" className="bg-[#120A2A]/80 px-4 py-24 sm:px-6 lg:px-8">
+    <section id="contact" className="px-4 py-24 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.24em] text-fuchsia-200">
               Contact & support
             </p>
-            <h2 className="mt-4 font-display text-4xl font-black tracking-tight text-white sm:text-6xl">
+            <h2 className="mt-4 font-display text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-[#00dcff] sm:text-6xl">
               Need help with registration or participation?
             </h2>
           </div>

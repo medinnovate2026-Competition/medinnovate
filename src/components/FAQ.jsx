@@ -33,7 +33,7 @@ function FAQ() {
           <p className="text-sm font-bold uppercase tracking-[0.24em] text-fuchsia-200">
             FAQ
           </p>
-          <h2 className="mt-4 font-display text-4xl font-black tracking-tight text-white sm:text-6xl">
+          <h2 className="mt-4 font-display text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-[#00dcff] sm:text-6xl">
             Questions before you register.
           </h2>
         </div>

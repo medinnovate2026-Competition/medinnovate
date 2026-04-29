@@ -1,0 +1,22 @@
+CREATE DATABASE IF NOT EXISTS medinnovate;
+
+USE medinnovate;
+
+DROP TABLE IF EXISTS participants;
+DROP TABLE IF EXISTS teams;
+
+CREATE TABLE teams (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  team_name VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE participants (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  team_id INT,
+  name VARCHAR(100),
+  email VARCHAR(100) UNIQUE,
+  college VARCHAR(150),
+  country VARCHAR(100),
+  FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
+);
