@@ -12,9 +12,9 @@ const STEPS = [
 ];
 
 const inputClass =
-  "w-full bg-[#0a061c] border border-purple-200/20 rounded-xl px-4 py-3 text-white placeholder-gray-600 outline-none focus:border-cyan-400/60 focus:shadow-[0_0_20px_rgba(0,220,255,0.08)] transition-all duration-300 text-sm";
+  "w-full bg-white border border-slate-300 rounded-md px-4 py-2.5 text-slate-900 placeholder-slate-400 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 transition-all text-sm shadow-sm";
 
-const labelClass = "block text-xs font-bold uppercase tracking-[0.18em] text-fuchsia-300/80 mb-2";
+const labelClass = "block text-sm font-semibold text-slate-700 mb-1.5";
 
 // Custom select using div so we can style it fully
 function CustomSelect({ label, name, value, onChange, required = true, options }) {
@@ -25,22 +25,22 @@ function CustomSelect({ label, name, value, onChange, required = true, options }
         {label} {required && <span className="text-red-400/70">*</span>}
       </label>
       <div
-        className={`w-full bg-[#0a061c] border rounded-xl px-4 py-3 text-sm cursor-pointer flex items-center justify-between transition-all duration-300 ${
-          open ? "border-cyan-400/60 shadow-[0_0_20px_rgba(0,220,255,0.08)]" : "border-purple-200/20"
-        } ${value ? "text-white" : "text-gray-600"}`}
+        className={`w-full bg-white border rounded-md px-4 py-2.5 text-sm cursor-pointer flex items-center justify-between transition-all shadow-sm ${
+          open ? "border-blue-600 ring-2 ring-blue-600/20" : "border-slate-300"
+        } ${value ? "text-slate-900" : "text-slate-400"}`}
         onClick={() => setOpen(o => !o)}
       >
         <span>{value || "Select an option"}</span>
-        <span className={`transition-transform duration-300 text-gray-500 ${open ? "rotate-180" : ""}`}>▾</span>
+        <span className={`transition-transform duration-200 text-slate-400 ${open ? "rotate-180" : ""}`}>▾</span>
       </div>
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-[#0e0920] border border-purple-200/20 rounded-xl overflow-hidden z-50 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md overflow-hidden z-50 shadow-md">
           {options.map(opt => (
             <div
               key={opt}
               onClick={() => { onChange({ target: { name, value: opt } }); setOpen(false); }}
-              className={`px-4 py-3 text-sm cursor-pointer transition-colors hover:bg-white/5 hover:text-cyan-300 ${
-                value === opt ? "text-cyan-300 bg-cyan-400/10" : "text-gray-300"
+              className={`px-4 py-2.5 text-sm cursor-pointer transition-colors hover:bg-slate-50 hover:text-slate-900 ${
+                value === opt ? "bg-slate-100 text-slate-900 font-medium" : "text-slate-600"
               }`}
             >
               {opt}
@@ -75,22 +75,22 @@ function StepIndicator({ currentStep }) {
       {STEPS.map((step, i) => (
         <React.Fragment key={step.number}>
           <div className="flex flex-col items-center gap-2">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-500 ${
+            <div className={`w-8 h-8 rounded-md flex items-center justify-center text-sm font-semibold border transition-colors ${
               currentStep === step.number
-                ? "border-cyan-400 bg-cyan-400/20 text-cyan-300 shadow-[0_0_20px_rgba(0,220,255,0.4)]"
+                ? "border-blue-600 bg-blue-600 text-white shadow-sm"
                 : currentStep > step.number
-                ? "border-fuchsia-400/60 bg-fuchsia-400/10 text-fuchsia-300"
-                : "border-white/10 bg-white/5 text-gray-600"
+                ? "border-slate-300 bg-slate-100 text-slate-600"
+                : "border-slate-200 bg-white text-slate-400"
             }`}>
               {currentStep > step.number ? "✓" : step.icon}
             </div>
-            <span className={`text-[10px] font-bold uppercase tracking-wider hidden sm:block transition-colors duration-300 ${
-              currentStep === step.number ? "text-cyan-300" : currentStep > step.number ? "text-fuchsia-300/60" : "text-gray-600"
+            <span className={`text-[10px] font-medium uppercase tracking-wider hidden sm:block transition-colors ${
+              currentStep === step.number ? "text-blue-600" : currentStep > step.number ? "text-slate-600" : "text-slate-400"
             }`}>{step.label}</span>
           </div>
           {i < STEPS.length - 1 && (
-            <div className={`w-8 sm:w-12 h-px mb-5 transition-all duration-500 ${
-              currentStep > step.number ? "bg-fuchsia-400/40" : "bg-white/10"
+            <div className={`w-8 sm:w-12 h-px mb-5 transition-colors ${
+              currentStep > step.number ? "bg-slate-300" : "bg-slate-200"
             }`} />
           )}
         </React.Fragment>
@@ -194,19 +194,19 @@ export default function Register() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#030712] flex items-center justify-center p-6" style={{
-        backgroundImage: "linear-gradient(rgba(0,220,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,220,255,0.03) 1px, transparent 1px)",
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6" style={{
+        backgroundImage: "linear-gradient(rgba(59,130,246,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.05) 1px, transparent 1px)",
         backgroundSize: "60px 60px"
       }}>
         <div className="text-center max-w-md">
-          <div className="w-24 h-24 rounded-full bg-green-400/10 border-2 border-green-400/40 flex items-center justify-center text-5xl mx-auto mb-8 shadow-[0_0_40px_rgba(34,197,94,0.3)]">✓</div>
-          <h1 className="text-4xl font-black text-white mb-4">You're In!</h1>
-          <p className="text-slate-400 mb-2">Team <span className="text-white font-bold">"{form.teamName}"</span> has been registered.</p>
+          <div className="w-20 h-20 rounded-full bg-green-50 border border-green-200 flex items-center justify-center text-4xl mx-auto mb-6 text-green-600 shadow-sm">✓</div>
+          <h1 className="text-3xl font-bold text-slate-900 mb-4">Registration Complete</h1>
+          <p className="text-slate-600 mb-2">Team <span className="text-slate-900 font-semibold">"{form.teamName}"</span> has been registered.</p>
           <p className="text-slate-500 text-sm mb-8">
-            Pending payment verification. We'll reach out to <span className="text-cyan-400">{form.email}</span> shortly.
+            Pending payment verification. We'll reach out to <span className="text-slate-700 font-medium">{form.email}</span> shortly.
           </p>
           <button onClick={() => navigate("/")}
-            className="px-8 py-3 rounded-full bg-gradient-to-r from-fuchsia-300 via-purple-400 to-cyan-300 text-[#12091F] font-black uppercase tracking-wide text-sm hover:-translate-y-1 transition-transform shadow-[0_0_30px_rgba(168,85,247,0.3)]">
+            className="px-6 py-2.5 rounded-md bg-white border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors shadow-sm">
             ← Back to Home
           </button>
         </div>
@@ -215,43 +215,38 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-[#030712] text-white py-16 px-4" style={{
-      backgroundImage: "linear-gradient(rgba(0,220,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,220,255,0.03) 1px, transparent 1px)",
+    <div className="min-h-screen bg-slate-50 py-16 px-4 relative overflow-hidden" style={{
+      backgroundImage: "linear-gradient(rgba(59,130,246,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.05) 1px, transparent 1px)",
       backgroundSize: "60px 60px"
     }}>
-      <div className="fixed top-1/4 left-1/4 w-96 h-96 rounded-full blur-[120px] bg-cyan-500/10 pointer-events-none" />
-      <div className="fixed bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-[120px] bg-purple-500/10 pointer-events-none" />
 
       <div className="max-w-2xl mx-auto relative z-10">
-
         {/* Header */}
         <div className="text-center mb-12">
           <button onClick={() => navigate("/")}
-            className="text-xs text-gray-500 hover:text-cyan-400 transition mb-6 flex items-center gap-2 mx-auto">
+            className="text-xs font-medium text-slate-500 hover:text-slate-800 transition mb-6 flex items-center gap-2 mx-auto">
             ← Back to Home
           </button>
-          <p className="text-xs font-bold uppercase tracking-[0.28em] text-fuchsia-300 mb-3">MedInnovate 2.0</p>
-          <h1 className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-[#00dcff] mb-3">
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-3">
             Team Registration
           </h1>
-          <p className="text-slate-500 text-sm">Complete all 5 steps to secure your spot</p>
+          <p className="text-slate-600 text-sm">Please provide accurate details for all members.</p>
         </div>
 
         <StepIndicator currentStep={step} />
 
-        <div className="rounded-[2rem] border border-purple-200/15 bg-gradient-to-br from-white/[0.05] to-white/[0.02] backdrop-blur p-8 shadow-[0_0_80px_rgba(168,85,247,0.1)]">
+        <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm relative">
 
           {/* ── Step 1 ── */}
           {step === 1 && (
             <div>
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-8 h-8 rounded-lg bg-cyan-400/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 text-sm">✦</div>
-                <h2 className="text-xl font-black text-white">Basic Info</h2>
+                <h2 className="text-xl font-semibold text-slate-900">Basic Contact Info</h2>
               </div>
               <div className="space-y-5">
                 <Field label="Your Email" name="email" type="email" placeholder="you@example.com" value={form.email} onChange={set} />
               </div>
-              <p className="text-xs text-slate-600 mt-6">Used for all registration communications.</p>
+              <p className="text-xs text-slate-500 mt-6">This email will be used for primary communication regarding the hackathon.</p>
             </div>
           )}
 
@@ -259,13 +254,12 @@ export default function Register() {
           {step === 2 && (
             <div>
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-8 h-8 rounded-lg bg-fuchsia-400/20 border border-fuchsia-400/40 flex items-center justify-center text-fuchsia-300 text-sm">⬡</div>
-                <h2 className="text-xl font-black text-white">Team Details</h2>
+                <h2 className="text-xl font-semibold text-slate-900">Team & Leader Details</h2>
               </div>
               <div className="space-y-5">
                 <Field label="Team Name" name="teamName" placeholder="e.g. BioHackers United" value={form.teamName} onChange={set} />
-                <div className="border-t border-white/5 pt-5">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-300/60 mb-5">— Team Leader</p>
+                <div className="border-t border-slate-100 pt-5">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-5">— Team Leader</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="Full Name" name="leaderName" placeholder="Leader's full name" value={form.leaderName} onChange={set} />
                     <Field label="Email" name="leaderEmail" type="email" placeholder="leader@email.com" value={form.leaderEmail} onChange={set} />
@@ -284,18 +278,17 @@ export default function Register() {
           {step === 3 && (
             <div>
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-8 h-8 rounded-lg bg-purple-400/20 border border-purple-400/40 flex items-center justify-center text-purple-300 text-sm">◈</div>
-                <h2 className="text-xl font-black text-white">Team Members</h2>
+                <h2 className="text-xl font-semibold text-slate-900">Team Members</h2>
               </div>
               <div className="space-y-6">
                 {[
-                  { label: "Member 1", numColor: "cyan",    borderColor: "border-cyan-400/10",    fields: { name: "m1Name", email: "m1Email", college: "m1College", phone: "m1Phone" } },
-                  { label: "Member 2", numColor: "fuchsia", borderColor: "border-fuchsia-400/10", fields: { name: "m2Name", email: "m2Email", college: "m2College", phone: "m2Phone" } },
+                  { label: "Member 1", fields: { name: "m1Name", email: "m1Email", college: "m1College", phone: "m1Phone" } },
+                  { label: "Member 2", fields: { name: "m2Name", email: "m2Email", college: "m2College", phone: "m2Phone" } },
                 ].map(({ label, numColor, borderColor, fields }, idx) => (
-                  <div key={label} className={`p-6 rounded-2xl bg-white/[0.03] border ${borderColor}`}>
+                  <div key={label} className={`p-6 rounded-xl bg-slate-50 border border-slate-200`}>
                     <div className="flex items-center gap-2 mb-5">
-                      <span className="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white text-xs font-bold">{idx + 1}</span>
-                      <span className="text-sm font-bold text-white/60 uppercase tracking-wider">{label}</span>
+                      <span className="w-6 h-6 rounded bg-white border border-slate-200 flex items-center justify-center text-slate-700 text-xs font-semibold">{idx + 1}</span>
+                      <span className="text-sm font-semibold text-slate-700 uppercase tracking-wider">{label}</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Field label="Full Name"                              name={fields.name}    placeholder="Member's full name"   value={form[fields.name]}    onChange={set} />
@@ -313,8 +306,7 @@ export default function Register() {
           {step === 4 && (
             <div>
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-8 h-8 rounded-lg bg-emerald-400/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 text-sm">◉</div>
-                <h2 className="text-xl font-black text-white">Academic Background</h2>
+                <h2 className="text-xl font-semibold text-slate-900">Academic Background</h2>
               </div>
               <div className="space-y-6">
                 <CustomSelect
@@ -332,8 +324,8 @@ export default function Register() {
                   options={["Yes", "No"]}
                 />
                 {form.enrolledInMedical === "No" && (
-                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-                    ⚠️ MedInnovate 2.0 is open only to undergraduate medical students. Please verify eligibility before proceeding.
+                  <div className="p-4 rounded-md bg-red-50 border border-red-200 text-red-600 text-sm">
+                    ⚠️ Medinnovate is open only to undergraduate medical students. Please verify eligibility before proceeding.
                   </div>
                 )}
               </div>
@@ -344,100 +336,123 @@ export default function Register() {
           {step === 5 && (
             <div>
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-8 h-8 rounded-lg bg-yellow-400/20 border border-yellow-400/40 flex items-center justify-center text-yellow-300 text-sm">⬢</div>
-                <h2 className="text-xl font-black text-white">Payment</h2>
+                <h2 className="text-xl font-semibold text-slate-900">Payment</h2>
               </div>
 
               {/* Fee box */}
-              <div className="p-6 rounded-2xl bg-white/[0.03] border border-purple-200/15 text-center mb-8">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Registration Fee</p>
+              <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 text-center mb-8">
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2">Registration Fee</p>
                 <div className="flex items-baseline justify-center gap-3 mb-1">
-                  <span className="text-2xl text-gray-500 line-through">$10</span>
-                  <span className="text-5xl font-black text-white">$5</span>
-                  <span className="text-gray-400 text-sm">/ participant</span>
+                  <span className="text-2xl text-slate-400 line-through">$10</span>
+                  <span className="text-4xl font-bold text-slate-900">$5</span>
+                  <span className="text-slate-500 text-sm">/ participant</span>
                 </div>
-                <p className="text-cyan-400 font-bold">Total: $15 per team <span className="text-gray-500 line-through text-sm ml-1">$30</span></p>
+                <p className="text-slate-700 font-semibold mt-2">Total: $15 per team <span className="text-slate-400 line-through text-sm ml-1 font-normal">$30</span></p>
                 <p className="text-slate-500 text-xs mt-1">≈ ₹429 per participant · ₹1,287 per team</p>
-                <div className="mt-3 inline-block rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                <div className="mt-3 inline-block rounded-md bg-emerald-50 border border-emerald-200 px-2 py-1 text-xs font-medium text-emerald-700 uppercase tracking-wider">
                   Early Bird Discount
                 </div>
               </div>
 
               {/* Region picker */}
-              <p className={labelClass}>Select your payment region <span className="text-red-400/70">*</span></p>
+              <p className={labelClass}>Select your region to pay <span className="text-red-500">*</span></p>
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <button
                   onClick={() => setPaymentRegion("india")}
-                  className={`p-4 rounded-2xl border-2 text-center transition-all duration-300 ${
+                  className={`p-4 rounded-xl border text-center transition-all ${
                     paymentRegion === "india"
-                      ? "border-cyan-400/70 bg-cyan-400/10 shadow-[0_0_20px_rgba(0,220,255,0.15)]"
-                      : "border-white/10 bg-white/[0.03] hover:border-white/20"
+                      ? "border-blue-600 bg-blue-50 ring-1 ring-blue-600"
+                      : "border-slate-300 bg-white hover:border-slate-400"
                   }`}
                 >
                   <div className="text-2xl mb-2">🇮🇳</div>
-                  <div className="text-sm font-bold text-white">India</div>
+                  <div className="text-sm font-semibold text-slate-900">India</div>
                   <div className="text-xs text-slate-500 mt-1">Pay via UPI</div>
                 </button>
                 <button
                   onClick={() => setPaymentRegion("nigeria")}
-                  className={`p-4 rounded-2xl border-2 text-center transition-all duration-300 ${
+                  className={`p-4 rounded-xl border text-center transition-all ${
                     paymentRegion === "nigeria"
-                      ? "border-fuchsia-400/70 bg-fuchsia-400/10 shadow-[0_0_20px_rgba(168,85,247,0.15)]"
-                      : "border-white/10 bg-white/[0.03] hover:border-white/20"
+                      ? "border-blue-600 bg-blue-50 ring-1 ring-blue-600"
+                      : "border-slate-300 bg-white hover:border-slate-400"
                   }`}
                 >
                   <div className="text-2xl mb-2">🇳🇬</div>
-                  <div className="text-sm font-bold text-white">Nigeria</div>
-                  <div className="text-xs text-slate-500 mt-1">Coming soon</div>
+                  <div className="text-sm font-semibold text-slate-900">Nigeria</div>
+                  <div className="text-xs text-slate-500 mt-1">Pay via Paystack</div>
                 </button>
               </div>
 
               {/* India payment */}
               {paymentRegion === "india" && (
                 <div className="space-y-4">
-                  <div className="p-6 rounded-2xl bg-white/[0.03] border border-cyan-400/15 text-center">
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Scan to Pay</p>
-                    {/* QR placeholder — replace src with your actual QR image */}
-                    <div className="w-40 h-40 rounded-xl bg-white mx-auto flex items-center justify-center mb-4 overflow-hidden">
+                  <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">Scan to Pay</p>
+                    <div className="w-40 h-40 rounded-lg bg-white border border-slate-200 mx-auto flex items-center justify-center mb-4 overflow-hidden">
                       <img
-                        src="/qr.png"
+                        src="public/qr.png"
                         alt="UPI QR Code"
                         className="w-full h-full object-contain"
                         onError={e => {
                           e.target.style.display = "none";
-                          e.target.parentNode.innerHTML = '<p class="text-gray-400 text-xs p-4">Place your QR image at<br/><code>/public/qr.png</code></p>';
+                          e.target.parentNode.innerHTML = '<p class="text-slate-400 text-xs p-4">Place your QR image at<br/><code>/public/qr.png</code></p>';
                         }}
                       />
                     </div>
-                    <p className="text-slate-400 text-sm">Or pay manually to:</p>
-                    <p className="text-cyan-300 font-mono font-bold text-base mt-1">giriksubudhi-1@okhdfcbank</p>
-                    <p className="text-slate-600 text-xs mt-3">After payment, enter your UTR number below</p>
+                    <p className="text-slate-500 text-sm">Or pay manually to:</p>
+                    <p className="text-slate-800 font-mono font-semibold text-sm mt-1">giriksubudhi-1@okhdfcbank</p>
+                    <p className="text-slate-500 text-xs mt-3">After payment, enter your UTR number below</p>
                   </div>
                   <div>
-                    <label className={labelClass}>UTR / Transaction ID <span className="text-red-400/70">*</span></label>
+                    <label className={labelClass}>UTR / Transaction ID <span className="text-red-500">*</span></label>
                     <input
                       type="text" placeholder="12-digit UTR number"
                       value={utr} onChange={e => setUtr(e.target.value)}
                       className={inputClass}
                     />
-                    <p className="text-xs text-slate-600 mt-2">Find your UTR in your bank app after completing the UPI payment.</p>
+                    <p className="text-xs text-slate-500 mt-2">Find your UTR in your bank app after completing the UPI payment.</p>
                   </div>
                 </div>
               )}
 
               {/* Nigeria payment */}
               {paymentRegion === "nigeria" && (
-                <div className="p-8 rounded-2xl bg-white/[0.03] border border-fuchsia-400/15 text-center">
-                  <div className="text-4xl mb-4">🚧</div>
-                  <h3 className="text-lg font-black text-white mb-2">Coming Soon</h3>
-                  <p className="text-slate-400 text-sm max-w-xs mx-auto">
-                    Payment options for Nigeria are being set up. Please reach out to us directly to complete your registration.
-                  </p>
-                  <a href="mailto:medinnovate2026@gmail.com"
-                    className="inline-block mt-4 px-6 py-2 rounded-full border border-fuchsia-400/30 text-fuchsia-300 text-sm font-bold hover:bg-fuchsia-400/10 transition">
-                    Contact Us
-                  </a>
-                  <p className="text-slate-600 text-xs mt-4">You can still submit your registration — we'll follow up on payment.</p>
+                <div className="space-y-4">
+                  <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">Pay via Paystack</p>
+                    <div className="w-40 h-40 rounded-lg bg-white border border-slate-200 mx-auto flex items-center justify-center mb-4 overflow-hidden">
+                      <img
+                        src="public/paystack-qr.png"
+                        alt="Paystack QR Code"
+                        className="w-full h-full object-contain"
+                        onError={e => {
+                          e.target.style.display = "none";
+                          e.target.parentNode.innerHTML = '<p class="text-slate-400 text-xs p-4">Place your QR image at<br/><code>/public/paystack-qr.png</code></p>';
+                        }}
+                      />
+                    </div>
+                    <p className="text-slate-500 text-sm max-w-xs mx-auto mb-4">
+                      Secure your spot by completing the payment. Click the button below to proceed to the payment page.
+                    </p>
+                    <a
+                      href="PAYSTACK LINK HERE"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block px-6 py-2.5 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+                    >
+                      Pay Now
+                    </a>
+                    <p className="text-slate-500 text-xs mt-4">After payment, enter your Transaction ID below</p>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Transaction ID <span className="text-red-500">*</span></label>
+                    <input
+                      type="text" placeholder="Enter your Paystack reference"
+                      value={utr} onChange={e => setUtr(e.target.value)}
+                      className={inputClass}
+                    />
+                    <p className="text-xs text-slate-500 mt-2">Find your Transaction ID in your payment receipt after completing the transaction.</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -445,37 +460,37 @@ export default function Register() {
 
           {/* Error */}
           {error && (
-            <div className="mt-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-start gap-2">
+            <div className="mt-6 p-4 rounded-md bg-red-50 border border-red-200 text-red-600 text-sm flex items-start gap-2">
               <span className="shrink-0">⚠️</span><span>{error}</span>
             </div>
           )}
 
           {/* Navigation */}
-          <div className="flex justify-between items-center mt-10 pt-6 border-t border-white/5">
+          <div className="flex justify-between items-center mt-10 pt-6 border-t border-slate-100">
             {step > 1 ? (
               <button onClick={back}
-                className="px-6 py-2.5 rounded-full border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition text-sm font-medium">
+                className="px-6 py-2.5 rounded-md border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 transition text-sm font-medium shadow-sm">
                 ← Back
               </button>
             ) : <div />}
 
             {step < 5 ? (
               <button onClick={next}
-                className="px-8 py-2.5 rounded-full bg-gradient-to-r from-fuchsia-300 via-purple-400 to-cyan-300 text-[#12091F] font-black uppercase tracking-wide text-sm shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:scale-105 transition-transform">
+                className="px-6 py-2.5 rounded-md bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition-colors shadow-sm">
                 Next →
               </button>
             ) : (
               <button onClick={handleSubmit} disabled={isSubmitting}
-                className="px-8 py-2.5 rounded-full bg-gradient-to-r from-green-400 via-cyan-500 to-blue-500 text-white font-black uppercase tracking-wide text-sm shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed">
+                className="px-6 py-2.5 rounded-md bg-green-600 text-white font-semibold text-sm hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                 {isSubmitting ? "Submitting..." : "Complete Registration ✓"}
               </button>
             )}
           </div>
         </div>
 
-        <p className="text-center text-xs text-slate-600 mt-8">
+        <p className="text-center text-xs text-slate-500 mt-8">
           By registering, you confirm all team members are undergraduate medical students. ·{" "}
-          <a href="mailto:medinnovate2026@gmail.com" className="hover:text-cyan-400 transition">medinnovate2026@gmail.com</a>
+          <a href="mailto:medinnovate2026@gmail.com" className="hover:text-blue-600 transition hover:underline">medinnovate2026@gmail.com</a>
         </p>
       </div>
     </div>

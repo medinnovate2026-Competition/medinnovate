@@ -14,7 +14,7 @@ function Navbar() {
             <img src="medinnovate/public/logo.png" alt="MedInnovate Logo" className="h-full w-full object-contain" />
           </div>
           <span className="font-display text-base font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-white to-[#00dcff] sm:text-lg">
-            MedInnovate 2.0
+            Medinnovate
           </span>
         </a>
 

@@ -16,7 +16,7 @@ function Global() {
             Collaborate beyond borders.
           </h2>
           <p className="mt-5 text-lg leading-8 text-slate-300">
-            MedInnovate 2.0 is designed for international partnerships, Africa
+            Medinnovate is designed for international partnerships, Africa
             collaboration, and global participation across healthcare systems,
             cultures, and disciplines.
           </p>

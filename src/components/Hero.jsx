@@ -10,7 +10,7 @@ function Hero() {
           </div>
 
           <h1 className="font-display animate-[gradient-shift_4s_ease-in-out_infinite] bg-[length:200%_auto] bg-gradient-to-r from-white via-[#00dcff] to-white bg-clip-text text-6xl font-black leading-[0.92] tracking-tight text-transparent drop-shadow-[0_0_28px_rgba(0,220,255,0.25)] sm:text-8xl lg:text-9xl">
-            MedInnovate 2.0
+            Medinnovate
           </h1>
           <p className="mt-6 text-xl font-semibold tracking-wide text-fuchsia-100 sm:text-2xl">
             International Healthcare Innovation Hackathon
