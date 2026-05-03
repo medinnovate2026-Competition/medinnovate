@@ -19,18 +19,24 @@ import jwt from "jsonwebtoken";
 dotenv.config();
 
 const app = express();
+
+app.get("/", (req, res) => {
+  res.status(200).send("OK");
+});
+
 app.use((req, res, next) => {
   console.log("Incoming request:", req.method, req.url);
   next();
 });
+
 app.use(cors({
   origin: "https://medinnovate2026-competition.github.io",
   methods: ["GET", "POST", "PUT"],
   credentials: true
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 /* ================= DB ================= */
 const db = mysql.createPool({
   host: process.env.DB_HOST || "127.0.0.1",
