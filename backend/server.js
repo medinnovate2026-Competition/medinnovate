@@ -40,8 +40,14 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 /* ================= DB ================= */
+// ✅ Safety check (add this)
+if (!process.env.DB_HOST) {
+  console.error("❌ DB_HOST missing!");
+}
+
+// DB connection
 const db = mysql.createPool({
-  host: process.env.DB_HOST || "127.0.0.1",
+  host: process.env.DB_HOST, // ❌ removed fallback
   port: process.env.DB_PORT,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
