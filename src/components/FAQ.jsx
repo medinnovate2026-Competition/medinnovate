@@ -10,8 +10,8 @@ const faqs = [
     answer: 'Both solo participants and teams are allowed. Teams can be multidisciplinary.',
   },
   {
-    question: 'Who can join?',
-    answer: 'Medical students, public health graduates, engineers, designers, social science professionals, interns, and young professionals can join.',
+    question: 'Who can participate?',
+    answer: 'Only students currently pursuing medical degree are allowed.',
   },
   {
     question: 'Certificate provided?',

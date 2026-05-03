@@ -10,7 +10,7 @@ export default function QRModal({ onClose }) {
 
         {/* QR Code Image */}
         <div className="bg-white border border-slate-200 shadow-sm p-4 rounded-xl inline-block mb-6">
-          <img src="/qr.png" alt="Payment QR Code" className="w-48 h-48 object-contain" />
+          <img src={`${import.meta.env.BASE_URL}qr.png`} alt="Payment QR Code" className="w-48 h-48 object-contain" />
         </div>
 
         <p className="text-slate-600 font-medium text-sm mb-6">

@@ -11,7 +11,7 @@ function Navbar() {
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <a href="#hero" className="flex items-center gap-3">
           <div className="grid h-9 w-9 place-items-center rounded-xl border border-purple-300/40 bg-purple-400/15 shadow-[0_0_26px_rgba(168,85,247,0.36)] overflow-hidden p-0.5">
-            <img src="medinnovate/public/logo.png" alt="MedInnovate Logo" className="h-full w-full object-contain" />
+            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="MedInnovate Logo" className="h-full w-full object-contain" />
           </div>
           <span className="font-display text-base font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-white to-[#00dcff] sm:text-lg">
             Medinnovate

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import QRModal from "./QRModal";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_BASE_URL } from "../config";
 
 function Registration() {
   const [showQR, setShowQR] = useState(false);
@@ -42,25 +41,19 @@ function Registration() {
       return;
     }
 
-    if (!API_URL) {
-      setSubmitError("API URL is not configured. Check your .env file (VITE_API_URL).");
-      console.error("VITE_API_URL is undefined. Make sure .env has VITE_API_URL=http://localhost:5000 and you restarted Vite.");
-      return;
-    }
-
     const payload = {
       team_name: teamName.trim(),
       members: filledMembers,
       utr: utr.trim(),
     };
 
-    console.log("Submitting to:", `${API_URL}/register-upi`);
+    console.log("Submitting to:", `${API_BASE_URL}/register-upi`);
     console.log("Payload:", JSON.stringify(payload, null, 2));
 
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/register-upi`, {
+      const response = await fetch(`${API_BASE_URL}/register-upi`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -76,7 +69,7 @@ function Registration() {
       }
     } catch (error) {
       console.error("Registration fetch error:", error);
-      setSubmitError("Network error — make sure the backend server is running on port 5000.");
+      setSubmitError("Network error — failed to connect to the backend server.");
     } finally {
       setIsSubmitting(false);
     }

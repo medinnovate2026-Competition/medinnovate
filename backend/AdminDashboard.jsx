@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TeamCard from './TeamCard';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://medinnovate-production.up.railway.app';
+
 const AdminDashboard = () => {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +18,7 @@ const AdminDashboard = () => {
       if (!token) return navigate('/admin/login');
 
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/teams`, { // ✅ Fix #1 & #2: consistent backticks, closed properly
+        const response = await fetch(`${API_BASE_URL}/admin/teams`, { // ✅ Fix #1 & #2: consistent backticks, closed properly
           headers: { 'Authorization': `Bearer ${token}` },
           signal: controller.signal,
         });
@@ -51,8 +53,7 @@ const AdminDashboard = () => {
     if (!token) return navigate('/admin/login');
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/admin/verify/${encodeURIComponent(teamIdentifier)}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/verify/${encodeURIComponent(teamIdentifier)}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,

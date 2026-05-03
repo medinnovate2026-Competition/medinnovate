@@ -622,7 +622,7 @@ const FAQS = [
   },
   {
     q: "Who can participate?",
-    a: "The event is open to:\n• Medical students\n• Public health graduates\n• Engineering & design students\n• Social science professionals\n• Interns and young professionals\n\nAnyone interested in healthcare innovation is welcome."
+    a: "Only students currently pursuing medical degree are allowed."
   },
   {
     q: "Can team members be from different colleges or countries?",
@@ -901,7 +901,7 @@ function RegisterSection({ config }) {
                 Early Bird Discount
               </div>
               <div className="mt-3 text-sm text-slate-600 bg-white px-4 py-2 rounded-md border border-slate-200 shadow-sm">
-                Opportunity to win a share of <span className="font-bold text-slate-900">$729</span>
+                Opportunity to win a share of <span className="font-bold text-slate-900">the prize pool</span>
               </div>
             </div>
           </div>

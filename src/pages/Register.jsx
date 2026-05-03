@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_BASE_URL } from "../config";
 
 const STEPS = [
   { number: 1, label: "Basic Info", icon: "✦" },
@@ -155,7 +154,6 @@ export default function Register() {
 
   const handleSubmit = async () => {
     if (!validateStep()) return;
-    if (!API_URL) { setError("API URL not configured. Check your .env file (VITE_API_URL)."); return; }
 
     setIsSubmitting(true);
     setError("");
@@ -175,18 +173,23 @@ export default function Register() {
     console.log("Submitting:", JSON.stringify(payload, null, 2));
 
     try {
-      const response = await fetch(`${API_URL}/register-upi`, {
+      const response = await fetch(`${API_BASE_URL}/register-upi`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await response.json();
       console.log("Response:", response.status, data);
-      if (response.ok) { setSubmitted(true); }
+      if (response.ok) { 
+        setSubmitted(true); 
+        setTimeout(() => {
+          window.location.href = "https://chat.whatsapp.com/D2mQmGTXMEuHfZxsILfI0c";
+        }, 2000);
+      }
       else { setError(data.error || "Registration failed. Please try again."); }
     } catch (err) {
       console.error(err);
-      setError("Network error — make sure your backend is running on port 5000.");
+      setError("Network error — failed to connect to the backend server.");
     } finally {
       setIsSubmitting(false);
     }
@@ -202,13 +205,20 @@ export default function Register() {
           <div className="w-20 h-20 rounded-full bg-green-50 border border-green-200 flex items-center justify-center text-4xl mx-auto mb-6 text-green-600 shadow-sm">✓</div>
           <h1 className="text-3xl font-bold text-slate-900 mb-4">Registration Complete</h1>
           <p className="text-slate-600 mb-2">Team <span className="text-slate-900 font-semibold">"{form.teamName}"</span> has been registered.</p>
-          <p className="text-slate-500 text-sm mb-8">
+          <p className="text-slate-500 text-sm mb-6">
             Pending payment verification. We'll reach out to <span className="text-slate-700 font-medium">{form.email}</span> shortly.
           </p>
-          <button onClick={() => navigate("/")}
-            className="px-6 py-2.5 rounded-md bg-white border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors shadow-sm">
-            ← Back to Home
-          </button>
+          <p className="text-slate-600 font-medium mb-6 animate-pulse">Redirecting you to our WhatsApp group...</p>
+          <div className="flex flex-col gap-3">
+            <button onClick={() => window.location.href = "https://chat.whatsapp.com/D2mQmGTXMEuHfZxsILfI0c"}
+              className="px-6 py-2.5 rounded-md bg-[#25D366] text-white font-semibold text-sm hover:bg-[#20bd5a] transition-colors shadow-sm">
+              Join WhatsApp Group Manually
+            </button>
+            <button onClick={() => navigate("/")}
+              className="px-6 py-2.5 rounded-md bg-white border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors shadow-sm">
+              ← Back to Home
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -390,7 +400,7 @@ export default function Register() {
                     <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">Scan to Pay</p>
                     <div className="w-40 h-40 rounded-lg bg-white border border-slate-200 mx-auto flex items-center justify-center mb-4 overflow-hidden">
                       <img
-                        src="public/qr.png"
+                        src={`${import.meta.env.BASE_URL}qr.png`}
                         alt="UPI QR Code"
                         className="w-full h-full object-contain"
                         onError={e => {
@@ -422,7 +432,7 @@ export default function Register() {
                     <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">Pay via Paystack</p>
                     <div className="w-40 h-40 rounded-lg bg-white border border-slate-200 mx-auto flex items-center justify-center mb-4 overflow-hidden">
                       <img
-                        src="public/paystack-qr.png"
+                        src={`${import.meta.env.BASE_URL}paystack-qr.png`}
                         alt="Paystack QR Code"
                         className="w-full h-full object-contain"
                         onError={e => {
@@ -435,7 +445,7 @@ export default function Register() {
                       Secure your spot by completing the payment. Click the button below to proceed to the payment page.
                     </p>
                     <a
-                      href="PAYSTACK LINK HERE"
+                      href="https://paystack.com/buy/medinnovate-20-dhnwdw"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-block px-6 py-2.5 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"

@@ -7,7 +7,11 @@ import jwt from "jsonwebtoken";
 dotenv.config();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: "https://medinnovate2026-competition.github.io",
+  methods: ["GET", "POST", "PUT"],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -33,7 +37,7 @@ db.getConnection((err, connection) => {
 });
 
 /* ================= AUTH ================= */
-app.post("/admin/login", (req, res) => {
+app.post("/api/admin/login", (req, res) => {
   const { adminId, password } = req.body;
 
   if (
@@ -66,7 +70,7 @@ const verify = (req, res, next) => {
 };
 
 /* ================= GET TEAMS ================= */
-app.get("/admin/teams", verify, (req, res) => {
+app.get("/api/admin/teams", verify, (req, res) => {
   console.log("Fetching all teams...");
   const sql = `
     SELECT t.id as team_id, t.team_name, t.payment_method, t.payment_status, t.transaction_ref,
@@ -111,7 +115,7 @@ app.get("/admin/teams", verify, (req, res) => {
 });
 
 /* ================= REGISTER ================= */
-app.post("/register-upi", (req, res) => {
+app.post("/api/register-upi", (req, res) => {
   const { team_name, members, utr } = req.body;
 
   if (!team_name || !utr || !members || members.length === 0) {
@@ -168,7 +172,7 @@ app.post("/register-upi", (req, res) => {
 });
 
 /* ================= VERIFY TEAM ================= */
-app.put("/admin/verify/:id", verify, (req, res) => {
+app.put("/api/admin/verify/:id", verify, (req, res) => {
   const teamId = req.params.id;
   db.query(
     "UPDATE teams SET payment_status = 'verified' WHERE id = ? OR team_name = ?",
@@ -189,6 +193,8 @@ app.get("/", (req, res) => {
 });
 
 /* ================= SERVER ================= */
-app.listen(5000, () => {
-  console.log("Server running on port 5000 🔥");
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT} 🔥`);
 });

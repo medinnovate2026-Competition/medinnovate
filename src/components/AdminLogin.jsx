@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../config';
 
 const AdminLogin = () => {
   const [adminId, setAdminId] = useState('');
@@ -12,8 +13,7 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/admin/login`, {
+      const response = await fetch(`${API_BASE_URL}/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ adminId, password })
@@ -28,7 +28,7 @@ const AdminLogin = () => {
         setError(data.message || 'Login failed');
       }
     } catch (err) {
-      setError('Network error. Ensure the backend is running on port 5000.');
+      setError('Network error. Failed to connect to the backend server.');
     }
   };
 

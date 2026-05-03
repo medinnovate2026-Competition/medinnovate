@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TeamCard from './TeamCard';
+import { API_BASE_URL } from '../config';
 
 const AdminDashboard = () => {
   const [teams, setTeams] = useState([]);
@@ -17,8 +18,7 @@ const AdminDashboard = () => {
       if (!token) return navigate('/admin/login');
 
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const response = await fetch(`${apiUrl}/admin/teams`, {
+        const response = await fetch(`${API_BASE_URL}/admin/teams`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -50,8 +50,7 @@ const AdminDashboard = () => {
     if (!token) return navigate('/admin/login');
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/admin/verify/${encodeURIComponent(teamIdentifier)}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/verify/${encodeURIComponent(teamIdentifier)}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -73,11 +72,10 @@ const AdminDashboard = () => {
     if (!token) return navigate('/admin/login');
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       // Optimistic update
       setTeams(prev => prev.map(t => (t.id === teamIdentifier || t.team_name === teamIdentifier) ? { ...t, abstract_url: url } : t));
       
-      const response = await fetch(`${apiUrl}/admin/abstract/${encodeURIComponent(teamIdentifier)}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/abstract/${encodeURIComponent(teamIdentifier)}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -98,11 +96,10 @@ const AdminDashboard = () => {
     if (!token) return navigate('/admin/login');
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       // Optimistic update
       setTeams(prev => prev.map(t => (t.id === teamIdentifier || t.team_name === teamIdentifier) ? { ...t, shortlisted: status } : t));
       
-      const response = await fetch(`${apiUrl}/admin/shortlist/${encodeURIComponent(teamIdentifier)}`, {
+      const response = await fetch(`${API_BASE_URL}/admin/shortlist/${encodeURIComponent(teamIdentifier)}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

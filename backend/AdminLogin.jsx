@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://medinnovate-production.up.railway.app';
+
 const AdminLogin = () => {
   const [adminId, setAdminId] = useState('');
   const [password, setPassword] = useState('');
@@ -12,7 +14,7 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const response = await fetch('/api/admin/login', {
+      const response = await fetch(`${API_BASE_URL}/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ adminId, password })
@@ -27,7 +29,7 @@ const AdminLogin = () => {
         setError(data.error || 'Login failed');
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      setError('Network error. Failed to connect to the backend server.');
     }
   };
 
