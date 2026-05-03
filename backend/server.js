@@ -44,7 +44,7 @@ const db = mysql.createPool({
  // if (err) {
  //   console.error("DB Connection Error:", err);
  //   // ❗ DO NOT crash app
-    return;
+// return;
  // }
  // console.log("MySQL Connected ✅");
 //connection.release();
