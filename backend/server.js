@@ -76,7 +76,13 @@ const verify = (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    jwt.verify(token, process.env.JWT_SECRET);
+    try {
+  jwt.verify(token, process.env.JWT_SECRET);
+  next();
+} catch (err) {
+  console.error("JWT error:", err);
+  return res.status(401).json({ error: "Invalid token" });
+}
     next();
   } catch {
     return res.status(401).json({ error: "Invalid token" });
@@ -203,7 +209,8 @@ app.put("/api/admin/verify/:id", verify, (req, res) => {
 
 /* ================= HEALTH CHECK ================= */
 app.get("/", (req, res) => {
-  res.send("Backend running 🚀");
+  console.log("Health check hit");
+  res.status(200).send("OK");
 });
 
 setInterval(() => {
@@ -215,6 +222,17 @@ setInterval(() => {
     }
   });
 }, 4 * 60 * 1000); // every 4 minutes
+
+/* ================= 404 HANDLER ================= */
+app.use((req, res) => {
+  res.status(404).send("Route not found");
+});
+
+/* ================= GLOBAL ERROR HANDLER ================= */
+app.use((err, req, res, next) => {
+  console.error("GLOBAL ERROR:", err);
+  res.status(500).send("Internal Server Error");
+});
 
 /* ================= SERVER ================= */
 const PORT = process.env.PORT || 5000;
