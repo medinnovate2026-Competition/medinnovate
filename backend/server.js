@@ -1,3 +1,7 @@
+process.on("exit", (code) => {
+  console.log("Process exiting with code:", code);
+});
+
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION:", err);
 });
@@ -203,17 +207,9 @@ app.put("/api/admin/verify/:id", verify, (req, res) => {
 });
 
 /* ================= HEALTH CHECK ================= */
-app.get("/", (req, res) => res.status(200).send("OK"));
-
-setInterval(() => {
-  db.query("SELECT 1", (err) => {
-    if (err) {
-      console.error("Keep-alive failed:", err.message);
-    } else {
-      console.log("DB keep-alive ping");
-    }
-  });
-}, 4 * 60 * 1000); // every 4 minutes
+app.get("/", (req, res) => {
+  res.status(200).send("OK");
+});
 
 /* ================= 404 HANDLER ================= */
 app.use((req, res) => {
@@ -230,6 +226,8 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 // Bind to 0.0.0.0 so Railway's proxy can route traffic to the container
+const PORT = process.env.PORT || 8080;
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT} 🔥`);
 });
