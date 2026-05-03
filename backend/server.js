@@ -223,9 +223,7 @@ app.use((err, req, res, next) => {
 });
 
 /* ================= SERVER ================= */
-const PORT = process.env.PORT || 5000;
 
-// Bind to 0.0.0.0 so Railway's proxy can route traffic to the container
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, "0.0.0.0", () => {
