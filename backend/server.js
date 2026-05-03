@@ -1,3 +1,11 @@
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT EXCEPTION:", err);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("UNHANDLED REJECTION:", err);
+});
+
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -7,6 +15,10 @@ import jwt from "jsonwebtoken";
 dotenv.config();
 
 const app = express();
+app.use((req, res, next) => {
+  console.log("Incoming request:", req.method, req.url);
+  next();
+});
 app.use(cors({
   origin: "https://medinnovate2026-competition.github.io",
   methods: ["GET", "POST", "PUT"],
