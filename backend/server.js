@@ -28,14 +28,15 @@ const db = mysql.createPool({
   queueLimit: 0,
 });
 
-db.getConnection((err, connection) => {
+ db.getConnection((err, connection) => {
   if (err) {
     console.error("DB Connection Error:", err);
-  } else {
-    console.log("MySQL Connected ✅");
-    connection.release();
+    // ❗ DO NOT crash app
+    return;
   }
-});
+  console.log("MySQL Connected ✅");
+  connection.release();
+ });
 
 /* ================= AUTH ================= */
 app.post("/api/admin/login", (req, res) => {
@@ -192,6 +193,16 @@ app.put("/api/admin/verify/:id", verify, (req, res) => {
 app.get("/", (req, res) => {
   res.send("Backend running 🚀");
 });
+
+setInterval(() => {
+  db.query("SELECT 1", (err) => {
+    if (err) {
+      console.error("Keep-alive failed:", err.message);
+    } else {
+      console.log("DB keep-alive ping");
+    }
+  });
+}, 4 * 60 * 1000); // every 4 minutes
 
 /* ================= SERVER ================= */
 const PORT = process.env.PORT || 5000;
