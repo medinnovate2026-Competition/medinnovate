@@ -40,15 +40,15 @@ const db = mysql.createPool({
   queueLimit: 0,
 });
 
- db.getConnection((err, connection) => {
-  if (err) {
-    console.error("DB Connection Error:", err);
-    // ❗ DO NOT crash app
+ //db.getConnection((err, connection) => {
+ // if (err) {
+ //   console.error("DB Connection Error:", err);
+ //   // ❗ DO NOT crash app
     return;
-  }
-  console.log("MySQL Connected ✅");
-  connection.release();
- });
+ // }
+ // console.log("MySQL Connected ✅");
+//connection.release();
+ // });
 
 /* ================= AUTH ================= */
 app.post("/api/admin/login", (req, res) => {
@@ -76,15 +76,10 @@ const verify = (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    try {
-  jwt.verify(token, process.env.JWT_SECRET);
-  next();
-} catch (err) {
-  console.error("JWT error:", err);
-  return res.status(401).json({ error: "Invalid token" });
-}
+    jwt.verify(token, process.env.JWT_SECRET);
     next();
-  } catch {
+  } catch (err) {
+    console.error("JWT error:", err);
     return res.status(401).json({ error: "Invalid token" });
   }
 };
@@ -208,10 +203,7 @@ app.put("/api/admin/verify/:id", verify, (req, res) => {
 });
 
 /* ================= HEALTH CHECK ================= */
-app.get("/", (req, res) => {
-  console.log("Health check hit");
-  res.status(200).send("OK");
-});
+app.get("/", (req, res) => res.status(200).send("OK"));
 
 setInterval(() => {
   db.query("SELECT 1", (err) => {
@@ -225,7 +217,7 @@ setInterval(() => {
 
 /* ================= 404 HANDLER ================= */
 app.use((req, res) => {
-  res.status(404).send("Route not found");
+  res.status(404).send("Not Found");
 });
 
 /* ================= GLOBAL ERROR HANDLER ================= */
@@ -237,6 +229,7 @@ app.use((err, req, res, next) => {
 /* ================= SERVER ================= */
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+// Bind to 0.0.0.0 so Railway's proxy can route traffic to the container
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT} 🔥`);
 });
