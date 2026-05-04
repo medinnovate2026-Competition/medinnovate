@@ -33,6 +33,8 @@ const TeamCard = ({ team, onVerify }) => {
           )}
         </div>
         <div className="text-right">
+          <div className="text-xs text-slate-500 mb-1">Referral Code</div>
+          <div className="text-sm font-mono text-slate-700 mb-2">{team.referral_code || "N/A"}</div>
           <div className="text-xs text-slate-500 mb-1">Transaction ID (transaction_ref)</div>
           <div className="text-sm font-mono text-slate-700 mb-2">{team.transaction_ref || "N/A"}</div>
           {team.payment_status !== 'verified' && (
