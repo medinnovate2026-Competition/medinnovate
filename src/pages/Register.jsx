@@ -108,7 +108,7 @@ export default function Register() {
   const [paymentRegion, setPaymentRegion] = useState(""); // "india" | "nigeria"
 
   const [form, setForm] = useState({
-    email: "",
+    referralCode: "",
     teamName: "",
     leaderName: "",
     leaderEmail: "",
@@ -121,11 +121,17 @@ export default function Register() {
     enrolledInMedical: "",
   });
 
-  const set = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  const set = (e) => {
+    let value = e.target.value;
+    if (e.target.name === "referralCode") {
+      // Only allow words and numbers (alphanumeric), remove spaces/special chars
+      value = value.replace(/[^a-zA-Z0-9]/g, "");
+    }
+    setForm(f => ({ ...f, [e.target.name]: value }));
+  };
 
   const validateStep = () => {
     setError("");
-    if (step === 1 && !form.email.trim()) { setError("Email is required."); return false; }
     if (step === 2) {
       if (!form.teamName.trim()) { setError("Team name is required."); return false; }
       if (!form.leaderName.trim()) { setError("Team leader name is required."); return false; }
@@ -167,6 +173,7 @@ export default function Register() {
     const payload = {
       team_name: form.teamName,
       members,
+      referral_code: form.referralCode.trim() || null,
       utr: paymentRegion === "nigeria" ? "NIGERIA-PENDING" : utr.trim(),
     };
 
@@ -206,7 +213,7 @@ export default function Register() {
           <h1 className="text-3xl font-bold text-slate-900 mb-4">Registration Complete</h1>
           <p className="text-slate-600 mb-2">Team <span className="text-slate-900 font-semibold">"{form.teamName}"</span> has been registered.</p>
           <p className="text-slate-500 text-sm mb-6">
-            Pending payment verification. We'll reach out to <span className="text-slate-700 font-medium">{form.email}</span> shortly.
+            Pending payment verification. We'll reach out to <span className="text-slate-700 font-medium">{form.leaderEmail}</span> shortly.
           </p>
           <p className="text-slate-600 font-medium mb-6 animate-pulse">Redirecting you to our WhatsApp group...</p>
           <div className="flex flex-col gap-3">
@@ -251,12 +258,12 @@ export default function Register() {
           {step === 1 && (
             <div>
               <div className="flex items-center gap-3 mb-8">
-                <h2 className="text-xl font-semibold text-slate-900">Referal code</h2>
+                <h2 className="text-xl font-semibold text-slate-900">Referral Code</h2>
               </div>
               <div className="space-y-5">
-                <Field label="Referal Code" name="text" type="text" placeholder="referal code from your college ambassador" value={form.email} onChange={set} />
+                <Field label="Referral Code (Optional)" name="referralCode" type="text" placeholder="referral code from your college ambassador" value={form.referralCode} onChange={set} required={false} />
               </div>
-              <p className="text-xs text-slate-500 mt-6">This email will be used for primary communication regarding the hackathon.</p>
+              <p className="text-xs text-slate-500 mt-6">If you have a referral code, enter it here. Otherwise, you can skip this step.</p>
             </div>
           )}
 
