@@ -106,7 +106,7 @@ const verify = (req, res, next) => {
 app.get("/api/admin/teams", verify, (req, res) => {
   console.log("Fetching all teams...");
   const sql = `
-    SELECT t.id as team_id, t.team_name, t.payment_method, t.payment_status, t.transaction_ref,
+    SELECT t.id as team_id, t.team_name, t.payment_method, t.payment_status, t.transaction_ref, t.referral_code,
            p.name, p.email, p.college, p.country
     FROM teams t
     LEFT JOIN participants p ON t.id = p.team_id
@@ -129,6 +129,7 @@ app.get("/api/admin/teams", verify, (req, res) => {
           payment_method: row.payment_method,
           payment_status: row.payment_status,
           transaction_ref: row.transaction_ref, // ✅ fixed: was row.utr
+          referral_code: row.referral_code,
           members: [],
         };
       }
@@ -149,7 +150,9 @@ app.get("/api/admin/teams", verify, (req, res) => {
 
 /* ================= REGISTER ================= */
 app.post("/api/register-upi", (req, res) => {
-  const { team_name, members, utr } = req.body;
+  console.log("Incoming request body:", req.body);
+  
+  const { team_name, members, utr, referral_code, referralCode } = req.body;
 
   if (!team_name || !utr || !members || members.length === 0) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -162,9 +165,21 @@ app.post("/api/register-upi", (req, res) => {
 
   console.log("Registering team:", { team_name, utr, memberCount: validMembers.length });
 
+  // Normalize referral code: fallback to camelCase, trim, uppercase, or set to null
+  let rawReferralCode = referral_code || referralCode;
+  let normalizedReferralCode = null;
+  if (rawReferralCode && typeof rawReferralCode === 'string') {
+    const trimmed = rawReferralCode.trim();
+    if (trimmed) normalizedReferralCode = trimmed.toUpperCase();
+  }
+  console.log("Normalized referral code:", normalizedReferralCode);
+
+  const queryValues = [team_name, "upi", "pending", utr, normalizedReferralCode];
+  console.log("Final query values:", queryValues);
+
   db.query(
-    "INSERT INTO teams (team_name, payment_method, payment_status, transaction_ref) VALUES (?, ?, ?, ?)",
-    [team_name, "upi", "pending", utr], // ✅ fixed: column was wrongly named utr
+    "INSERT INTO teams (team_name, payment_method, payment_status, transaction_ref, referral_code) VALUES (?, ?, ?, ?, ?)",
+    queryValues,
     (err, result) => {
       if (err) {
         console.error("SQL Error inserting team:", err);
