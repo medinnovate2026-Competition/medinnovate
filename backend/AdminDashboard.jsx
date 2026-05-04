@@ -9,6 +9,7 @@ const AdminDashboard = () => {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedCountry, setSelectedCountry] = useState('All');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -76,20 +77,37 @@ const AdminDashboard = () => {
     navigate('/admin/login');
   };
 
-  if (loading) return <div className="min-h-screen bg-[#0B1B2B] text-cyan-400 flex justify-center items-center">Loading Data...</div>;
-  if (error) return <div className="min-h-screen bg-[#0B1B2B] text-red-400 flex justify-center items-center">{error}</div>;
+  if (loading) return <div className="min-h-screen bg-slate-50 text-blue-700 font-semibold flex justify-center items-center">Loading Data...</div>;
+  if (error) return <div className="min-h-screen bg-slate-50 text-red-600 font-semibold flex justify-center items-center">{error}</div>;
+
+  const uniqueCountries = [...new Set(teams.map(team => team.members?.[0]?.country || 'Unknown'))].sort();
+  const filteredTeams = selectedCountry === 'All' 
+    ? teams 
+    : teams.filter(team => (team.members?.[0]?.country || 'Unknown') === selectedCountry);
 
   return (
-    <div className="min-h-screen bg-[#0B1B2B] text-[#E6F1FF] p-6 md:p-10">
+    <div className="min-h-screen bg-slate-50 text-slate-900 p-6 md:p-10">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-          <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">Organizer Dashboard</h1>
-          <button onClick={handleLogout} className="py-2 px-6 border border-cyan-500/50 hover:bg-cyan-900/30 rounded-md text-cyan-400 transition-all hover:shadow-[0_0_10px_rgba(6,182,212,0.4)]">Logout</button>
+          <h1 className="text-3xl md:text-4xl font-bold text-blue-700">Organizer Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <select 
+              value={selectedCountry}
+              onChange={(e) => setSelectedCountry(e.target.value)}
+              className="py-2 px-4 rounded-md border border-slate-300 bg-white text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="All">All Countries</option>
+              {uniqueCountries.map(country => (
+                <option key={country} value={country}>{country}</option>
+              ))}
+            </select>
+            <button onClick={handleLogout} className="py-2 px-6 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold shadow-sm transition-colors">Logout</button>
+          </div>
         </div>
         <div className="space-y-8">
-          {teams.length === 0
-            ? <p className="text-gray-400 text-center text-lg mt-20">No teams registered yet.</p>
-            : teams.map((team) => <TeamCard key={team.team_name} team={team} onVerify={handleVerify} />)} {/* ✅ Fix #3: stable key */}
+          {filteredTeams.length === 0
+            ? <p className="text-slate-600 text-center text-lg mt-20">No teams registered yet.</p>
+            : filteredTeams.map((team) => <TeamCard key={team.team_name} team={team} onVerify={handleVerify} />)} 
         </div>
       </div>
     </div>
