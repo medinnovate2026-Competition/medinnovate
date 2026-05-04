@@ -251,10 +251,10 @@ export default function Register() {
           {step === 1 && (
             <div>
               <div className="flex items-center gap-3 mb-8">
-                <h2 className="text-xl font-semibold text-slate-900">Basic Contact Info</h2>
+                <h2 className="text-xl font-semibold text-slate-900">Referal code</h2>
               </div>
               <div className="space-y-5">
-                <Field label="Your Email" name="email" type="email" placeholder="you@example.com" value={form.email} onChange={set} />
+                <Field label="Referal Code" name="text" type="text" placeholder="referal code from your college ambassador" value={form.email} onChange={set} />
               </div>
               <p className="text-xs text-slate-500 mt-6">This email will be used for primary communication regarding the hackathon.</p>
             </div>
