@@ -1,20 +1,15 @@
 {
-  "name": "medinnovate-frontend",
-  "private": true,
+  "name": "medinnovate-backend",
   "version": "1.0.0",
   "type": "module",
-  "homepage": "https://medinnovate2026-competition.github.io/medinnovate",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "start": "node server.js"
   },
   "dependencies": {
-  },
-  "devDependencies": {
-    "vite": "^5.0.0",
-    "gh-pages": "^6.1.1"
+    "express": "^4.18.0",
+    "jsonwebtoken": "^9.0.0",
+    "mysql2": "^3.0.0",
+    "dotenv": "^16.0.0",
+    "cors": "^2.8.5"
   }
 }
