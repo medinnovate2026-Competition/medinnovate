@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://medinnovate-production.up.railway.app';
+const RAW_API_URL = import.meta.env.VITE_API_URL || 'https://medinnovate-production.up.railway.app';
+const API_BASE_URL = RAW_API_URL.replace(/\/$/, "");
 
 const AdminLogin = () => {
   const [adminId, setAdminId] = useState('');
@@ -14,7 +15,7 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ adminId, password })

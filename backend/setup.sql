@@ -1,6 +1,4 @@
-CREATE DATABASE IF NOT EXISTS medinnovate;
-
-USE medinnovate;
+USE defaultdb;
 
 DROP TABLE IF EXISTS participants;
 DROP TABLE IF EXISTS teams;

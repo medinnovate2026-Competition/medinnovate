@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import PrizeReveal from "./components/PrizeReveal";
-import AdminLogin from "./components/AdminLogin";
-import AdminDashboard from "./components/AdminDashboard";
-import ProtectedRoute from "./components/ProtectedRoute";
+import AdminLogin from "../backend/AdminLogin";
+import AdminDashboard from "../backend/AdminDashboard";
+import ProtectedRoute from "../backend/ProtectedRoute";
 import Register from "./pages/Register";
 
 
@@ -306,7 +306,7 @@ function HeroSection({ config }) {
 function PartnersSection() {
   return (
     <section id="partners" className="relative w-full py-24 px-6 bg-white">
-      <SectionHeader subtitle="Partners" title="Collaborating Partners" description="Supported by global organizations driving healthcare innovation." />
+      <SectionHeader subtitle="Partners" title="Collaboration Between" description="Supported by global organizations driving healthcare innovation." />
       <div className="relative max-w-6xl mx-auto flex flex-wrap justify-center gap-6">
         {COLLABORATING_PARTNERS.map(({ name, initials, fullForm, logo, link }) => (
           <a

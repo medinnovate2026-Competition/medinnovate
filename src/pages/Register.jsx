@@ -173,7 +173,7 @@ export default function Register() {
     console.log("Submitting:", JSON.stringify(payload, null, 2));
 
     try {
-      const response = await fetch(`${API_BASE_URL}/register-upi`, {
+      const response = await fetch(`${API_BASE_URL}/api/register-upi`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
