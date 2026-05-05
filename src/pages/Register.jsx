@@ -365,7 +365,7 @@ export default function Register() {
                   <span className="text-slate-500 text-sm">/ participant</span>
                 </div>
                 <p className="text-slate-700 font-semibold mt-2">Total: $15 per team <span className="text-slate-400 line-through text-sm ml-1 font-normal">$30</span></p>
-                <p className="text-slate-500 text-xs mt-1">≈ ₹429 per participant · ₹1,287 per team</p>
+                <p className="text-slate-500 text-xs mt-1">≈ ₹500 per participant · ₹1,500 per team</p>
                 <div className="mt-3 inline-block rounded-md bg-emerald-50 border border-emerald-200 px-2 py-1 text-xs font-medium text-emerald-700 uppercase tracking-wider">
                   Early Bird Discount
                 </div>

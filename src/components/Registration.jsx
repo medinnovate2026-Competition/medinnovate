@@ -111,7 +111,7 @@ function Registration() {
         <div className="mx-auto mb-10 max-w-md rounded-3xl border border-purple-200/15 bg-[#09051A]/80 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] text-center">
           <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Registration Fee</p>
           <p className="mt-2 font-display text-6xl font-black text-white">$5</p>
-          <p className="mt-2 text-sm text-slate-400">+ INR equivalent (₹429)</p>
+          <p className="mt-2 text-sm text-slate-400">+ INR equivalent (₹1,500/team)</p>
         </div>
 
         <div className="space-y-6">
@@ -172,7 +172,7 @@ function Registration() {
           <div className="p-6 rounded-xl bg-[#09051A]/50 border border-purple-200/10">
             <h3 className="text-lg font-semibold text-white mb-4">Payment</h3>
             <p className="text-sm text-slate-400 mb-4">
-              Pay ₹429 via UPI to complete registration. Click the button below to show the QR code.
+              Pay ₹1,500 via UPI to complete registration. Click the button below to show the QR code.
             </p>
 
             <button
