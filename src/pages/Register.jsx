@@ -105,7 +105,7 @@ export default function Register() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [utr, setUtr] = useState("");
-  const [paymentRegion, setPaymentRegion] = useState(""); // "india" | "nigeria"
+  const [paymentRegion, setPaymentRegion] = useState(""); // "india" | "africa"
 
   const [form, setForm] = useState({
     referralCode: "",
@@ -174,7 +174,7 @@ export default function Register() {
       team_name: form.teamName,
       members,
       referral_code: form.referralCode.trim() || null,
-      utr: paymentRegion === "nigeria" ? "NIGERIA-PENDING" : utr.trim(),
+      utr: paymentRegion === "africa" ? "AFRICA-PENDING" : utr.trim(),
     };
 
     console.log("Submitting:", JSON.stringify(payload, null, 2));
@@ -373,7 +373,7 @@ export default function Register() {
 
               {/* Region picker */}
               <p className={labelClass}>Select your region to pay <span className="text-red-500">*</span></p>
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-2 gap-4 mb-3">
                 <button
                   onClick={() => setPaymentRegion("india")}
                   className={`p-4 rounded-xl border text-center transition-all ${
@@ -387,18 +387,21 @@ export default function Register() {
                   <div className="text-xs text-slate-500 mt-1">Pay via UPI</div>
                 </button>
                 <button
-                  onClick={() => setPaymentRegion("nigeria")}
+                  onClick={() => setPaymentRegion("africa")}
                   className={`p-4 rounded-xl border text-center transition-all ${
-                    paymentRegion === "nigeria"
+                    paymentRegion === "africa"
                       ? "border-blue-600 bg-blue-50 ring-1 ring-blue-600"
                       : "border-slate-300 bg-white hover:border-slate-400"
                   }`}
                 >
-                  <div className="text-2xl mb-2">🇳🇬</div>
-                  <div className="text-sm font-semibold text-slate-900">Nigeria</div>
+                  <div className="text-2xl mb-2">🌍</div>
+                  <div className="text-sm font-semibold text-slate-900">Africa</div>
                   <div className="text-xs text-slate-500 mt-1">Pay via Paystack</div>
                 </button>
               </div>
+              <p className="text-xs text-slate-500 mb-6 text-center italic">
+                These payment methods are just suggestions, you can pay using any method you prefer.
+              </p>
 
               {/* India payment */}
               {paymentRegion === "india" && (
@@ -432,8 +435,8 @@ export default function Register() {
                 </div>
               )}
 
-              {/* Nigeria payment */}
-              {paymentRegion === "nigeria" && (
+              {/* Africa payment */}
+              {paymentRegion === "africa" && (
                 <div className="space-y-4">
                   <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 text-center">
                     <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">Pay via Paystack</p>
