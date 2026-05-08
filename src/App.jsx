@@ -58,8 +58,8 @@ const WHY_CARDS = [
 const JOIN_CARDS = [
   {
     icon: "🩺",
-    title: "Undergraduate Medical Students",
-    desc: "Students currently pursuing an undergraduate medical degree are eligible to participate.",
+    title: "Undergraduate Students",
+    desc: "Open to all undergraduate students in Africa and India.",
     accent: "cyan",
   },
   {
@@ -544,7 +544,7 @@ function EventFlowSection() {
   const steps = [
     {
       title: "Registration",
-      desc: "Sign up and form your team of three medical students.",
+      desc: "Sign up and form your team of three undergraduate students.",
       icon: "📝"
     },
     {
@@ -849,7 +849,7 @@ function RegistrationModal({ onClose }) {
                 </div>
                 <div className="mb-6">
                   <label className="block text-sm font-semibold text-fuchsia-200 mb-2">
-                    Are all team members currently enrolled in an undergraduate medical (MBBS or equivalent) program? <span className="text-red-400">*</span>
+                    Are all team members undergraduate students in Africa or India? <span className="text-red-400">*</span>
                   </label>
                   <select name="enrolledInMedical" required value={formData.enrolledInMedical} onChange={handleChange} className="w-full bg-[#0a061c] border border-purple-200/20 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-400/50 transition-colors">
                     <option value="" disabled>Select an option</option>

@@ -334,7 +334,7 @@ export default function Register() {
                   options={["Yes", "No"]}
                 />
                 <CustomSelect
-                  label="Are all team members currently enrolled in an undergraduate medical (MBBS or equivalent) program?"
+                  label="Are all team members undergraduate students in Africa or India?"
                   name="enrolledInMedical"
                   value={form.enrolledInMedical}
                   onChange={set}
@@ -342,7 +342,7 @@ export default function Register() {
                 />
                 {form.enrolledInMedical === "No" && (
                   <div className="p-4 rounded-md bg-red-50 border border-red-200 text-red-600 text-sm">
-                    ⚠️ Medinnovate is open only to undergraduate medical students. Please verify eligibility before proceeding.
+                    ⚠️ Medinnovate is open to all undergraduate students in Africa and India. Please verify eligibility before proceeding.
                   </div>
                 )}
               </div>
@@ -509,7 +509,7 @@ export default function Register() {
         </div>
 
         <p className="text-center text-xs text-slate-500 mt-8">
-          By registering, you confirm all team members are undergraduate medical students. ·{" "}
+          By registering, you confirm all team members are undergraduate students in Africa or India. ·{" "}
           <a href="mailto:medinnovate2026@gmail.com" className="hover:text-blue-600 transition hover:underline">medinnovate2026@gmail.com</a>
         </p>
       </div>
