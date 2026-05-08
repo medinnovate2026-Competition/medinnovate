@@ -78,8 +78,8 @@ const PREREQUISITES = [
   },
   {
     number: "02",
-    title: "All members should be medicos",
-    desc: "Each participant in the team must be from the medical field.",
+    title: "All members should be undergraduate students",
+    desc: "Each participant in the team must be an undergraduate student.",
   },
   {
     number: "03",
@@ -459,7 +459,7 @@ function HighlightCard({ icon, title, desc, accent }) {
 function FeaturesSection() {
   return (
     <section id="features" className="relative w-full py-24 px-6 bg-slate-50">
-      <SectionHeader subtitle="Eligibility" title="Who Can Join" description="Participation is limited to students pursuing the medical field." />
+      <SectionHeader subtitle="Eligibility" title="Who Can Join" description="Participation is limited to undergraduate students from Africa and India." />
       <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-6">
         {JOIN_CARDS.map((card) => <HighlightCard key={card.title} {...card} />)}
       </div>
@@ -630,7 +630,7 @@ const FAQS = [
   },
   {
     q: "Is there any registration fee?",
-    a: "Yes, the registration fee is $5 (or INR equivalent) per participant."
+    a: "Yes, the registration fee is $5 (or INR/NGN equivalent) per participant."
   },
   {
     q: "Will certificates be provided?",
