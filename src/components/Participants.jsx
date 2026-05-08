@@ -1,6 +1,6 @@
 const participants = [
-  'Medical students',
-  'Public health graduates',
+  'Undergraduate students',
+  'Public health learners',
   'Engineers & designers',
   'Social science professionals',
   'Interns / young professionals',

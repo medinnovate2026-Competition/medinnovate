@@ -5,7 +5,7 @@ const aboutCards = [
   },
   {
     title: 'Who is it for?',
-    body: 'Medical, technology, public health, design, business, and social science learners and professionals.',
+    body: 'Undergraduate learners from medicine, technology, public health, design, business, social sciences, and other disciplines.',
   },
   {
     title: 'Why it matters',

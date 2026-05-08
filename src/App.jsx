@@ -32,7 +32,7 @@ const WHY_CARDS = [
   {
     icon: "🌍",
     title: "Global Networking",
-    desc: "Connect with medical students, public health thinkers, engineers, designers, and young professionals across countries.",
+    desc: "Connect with undergraduate students, public health thinkers, engineers, designers, and young professionals across countries.",
     accent: "cyan",
   },
   {
@@ -64,8 +64,8 @@ const JOIN_CARDS = [
   },
   {
     icon: "⚕️",
-    title: "Medical Interns",
-    desc: "Interns in the medical field can join and submit healthcare innovation ideas.",
+    title: "Students Across Disciplines",
+    desc: "Undergraduate students from any discipline can join and submit healthcare innovation ideas.",
     accent: "purple",
   },
 ];
@@ -464,7 +464,7 @@ function FeaturesSection() {
         {JOIN_CARDS.map((card) => <HighlightCard key={card.title} {...card} />)}
       </div>
       <p className="max-w-3xl mx-auto mt-8 rounded-lg border border-slate-200 bg-slate-50 px-6 py-4 text-center text-sm font-medium text-slate-700 shadow-sm">
-        All undergraduate students from Africa and India are eligible to participate, including medical interns. We encourage interdisciplinary teams that bring together diverse perspectives from the medical field to foster innovative solutions to healthcare challenges.
+        All undergraduate students from Africa and India are eligible to participate. We encourage interdisciplinary teams that bring together diverse academic backgrounds to foster innovative solutions to healthcare challenges.
       </p>
     </section>
   );
@@ -622,7 +622,7 @@ const FAQS = [
   },
   {
     q: "Who can participate?",
-    a: "Only students currently pursuing medical degree are allowed."
+    a: "Undergraduate students from any discipline in Africa and India are welcome to participate."
   },
   {
     q: "Can team members be from different colleges or countries?",

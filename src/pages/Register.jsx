@@ -146,7 +146,7 @@ export default function Register() {
     }
     if (step === 4) {
       if (!form.participatedBefore) { setError("Please answer the ideathon question."); return false; }
-      if (!form.enrolledInMedical) { setError("Please answer the medical enrollment question."); return false; }
+      if (!form.enrolledInMedical) { setError("Please answer the undergraduate eligibility question."); return false; }
     }
     if (step === 5) {
       if (!paymentRegion) { setError("Please select your payment region."); return false; }
