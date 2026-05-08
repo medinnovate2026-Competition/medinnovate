@@ -464,7 +464,7 @@ function FeaturesSection() {
         {JOIN_CARDS.map((card) => <HighlightCard key={card.title} {...card} />)}
       </div>
       <p className="max-w-3xl mx-auto mt-8 rounded-lg border border-slate-200 bg-slate-50 px-6 py-4 text-center text-sm font-medium text-slate-700 shadow-sm">
-        Only students pursuing the medical field are allowed. No other disciplines are eligible.
+        All undergraduate students from Africa and India are eligible to participate, including medical interns. We encourage interdisciplinary teams that bring together diverse perspectives from the medical field to foster innovative solutions to healthcare challenges.
       </p>
     </section>
   );

@@ -11,7 +11,7 @@ const faqs = [
   },
   {
     question: 'Who can participate?',
-    answer: 'Only students currently pursuing medical degree are allowed.',
+    answer: 'all undergraduate students from Africa and India are eligible to participate, including medical interns. We encourage interdisciplinary teams that bring together diverse perspectives from the medical field to foster innovative solutions to healthcare challenges.',
   },
   {
     question: 'Certificate provided?',
