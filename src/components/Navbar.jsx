@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 const navLinks = [
   { label: 'About', href: '#about' },
   { label: 'Reach', href: '#global' },
@@ -28,6 +30,12 @@ function Navbar() {
               {link.label}
             </a>
           ))}
+          <Link
+            to="/organising-committee"
+            className="text-sm font-medium text-violet-100/75 transition hover:text-fuchsia-200"
+          >
+            Organising Committee
+          </Link>
         </div>
 
         <a

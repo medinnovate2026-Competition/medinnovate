@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
 import PrizeReveal from "./components/PrizeReveal";
 import AdminLogin from "../backend/AdminLogin";
 import AdminDashboard from "../backend/AdminDashboard";
 import ProtectedRoute from "../backend/ProtectedRoute";
 import Register from "./pages/Register";
+import OrganisingCommittee from "./pages/OrganisingCommittee";
 
 
 // ─────────────────────────────────────────────
@@ -153,6 +154,7 @@ function Navbar({ title }) {
           <a href="#why" className="hover:text-blue-700 transition font-medium">Why Attend</a>
           <a href="#features" className="hover:text-blue-700 transition font-medium">Who Can Join</a>
           <a href="#speakers" className="hover:text-blue-700 transition font-medium">Judges</a>
+          <Link to="/organising-committee" className="hover:text-blue-700 transition font-medium">Organising Committee</Link>
           <a
             href="#register"
             className="px-5 py-2 rounded-md bg-blue-700 hover:bg-blue-800 text-white font-semibold transition-colors shadow-sm"
@@ -1153,6 +1155,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/organising-committee" element={<OrganisingCommittee />} />
         <Route path="/admin" element={
           <ProtectedRoute>
             <AdminDashboard />
