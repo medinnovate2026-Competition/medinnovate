@@ -74,8 +74,8 @@ const JOIN_CARDS = [
 const PREREQUISITES = [
   {
     number: "01",
-    title: "Team of 3 is mandatory",
-    desc: "Every submission must come from a team of exactly three members.",
+    title: "Team of 5 is mandatory",
+    desc: "Every submission must come from a team of exactly five members.",
   },
   {
     number: "02",
@@ -546,7 +546,7 @@ function EventFlowSection() {
   const steps = [
     {
       title: "Registration",
-      desc: "Sign up and form your team of three undergraduate students.",
+      desc: "Sign up and form your team of five undergraduate students.",
       icon: "📝"
     },
     {
@@ -620,7 +620,7 @@ const FAQS = [
   },
   {
     q: "Can I participate solo?",
-    a: "No. Participation is strictly team-based.\nEach team must consist of exactly 3 members."
+    a: "No. Participation is strictly team-based.\nEach team must consist of exactly 5 members."
   },
   {
     q: "Who can participate?",
@@ -745,6 +745,14 @@ function RegistrationModal({ onClose }) {
     m2Email: '',
     m2College: '',
     m2Phone: '',
+    m3Name: '',
+    m3Email: '',
+    m3College: '',
+    m3Phone: '',
+    m4Name: '',
+    m4Email: '',
+    m4College: '',
+    m4Phone: '',
     participatedBefore: '',
     enrolledInMedical: ''
   });
@@ -820,20 +828,20 @@ function RegistrationModal({ onClose }) {
             {step === 3 && (
               <div className="animate-fade-up">
                 <h4 className="text-xl font-bold text-white mb-6">Team Members Details</h4>
-                <div className="mb-8 p-6 rounded-2xl bg-white/5 border border-white/10">
-                  <h5 className="text-lg font-semibold text-cyan-200 mb-5">Member 1</h5>
-                  {renderInput("Full Name", "m1Name")}
-                  {renderInput("Email", "m1Email", "email")}
-                  {renderInput("Institute/College", "m1College")}
-                  {renderInput("Phone Number (with country code and active WhatsApp)", "m1Phone", "tel")}
-                </div>
-                <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
-                  <h5 className="text-lg font-semibold text-cyan-200 mb-5">Member 2</h5>
-                  {renderInput("Full Name", "m2Name")}
-                  {renderInput("Email", "m2Email", "email")}
-                  {renderInput("Institute/College", "m2College")}
-                  {renderInput("Phone Number (with country code and active WhatsApp)", "m2Phone", "tel")}
-                </div>
+                {[
+                  { label: "Member 2", prefix: "m1" },
+                  { label: "Member 3", prefix: "m2" },
+                  { label: "Member 4", prefix: "m3" },
+                  { label: "Member 5", prefix: "m4" },
+                ].map(({ label, prefix }, index, memberFields) => (
+                  <div key={prefix} className={`${index < memberFields.length - 1 ? "mb-8 " : ""}p-6 rounded-2xl bg-white/5 border border-white/10`}>
+                    <h5 className="text-lg font-semibold text-cyan-200 mb-5">{label}</h5>
+                    {renderInput("Full Name", `${prefix}Name`)}
+                    {renderInput("Email", `${prefix}Email`, "email")}
+                    {renderInput("Institute/College", `${prefix}College`)}
+                    {renderInput("Phone Number (with country code and active WhatsApp)", `${prefix}Phone`, "tel")}
+                  </div>
+                ))}
               </div>
             )}
             {step === 4 && (
@@ -896,8 +904,8 @@ function RegisterSection({ config }) {
               </div>
               <div className="text-base font-semibold mt-1 flex items-center justify-center gap-2 text-slate-700">
                 <span>Total</span>
-                <span className="text-sm text-slate-400 line-through">$30</span>
-                <span>$15 per team</span>
+                <span className="text-sm text-slate-400 line-through">$50</span>
+                <span>$25 per team</span>
               </div>
               <div className="mt-2 inline-block rounded-md bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700 uppercase tracking-wider">
                 Early Bird Discount

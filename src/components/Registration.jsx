@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import QRModal from "./QRModal";
 import { API_BASE_URL } from "../config";
 
+const TEAM_MEMBER_COUNT = 5;
+
 function Registration() {
   const [showQR, setShowQR] = useState(false);
   const [utr, setUtr] = useState("");
@@ -11,6 +13,8 @@ function Registration() {
   const [submitError, setSubmitError] = useState("");
 
   const [members, setMembers] = useState([
+    { name: "", email: "", college: "", country: "" },
+    { name: "", email: "", college: "", country: "" },
     { name: "", email: "", college: "", country: "" },
     { name: "", email: "", college: "", country: "" },
     { name: "", email: "", college: "", country: "" },
@@ -31,8 +35,8 @@ function Registration() {
     }
 
     const filledMembers = members.filter((m) => m.name.trim() && m.email.trim());
-    if (filledMembers.length === 0) {
-      setSubmitError("Please fill in at least one team member's name and email.");
+    if (filledMembers.length !== TEAM_MEMBER_COUNT) {
+      setSubmitError(`Please fill in name and email for exactly ${TEAM_MEMBER_COUNT} team members.`);
       return;
     }
 
@@ -111,7 +115,7 @@ function Registration() {
         <div className="mx-auto mb-10 max-w-md rounded-3xl border border-purple-200/15 bg-[#09051A]/80 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] text-center">
           <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Registration Fee</p>
           <p className="mt-2 font-display text-6xl font-black text-white">$5</p>
-          <p className="mt-2 text-sm text-slate-400">+ INR equivalent (₹1,500/team)</p>
+          <p className="mt-2 text-sm text-slate-400">+ INR equivalent (₹2,500/team)</p>
         </div>
 
         <div className="space-y-6">
@@ -172,7 +176,7 @@ function Registration() {
           <div className="p-6 rounded-xl bg-[#09051A]/50 border border-purple-200/10">
             <h3 className="text-lg font-semibold text-white mb-4">Payment</h3>
             <p className="text-sm text-slate-400 mb-4">
-              Pay ₹1,500 via UPI to complete registration. Click the button below to show the QR code.
+              Pay ₹2,500 via UPI to complete registration. Click the button below to show the QR code.
             </p>
 
             <button

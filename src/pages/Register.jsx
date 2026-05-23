@@ -14,6 +14,8 @@ const inputClass =
   "w-full bg-white border border-slate-300 rounded-md px-4 py-2.5 text-slate-900 placeholder-slate-400 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 transition-all text-sm shadow-sm";
 
 const labelClass = "block text-sm font-semibold text-slate-700 mb-1.5";
+const TEAM_MEMBER_COUNT = 5;
+const ADDITIONAL_MEMBER_COUNT = TEAM_MEMBER_COUNT - 1;
 
 // Custom select using div so we can style it fully
 function CustomSelect({ label, name, value, onChange, required = true, options }) {
@@ -117,6 +119,8 @@ export default function Register() {
     leaderCollege: "",
     m1Name: "", m1Email: "", m1College: "", m1Phone: "",
     m2Name: "", m2Email: "", m2College: "", m2Phone: "",
+    m3Name: "", m3Email: "", m3College: "", m3Phone: "",
+    m4Name: "", m4Email: "", m4College: "", m4Phone: "",
     participatedBefore: "",
     enrolledInMedical: "",
   });
@@ -141,8 +145,12 @@ export default function Register() {
       if (!form.leaderCollege.trim()) { setError("College name is required."); return false; }
     }
     if (step === 3) {
-      if (!form.m1Name.trim() || !form.m1Email.trim()) { setError("Member 1 name and email are required."); return false; }
-      if (!form.m2Name.trim() || !form.m2Email.trim()) { setError("Member 2 name and email are required."); return false; }
+      for (let i = 1; i <= ADDITIONAL_MEMBER_COUNT; i += 1) {
+        if (!form[`m${i}Name`].trim() || !form[`m${i}Email`].trim()) {
+          setError(`Member ${i + 1} name and email are required. Teams must contain exactly ${TEAM_MEMBER_COUNT} members.`);
+          return false;
+        }
+      }
     }
     if (step === 4) {
       if (!form.participatedBefore) { setError("Please answer the ideathon question."); return false; }
@@ -168,6 +176,8 @@ export default function Register() {
       { name: form.leaderName, email: form.leaderEmail, college: form.leaderCollege, country: form.country },
       { name: form.m1Name,     email: form.m1Email,     college: form.m1College,     country: form.country },
       { name: form.m2Name,     email: form.m2Email,     college: form.m2College,     country: form.country },
+      { name: form.m3Name,     email: form.m3Email,     college: form.m3College,     country: form.country },
+      { name: form.m4Name,     email: form.m4Email,     college: form.m4College,     country: form.country },
     ];
 
     const payload = {
@@ -299,12 +309,14 @@ export default function Register() {
               </div>
               <div className="space-y-6">
                 {[
-                  { label: "Member 1", fields: { name: "m1Name", email: "m1Email", college: "m1College", phone: "m1Phone" } },
-                  { label: "Member 2", fields: { name: "m2Name", email: "m2Email", college: "m2College", phone: "m2Phone" } },
+                  { label: "Member 2", fields: { name: "m1Name", email: "m1Email", college: "m1College", phone: "m1Phone" } },
+                  { label: "Member 3", fields: { name: "m2Name", email: "m2Email", college: "m2College", phone: "m2Phone" } },
+                  { label: "Member 4", fields: { name: "m3Name", email: "m3Email", college: "m3College", phone: "m3Phone" } },
+                  { label: "Member 5", fields: { name: "m4Name", email: "m4Email", college: "m4College", phone: "m4Phone" } },
                 ].map(({ label, numColor, borderColor, fields }, idx) => (
                   <div key={label} className={`p-6 rounded-xl bg-slate-50 border border-slate-200`}>
                     <div className="flex items-center gap-2 mb-5">
-                      <span className="w-6 h-6 rounded bg-white border border-slate-200 flex items-center justify-center text-slate-700 text-xs font-semibold">{idx + 1}</span>
+                      <span className="w-6 h-6 rounded bg-white border border-slate-200 flex items-center justify-center text-slate-700 text-xs font-semibold">{idx + 2}</span>
                       <span className="text-sm font-semibold text-slate-700 uppercase tracking-wider">{label}</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -364,8 +376,8 @@ export default function Register() {
                   <span className="text-4xl font-bold text-slate-900">$5</span>
                   <span className="text-slate-500 text-sm">/ participant</span>
                 </div>
-                <p className="text-slate-700 font-semibold mt-2">Total: $15 per team <span className="text-slate-400 line-through text-sm ml-1 font-normal">$30</span></p>
-                <p className="text-slate-500 text-xs mt-1">≈ ₹500 per participant · ₹1,500 per team</p>
+                <p className="text-slate-700 font-semibold mt-2">Total: $25 per team <span className="text-slate-400 line-through text-sm ml-1 font-normal">$50</span></p>
+                <p className="text-slate-500 text-xs mt-1">≈ ₹500 per participant · ₹2,500 per team</p>
                 <div className="mt-3 inline-block rounded-md bg-emerald-50 border border-emerald-200 px-2 py-1 text-xs font-medium text-emerald-700 uppercase tracking-wider">
                   Early Bird Discount
                 </div>

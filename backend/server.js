@@ -21,6 +21,7 @@ import jwt from "jsonwebtoken";
 dotenv.config();
 
 const app = express();
+const TEAM_MEMBER_COUNT = 5;
 
 app.get("/", (req, res) => {
   res.status(200).send("OK");
@@ -154,13 +155,17 @@ app.post("/api/register-upi", (req, res) => {
   
   const { team_name, members, utr, referral_code, referralCode } = req.body;
 
-  if (!team_name || !utr || !members || members.length === 0) {
+  if (!team_name || !utr || !Array.isArray(members)) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  const validMembers = members.filter((m) => m.name && m.email);
-  if (validMembers.length === 0) {
-    return res.status(400).json({ error: "At least one member with name and email is required" });
+  if (members.length !== TEAM_MEMBER_COUNT) {
+    return res.status(400).json({ error: `Team must contain exactly ${TEAM_MEMBER_COUNT} members` });
+  }
+
+  const validMembers = members.filter((m) => m.name?.trim() && m.email?.trim());
+  if (validMembers.length !== TEAM_MEMBER_COUNT) {
+    return res.status(400).json({ error: `Name and email are required for all ${TEAM_MEMBER_COUNT} members` });
   }
 
   console.log("Registering team:", { team_name, utr, memberCount: validMembers.length });
@@ -191,8 +196,8 @@ app.post("/api/register-upi", (req, res) => {
 
       const values = validMembers.map((m) => [
         teamId,
-        m.name,
-        m.email,
+        m.name.trim(),
+        m.email.trim(),
         m.college || null,
         m.country || null,
       ]);
