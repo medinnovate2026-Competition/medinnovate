@@ -108,6 +108,9 @@ const COLLABORATING_PARTNERS = [
 ];
 
 const PREMIUM_BOX = "relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md hover:border-slate-300";
+const TEAM_MEMBER_COUNT = 5;
+const PRICE_PER_PERSON = 3;
+const TOTAL_TEAM_PRICE = 15;
 
 function SectionHeader({ subtitle, title, description, className = "" }) {
   return (
@@ -632,7 +635,7 @@ const FAQS = [
   },
   {
     q: "Is there any registration fee?",
-    a: "Yes, the registration fee is $5 (or INR/NGN equivalent) per participant."
+    a: `Individual Cost: $${PRICE_PER_PERSON} per participant.\nTeam Registration Fee: $${TOTAL_TEAM_PRICE} per team (${TEAM_MEMBER_COUNT} members).`
   },
   {
     q: "Will certificates be provided?",
@@ -898,17 +901,16 @@ function RegisterSection({ config }) {
           <div className="mb-8 p-6 rounded-xl border max-w-sm mx-auto bg-slate-50 border-slate-200 shadow-sm">
             <div className="flex flex-col items-center justify-center gap-2">
               <div className="flex items-baseline gap-3">
-                <span className="text-2xl text-slate-400 line-through font-medium">$10</span>
-                <span className="text-5xl font-bold text-slate-900">$5</span>
+                <span className="text-5xl font-bold text-slate-900">${PRICE_PER_PERSON}</span>
                 <span className="text-slate-500 font-medium">/ participant</span>
               </div>
-              <div className="text-base font-semibold mt-1 flex items-center justify-center gap-2 text-slate-700">
-                <span>Total</span>
-                <span className="text-sm text-slate-400 line-through">$50</span>
-                <span>$25 per team</span>
+              <div className="text-base font-semibold mt-1 flex flex-col items-center justify-center gap-1 text-slate-700">
+                <span>Individual Cost: ${PRICE_PER_PERSON} per participant</span>
+                <span>Team Registration Fee: ${TOTAL_TEAM_PRICE} per team ({TEAM_MEMBER_COUNT} members)</span>
               </div>
-              <div className="mt-2 inline-block rounded-md bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700 uppercase tracking-wider">
-                Early Bird Discount
+              <div className="mt-3 w-full rounded-md bg-white px-4 py-3 text-sm text-slate-600 border border-slate-200 shadow-sm">
+                <span>{TEAM_MEMBER_COUNT} Members × ${PRICE_PER_PERSON} = </span>
+                <span className="font-bold text-slate-900">${TOTAL_TEAM_PRICE} Total</span>
               </div>
               <div className="mt-3 text-sm text-slate-600 bg-white px-4 py-2 rounded-md border border-slate-200 shadow-sm">
                 Opportunity to win a share of <span className="font-bold text-slate-900">the prize pool</span>

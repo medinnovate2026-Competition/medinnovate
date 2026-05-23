@@ -37,6 +37,8 @@ const TeamCard = ({ team, onVerify }) => {
           <div className="text-sm font-mono text-slate-700 mb-2">{team.referral_code || "N/A"}</div>
           <div className="text-xs text-slate-500 mb-1">Transaction ID (transaction_ref)</div>
           <div className="text-sm font-mono text-slate-700 mb-2">{team.transaction_ref || "N/A"}</div>
+          <div className="text-xs text-slate-500 mb-1">Pricing</div>
+          <div className="text-sm font-semibold text-slate-700 mb-2">{team.totalPaid ? `$${team.totalPaid} paid` : "$15 per team"}</div>
           {team.payment_status !== 'verified' && (
             <button onClick={() => onVerify && onVerify(team.id || team.team_name)} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-1.5 rounded transition-colors shadow-sm">Verify Payment</button>
           )}

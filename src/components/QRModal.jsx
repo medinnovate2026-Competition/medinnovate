@@ -6,7 +6,8 @@ export default function QRModal({ onClose }) {
       <div className="bg-white p-8 rounded-2xl text-center max-w-sm w-full border border-slate-200 shadow-xl">
         
         <h2 className="text-xl font-bold text-slate-900 mb-2">Scan & Pay</h2>
-        <p className="text-slate-500 font-medium text-sm mb-6">Pay exactly ₹2,500 via any UPI app</p>
+        <p className="text-slate-500 font-medium text-sm mb-2">Pay exactly $15 per team via any UPI app</p>
+        <p className="text-slate-600 text-sm mb-6">5 Members × $3 = <span className="font-bold text-slate-900">$15 Total</span></p>
 
         {/* QR Code Image */}
         <div className="bg-white border border-slate-200 shadow-sm p-4 rounded-xl inline-block mb-6">

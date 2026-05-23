@@ -3,6 +3,8 @@ import QRModal from "./QRModal";
 import { API_BASE_URL } from "../config";
 
 const TEAM_MEMBER_COUNT = 5;
+const PRICE_PER_PERSON = 3;
+const TOTAL_TEAM_PRICE = 15;
 
 function Registration() {
   const [showQR, setShowQR] = useState(false);
@@ -49,6 +51,10 @@ function Registration() {
       team_name: teamName.trim(),
       members: filledMembers,
       utr: utr.trim(),
+      paymentAmount: TOTAL_TEAM_PRICE,
+      teamSize: TEAM_MEMBER_COUNT,
+      pricePerPerson: PRICE_PER_PERSON,
+      totalTeamPrice: TOTAL_TEAM_PRICE,
     };
 
     console.log("Submitting to:", `${API_BASE_URL}/register-upi`);
@@ -90,6 +96,9 @@ function Registration() {
           <p className="mt-4 text-slate-300">
             Your team <span className="text-white font-semibold">"{teamName}"</span> has been registered.
           </p>
+          <p className="mt-3 text-sm text-slate-300">
+            Team Registration Fee: ${TOTAL_TEAM_PRICE} per team ({TEAM_MEMBER_COUNT} members)
+          </p>
           <p className="mt-4 text-sm text-slate-400">
             Pending verification from our team.
           </p>
@@ -114,8 +123,12 @@ function Registration() {
         {/* Pricing */}
         <div className="mx-auto mb-10 max-w-md rounded-3xl border border-purple-200/15 bg-[#09051A]/80 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] text-center">
           <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Registration Fee</p>
-          <p className="mt-2 font-display text-6xl font-black text-white">$5</p>
-          <p className="mt-2 text-sm text-slate-400">+ INR equivalent (₹2,500/team)</p>
+          <p className="mt-2 font-display text-6xl font-black text-white">${PRICE_PER_PERSON}</p>
+          <p className="mt-2 text-sm text-slate-400">Individual Cost: ${PRICE_PER_PERSON} per participant</p>
+          <p className="mt-1 text-sm font-semibold text-white">Team Registration Fee: ${TOTAL_TEAM_PRICE} per team ({TEAM_MEMBER_COUNT} members)</p>
+          <div className="mt-4 rounded-2xl border border-purple-200/15 bg-white/[0.04] px-4 py-3 text-sm text-slate-300">
+            {TEAM_MEMBER_COUNT} Members × ${PRICE_PER_PERSON} = <span className="font-bold text-white">${TOTAL_TEAM_PRICE} Total</span>
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -176,7 +189,7 @@ function Registration() {
           <div className="p-6 rounded-xl bg-[#09051A]/50 border border-purple-200/10">
             <h3 className="text-lg font-semibold text-white mb-4">Payment</h3>
             <p className="text-sm text-slate-400 mb-4">
-              Pay ₹2,500 via UPI to complete registration. Click the button below to show the QR code.
+              Pay ${TOTAL_TEAM_PRICE} per team to complete registration. Click the button below to show the QR code.
             </p>
 
             <button

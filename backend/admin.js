@@ -28,6 +28,9 @@ router.get('/teams', authenticateToken, async (req, res) => {
       SELECT 
         t.id AS team_id, 
         t.team_name,
+        t.team_size,
+        t.price_per_person,
+        t.total_paid,
         p.id AS participant_id, 
         p.name, 
         p.email, 
@@ -42,7 +45,13 @@ router.get('/teams', authenticateToken, async (req, res) => {
     const teamsMap = {};
     rows.forEach(row => {
       if (!teamsMap[row.team_id]) {
-        teamsMap[row.team_id] = { team_name: row.team_name, members: [] };
+        teamsMap[row.team_id] = {
+          team_name: row.team_name,
+          teamSize: row.team_size,
+          pricePerPerson: row.price_per_person,
+          totalPaid: row.total_paid,
+          members: []
+        };
       }
       // Include participants if they exist
       if (row.participant_id) {

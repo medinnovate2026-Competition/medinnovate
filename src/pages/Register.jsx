@@ -16,6 +16,8 @@ const inputClass =
 const labelClass = "block text-sm font-semibold text-slate-700 mb-1.5";
 const TEAM_MEMBER_COUNT = 5;
 const ADDITIONAL_MEMBER_COUNT = TEAM_MEMBER_COUNT - 1;
+const PRICE_PER_PERSON = 3;
+const TOTAL_TEAM_PRICE = 15;
 
 // Custom select using div so we can style it fully
 function CustomSelect({ label, name, value, onChange, required = true, options }) {
@@ -185,6 +187,10 @@ export default function Register() {
       members,
       referral_code: form.referralCode.trim() || null,
       utr: paymentRegion === "africa" ? "AFRICA-PENDING" : utr.trim(),
+      paymentAmount: TOTAL_TEAM_PRICE,
+      teamSize: TEAM_MEMBER_COUNT,
+      pricePerPerson: PRICE_PER_PERSON,
+      totalTeamPrice: TOTAL_TEAM_PRICE,
     };
 
     console.log("Submitting:", JSON.stringify(payload, null, 2));
@@ -222,6 +228,7 @@ export default function Register() {
           <div className="w-20 h-20 rounded-full bg-green-50 border border-green-200 flex items-center justify-center text-4xl mx-auto mb-6 text-green-600 shadow-sm">✓</div>
           <h1 className="text-3xl font-bold text-slate-900 mb-4">Registration Complete</h1>
           <p className="text-slate-600 mb-2">Team <span className="text-slate-900 font-semibold">"{form.teamName}"</span> has been registered.</p>
+          <p className="text-slate-600 text-sm mb-2">Team Registration Fee: ${TOTAL_TEAM_PRICE} per team ({TEAM_MEMBER_COUNT} members)</p>
           <p className="text-slate-500 text-sm mb-6">
             Pending payment verification. We'll reach out to <span className="text-slate-700 font-medium">{form.leaderEmail}</span> shortly.
           </p>
@@ -371,15 +378,18 @@ export default function Register() {
               {/* Fee box */}
               <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 text-center mb-8">
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-2">Registration Fee</p>
-                <div className="flex items-baseline justify-center gap-3 mb-1">
-                  <span className="text-2xl text-slate-400 line-through">$10</span>
-                  <span className="text-4xl font-bold text-slate-900">$5</span>
+                <div className="flex items-baseline justify-center gap-2 mb-2">
+                  <span className="text-4xl font-bold text-slate-900">${PRICE_PER_PERSON}</span>
                   <span className="text-slate-500 text-sm">/ participant</span>
                 </div>
-                <p className="text-slate-700 font-semibold mt-2">Total: $25 per team <span className="text-slate-400 line-through text-sm ml-1 font-normal">$50</span></p>
-                <p className="text-slate-500 text-xs mt-1">≈ ₹500 per participant · ₹2,500 per team</p>
-                <div className="mt-3 inline-block rounded-md bg-emerald-50 border border-emerald-200 px-2 py-1 text-xs font-medium text-emerald-700 uppercase tracking-wider">
-                  Early Bird Discount
+                <p className="text-slate-700 font-semibold">Individual Cost: ${PRICE_PER_PERSON} per participant</p>
+                <p className="text-slate-700 font-semibold mt-1">Team Registration Fee: ${TOTAL_TEAM_PRICE} per team ({TEAM_MEMBER_COUNT} members)</p>
+                <div className="mt-4 rounded-lg bg-white border border-slate-200 px-4 py-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-600">{TEAM_MEMBER_COUNT} Members × ${PRICE_PER_PERSON}</span>
+                    <span className="text-slate-400">=</span>
+                    <span className="font-bold text-slate-900">${TOTAL_TEAM_PRICE} Total</span>
+                  </div>
                 </div>
               </div>
 

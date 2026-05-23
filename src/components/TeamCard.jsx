@@ -84,6 +84,10 @@ const TeamCard = ({ team, onVerify, onUpdateAbstract, onToggleShortlist }) => {
             <div className="text-right">
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">UTR / Ref</div>
               <div className="text-xs font-mono font-semibold text-slate-700 mb-2 bg-slate-100 px-2 py-1 rounded border border-slate-200 inline-block">{team.transaction_ref || team.utr || "N/A"}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Pricing</div>
+              <div className="text-xs font-semibold text-slate-700 mb-2">
+                {team.totalPaid ? `$${team.totalPaid} paid` : "$15 per team"}
+              </div>
               {team.payment_status !== 'verified' && (
                 <button onClick={() => onVerify && onVerify(team.id || team.team_name)} className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-md transition-all shadow-sm">Verify Payment</button>
               )}

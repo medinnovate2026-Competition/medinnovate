@@ -21,6 +21,10 @@ const faqs = [
     question: 'Payment issues?',
     answer: 'Contact support with your transaction reference and registration email so the team can verify your payment.',
   },
+  {
+    question: 'Is there any registration fee?',
+    answer: 'Individual Cost: $3 per participant. Team Registration Fee: $15 per team (5 members).',
+  },
 ]
 
 function FAQ() {

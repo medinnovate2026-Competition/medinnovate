@@ -22,6 +22,8 @@ dotenv.config();
 
 const app = express();
 const TEAM_MEMBER_COUNT = 5;
+const PRICE_PER_PERSON = 3;
+const TOTAL_TEAM_PRICE = 15;
 
 app.get("/", (req, res) => {
   res.status(200).send("OK");
@@ -57,6 +59,20 @@ const db = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+});
+
+const pricingColumns = [
+  "ADD COLUMN team_size INT NULL",
+  "ADD COLUMN price_per_person DECIMAL(10,2) NULL",
+  "ADD COLUMN total_paid DECIMAL(10,2) NULL",
+];
+
+pricingColumns.forEach((definition) => {
+  db.query(`ALTER TABLE teams ${definition}`, (err) => {
+    if (err && err.code !== "ER_DUP_FIELDNAME") {
+      console.error("Failed to ensure pricing column:", definition, err);
+    }
+  });
 });
 
  //db.getConnection((err, connection) => {
@@ -108,7 +124,7 @@ app.get("/api/admin/teams", verify, (req, res) => {
   console.log("Fetching all teams...");
   const sql = `
     SELECT t.id as team_id, t.team_name, t.payment_method, t.payment_status, t.transaction_ref, t.referral_code,
-           p.name, p.email, p.college, p.country
+           t.team_size, t.price_per_person, t.total_paid, p.name, p.email, p.college, p.country
     FROM teams t
     LEFT JOIN participants p ON t.id = p.team_id
     ORDER BY t.id
@@ -131,6 +147,9 @@ app.get("/api/admin/teams", verify, (req, res) => {
           payment_status: row.payment_status,
           transaction_ref: row.transaction_ref, // ✅ fixed: was row.utr
           referral_code: row.referral_code,
+          teamSize: row.team_size,
+          pricePerPerson: row.price_per_person,
+          totalPaid: row.total_paid,
           members: [],
         };
       }
@@ -153,7 +172,7 @@ app.get("/api/admin/teams", verify, (req, res) => {
 app.post("/api/register-upi", (req, res) => {
   console.log("Incoming request body:", req.body);
   
-  const { team_name, members, utr, referral_code, referralCode } = req.body;
+  const { team_name, members, utr, referral_code, referralCode, paymentAmount } = req.body;
 
   if (!team_name || !utr || !Array.isArray(members)) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -161,6 +180,10 @@ app.post("/api/register-upi", (req, res) => {
 
   if (members.length !== TEAM_MEMBER_COUNT) {
     return res.status(400).json({ error: `Team must contain exactly ${TEAM_MEMBER_COUNT} members` });
+  }
+
+  if (Number(paymentAmount) !== TOTAL_TEAM_PRICE) {
+    return res.status(400).json({ error: `Payment amount must be exactly $${TOTAL_TEAM_PRICE}` });
   }
 
   const validMembers = members.filter((m) => m.name?.trim() && m.email?.trim());
@@ -179,11 +202,20 @@ app.post("/api/register-upi", (req, res) => {
   }
   console.log("Normalized referral code:", normalizedReferralCode);
 
-  const queryValues = [team_name, "upi", "pending", utr, normalizedReferralCode];
+  const queryValues = [
+    team_name,
+    "upi",
+    "pending",
+    utr,
+    normalizedReferralCode,
+    TEAM_MEMBER_COUNT,
+    PRICE_PER_PERSON,
+    TOTAL_TEAM_PRICE,
+  ];
   console.log("Final query values:", queryValues);
 
   db.query(
-    "INSERT INTO teams (team_name, payment_method, payment_status, transaction_ref, referral_code) VALUES (?, ?, ?, ?, ?)",
+    "INSERT INTO teams (team_name, payment_method, payment_status, transaction_ref, referral_code, team_size, price_per_person, total_paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     queryValues,
     (err, result) => {
       if (err) {
