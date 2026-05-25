@@ -14,15 +14,15 @@ const PAYMENTS_DIR = path.join(__dirname, "public", "payments");
 const MEDIA_DIR = path.join(__dirname, "public", "media");
 const JSON_FIELDS = new Set(["social_links", "theme_colors", "highlights", "stats", "announcements", "metadata"]);
 const REQUIRED_DB_ENV = [
-  "MYSQL_HOST",
-  "MYSQL_PORT",
-  "MYSQL_USER",
-  "MYSQL_PASSWORD",
-  "MYSQL_DATABASE",
+  "DB_HOST",
+  "DB_PORT",
+  "DB_USER",
+  "DB_PASSWORD",
+  "DB_NAME",
 ];
 
-console.log("MYSQL_HOST:", process.env.MYSQL_HOST);
-console.log("MYSQL_PORT:", process.env.MYSQL_PORT);
+console.log("DB_HOST:", process.env.DB_HOST);
+console.log("DB_PORT:", process.env.DB_PORT);
 console.log("ALL ENV KEYS:", Object.keys(process.env));
 
 const missingDbEnv = REQUIRED_DB_ENV.filter((key) => !process.env[key]);
