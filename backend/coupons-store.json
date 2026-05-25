@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "code": "MED10",
+    "discountPercentage": 10,
+    "savedAmount": 1.5,
+    "finalPrice": 13.5,
+    "qrImage": "qr13_5.png",
+    "active": true
+  },
+  {
+    "id": 2,
+    "code": "EARLY20",
+    "discountPercentage": 20,
+    "savedAmount": 3,
+    "finalPrice": 12,
+    "qrImage": "qr12.png",
+    "active": true
+  }
+]

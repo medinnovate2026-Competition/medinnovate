@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Hadi Shaikh">
+  <defs>
+    <linearGradient id="g" x1="18" x2="222" y1="30" y2="212" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0891b2"/>
+      <stop offset="0.5" stop-color="#60a5fa"/>
+      <stop offset="1" stop-color="#34d399"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" rx="120" fill="url(#g)"/>
+  <circle cx="184" cy="58" r="42" fill="#ffffff" opacity="0.18"/>
+  <circle cx="56" cy="184" r="48" fill="#ffffff" opacity="0.14"/>
+  <text x="120" y="136" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="800" fill="#ffffff">HS</text>
+</svg>

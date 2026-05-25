@@ -2,10 +2,6 @@ import React, { useState } from "react";
 import QRModal from "./QRModal";
 import { API_BASE_URL } from "../config";
 
-const TEAM_MEMBER_COUNT = 5;
-const PRICE_PER_PERSON = 3;
-const TOTAL_TEAM_PRICE = 15;
-
 function Registration() {
   const [showQR, setShowQR] = useState(false);
   const [utr, setUtr] = useState("");
@@ -13,10 +9,12 @@ function Registration() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [isCouponLoading, setIsCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
 
   const [members, setMembers] = useState([
-    { name: "", email: "", college: "", country: "" },
-    { name: "", email: "", college: "", country: "" },
     { name: "", email: "", college: "", country: "" },
     { name: "", email: "", college: "", country: "" },
     { name: "", email: "", college: "", country: "" },
@@ -28,6 +26,46 @@ function Registration() {
     setMembers(updated);
   };
 
+  const handleApplyCoupon = async () => {
+    setCouponError("");
+
+    if (!couponCode.trim()) {
+      setCouponError("Invalid or expired coupon");
+      return;
+    }
+
+    setIsCouponLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/coupons/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.valid) {
+        setAppliedCoupon(null);
+        setCouponError(data.message || "Invalid or expired coupon");
+        return;
+      }
+
+      setAppliedCoupon(data);
+    } catch (error) {
+      console.error("Coupon validation error:", error);
+      setCouponError("Unable to validate coupon right now.");
+    } finally {
+      setIsCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponCode("");
+    setAppliedCoupon(null);
+    setCouponError("");
+  };
+
   const handleSubmit = async () => {
     setSubmitError("");
 
@@ -37,8 +75,8 @@ function Registration() {
     }
 
     const filledMembers = members.filter((m) => m.name.trim() && m.email.trim());
-    if (filledMembers.length !== TEAM_MEMBER_COUNT) {
-      setSubmitError(`Please fill in name and email for exactly ${TEAM_MEMBER_COUNT} team members.`);
+    if (filledMembers.length === 0) {
+      setSubmitError("Please fill in at least one team member's name and email.");
       return;
     }
 
@@ -51,14 +89,9 @@ function Registration() {
       team_name: teamName.trim(),
       members: filledMembers,
       utr: utr.trim(),
-      paymentAmount: TOTAL_TEAM_PRICE,
-      teamSize: TEAM_MEMBER_COUNT,
-      pricePerPerson: PRICE_PER_PERSON,
-      totalTeamPrice: TOTAL_TEAM_PRICE,
+      coupon_code: appliedCoupon ? couponCode.trim() : "",
+      amount_paid: appliedCoupon?.finalAmount || 15,
     };
-
-    console.log("Submitting to:", `${API_BASE_URL}/register-upi`);
-    console.log("Payload:", JSON.stringify(payload, null, 2));
 
     setIsSubmitting(true);
 
@@ -70,7 +103,6 @@ function Registration() {
       });
 
       const data = await response.json();
-      console.log("Server response:", response.status, data);
 
       if (response.ok) {
         setSubmitted(true);
@@ -79,25 +111,25 @@ function Registration() {
       }
     } catch (error) {
       console.error("Registration fetch error:", error);
-      setSubmitError("Network error — failed to connect to the backend server.");
+      setSubmitError("Network error - failed to connect to the backend server.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const finalAmount = appliedCoupon?.finalAmount || 15;
+  const paymentQrImage = appliedCoupon?.qrImage || "payments/qr15.png";
+
   if (submitted) {
     return (
       <section id="registration" className="px-4 py-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl overflow-hidden rounded-[2rem] border border-fuchsia-300/25 bg-gradient-to-br from-fuchsia-400/15 via-white/[0.05] to-purple-500/15 p-8 text-center shadow-[0_0_90px_rgba(168,85,247,0.18)] sm:p-12">
-          <div className="text-6xl mb-4">✅</div>
+          <div className="text-6xl mb-4">Success</div>
           <h2 className="mt-4 font-display text-3xl font-black tracking-tight text-white">
             Registration Successful!
           </h2>
           <p className="mt-4 text-slate-300">
             Your team <span className="text-white font-semibold">"{teamName}"</span> has been registered.
-          </p>
-          <p className="mt-3 text-sm text-slate-300">
-            Team Registration Fee: ${TOTAL_TEAM_PRICE} per team ({TEAM_MEMBER_COUNT} members)
           </p>
           <p className="mt-4 text-sm text-slate-400">
             Pending verification from our team.
@@ -110,7 +142,6 @@ function Registration() {
   return (
     <section id="registration" className="px-4 py-24 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl overflow-hidden rounded-[2rem] border border-fuchsia-300/25 bg-gradient-to-br from-fuchsia-400/15 via-white/[0.05] to-purple-500/15 p-8 shadow-[0_0_90px_rgba(168,85,247,0.18)] sm:p-12">
-        
         <div className="text-center mb-10">
           <p className="text-sm font-bold uppercase tracking-[0.24em] text-fuchsia-200">
             Registration & Pricing
@@ -120,20 +151,22 @@ function Registration() {
           </h2>
         </div>
 
-        {/* Pricing */}
         <div className="mx-auto mb-10 max-w-md rounded-3xl border border-purple-200/15 bg-[#09051A]/80 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] text-center">
           <p className="text-sm uppercase tracking-[0.22em] text-slate-400">Registration Fee</p>
-          <p className="mt-2 font-display text-6xl font-black text-white">${PRICE_PER_PERSON}</p>
-          <p className="mt-2 text-sm text-slate-400">Individual Cost: ${PRICE_PER_PERSON} per participant</p>
-          <p className="mt-1 text-sm font-semibold text-white">Team Registration Fee: ${TOTAL_TEAM_PRICE} per team ({TEAM_MEMBER_COUNT} members)</p>
-          <div className="mt-4 rounded-2xl border border-purple-200/15 bg-white/[0.04] px-4 py-3 text-sm text-slate-300">
-            {TEAM_MEMBER_COUNT} Members × ${PRICE_PER_PERSON} = <span className="font-bold text-white">${TOTAL_TEAM_PRICE} Total</span>
-          </div>
+          <p className="mt-2 font-display text-6xl font-black text-white">
+            {appliedCoupon ? (
+              <>
+                <span className="mr-3 text-3xl text-slate-500 line-through">$15</span>
+                <span>${finalAmount}</span>
+              </>
+            ) : (
+              "$15"
+            )}
+          </p>
+          <p className="mt-2 text-sm text-slate-400">Static QR payment only</p>
         </div>
 
         <div className="space-y-6">
-
-          {/* Team Name */}
           <div>
             <label className="block text-sm font-semibold text-fuchsia-200 mb-2">Team Name *</label>
             <input
@@ -145,7 +178,6 @@ function Registration() {
             />
           </div>
 
-          {/* Team Members */}
           <div className="space-y-4">
             <label className="block text-sm font-semibold text-fuchsia-200">Team Members *</label>
             {members.map((member, index) => (
@@ -185,12 +217,71 @@ function Registration() {
             ))}
           </div>
 
-          {/* Payment Section */}
           <div className="p-6 rounded-xl bg-[#09051A]/50 border border-purple-200/10">
             <h3 className="text-lg font-semibold text-white mb-4">Payment</h3>
             <p className="text-sm text-slate-400 mb-4">
-              Pay ${TOTAL_TEAM_PRICE} per team to complete registration. Click the button below to show the QR code.
+              Pay ${finalAmount} to complete registration. Click the button below to show the static QR code.
             </p>
+
+            <div className="mb-5 rounded-2xl border border-purple-200/10 bg-[#09051A]/80 p-4">
+              <label className="mb-2 block text-sm font-semibold text-fuchsia-200">
+                Coupon Code
+              </label>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  type="text"
+                  placeholder="Enter coupon code"
+                  className="min-w-0 flex-1 rounded-xl border border-purple-200/15 bg-[#09051A]/80 px-4 py-3 text-white placeholder-slate-500 focus:border-fuchsia-400 focus:outline-none"
+                  value={couponCode}
+                  onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
+                  disabled={isCouponLoading}
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyCoupon}
+                  disabled={isCouponLoading}
+                  className="rounded-full bg-gradient-to-r from-fuchsia-300 via-purple-400 to-cyan-300 px-7 py-3 text-sm font-black uppercase tracking-wide text-[#12091F] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isCouponLoading ? "Applying..." : "Apply"}
+                </button>
+              </div>
+
+              {appliedCoupon && (
+                <div className="mt-4 rounded-2xl border border-green-400/30 bg-green-500/10 p-4 text-left text-green-100">
+                  <h4 className="font-bold text-green-100">🎉 Coupon Applied Successfully</h4>
+                  <p className="mt-2 text-sm text-green-200">
+                    Congratulations! You saved ${Number(appliedCoupon.savedAmount).toFixed(2)}
+                  </p>
+                  <div className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
+                    <p>
+                      <span className="block text-green-300/80">Original Price</span>
+                      <span className="font-bold">$15</span>
+                    </p>
+                    <p>
+                      <span className="block text-green-300/80">Discount</span>
+                      <span className="font-bold">{appliedCoupon.discount}%</span>
+                    </p>
+                    <p>
+                      <span className="block text-green-300/80">Final Price</span>
+                      <span className="font-bold">${appliedCoupon.finalAmount}</span>
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={removeCoupon}
+                    className="mt-4 text-sm font-bold text-green-200 underline underline-offset-4 hover:text-white"
+                  >
+                    Remove Coupon
+                  </button>
+                </div>
+              )}
+
+              {!appliedCoupon && couponError && (
+                <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300">
+                  ❌ {couponError}
+                </div>
+              )}
+            </div>
 
             <button
               onClick={() => setShowQR(true)}
@@ -211,14 +302,12 @@ function Registration() {
             </div>
           </div>
 
-          {/* Error Message */}
           {submitError && (
             <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-              ⚠️ {submitError}
+              {submitError}
             </div>
           )}
 
-          {/* Submit Button */}
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
@@ -232,7 +321,14 @@ function Registration() {
           </p>
         </div>
 
-        {showQR && <QRModal onClose={() => setShowQR(false)} />}
+        {showQR && (
+          <QRModal
+            onClose={() => setShowQR(false)}
+            qrImage={paymentQrImage}
+            finalAmount={finalAmount}
+            couponApplied={Boolean(appliedCoupon)}
+          />
+        )}
       </div>
     </section>
   );

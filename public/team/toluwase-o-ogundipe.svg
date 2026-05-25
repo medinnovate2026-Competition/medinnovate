@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Toluwase O. Ogundipe">
+  <defs>
+    <linearGradient id="g" x1="26" x2="214" y1="18" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0284c7"/>
+      <stop offset="0.52" stop-color="#2dd4bf"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" rx="120" fill="url(#g)"/>
+  <circle cx="182" cy="58" r="40" fill="#ffffff" opacity="0.18"/>
+  <circle cx="58" cy="184" r="48" fill="#ffffff" opacity="0.14"/>
+  <text x="120" y="136" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="66" font-weight="800" fill="#ffffff">TO</text>
+</svg>

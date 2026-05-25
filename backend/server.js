@@ -1,297 +1,169 @@
-console.log("ENV PORT:", process.env.PORT);
-
-process.on("exit", (code) => {
-  console.log("Process exiting with code:", code);
-});
-
-process.on("uncaughtException", (err) => {
-  console.error("UNCAUGHT EXCEPTION:", err);
-});
-
-process.on("unhandledRejection", (err) => {
-  console.error("UNHANDLED REJECTION:", err);
-});
-
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import mysql from "mysql2";
-import jwt from "jsonwebtoken";
-
-dotenv.config();
+const cors = require("cors");
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
-const TEAM_MEMBER_COUNT = 5;
-const PRICE_PER_PERSON = 3;
-const TOTAL_TEAM_PRICE = 15;
+const PORT = process.env.PORT || 5000;
+const ORIGINAL_PRICE = 15;
+const DATA_FILE = path.join(__dirname, "coupons-store.json");
+const PAYMENTS_DIR = path.join(__dirname, "public", "payments");
 
-app.get("/", (req, res) => {
-  res.status(200).send("OK");
-});
+fs.mkdirSync(PAYMENTS_DIR, { recursive: true });
 
-app.use((req, res, next) => {
-  console.log("Incoming request:", req.method, req.url);
-  next();
-});
+app.use(cors());
+app.use(express.json({ limit: "8mb" }));
+app.use("/payments", express.static(PAYMENTS_DIR));
 
-app.use(cors({
-  origin: "https://medinnovate2026-competition.github.io",
-  methods: ["GET", "POST", "PUT"],
-  credentials: true
-}));
+function readCoupons() {
+  if (!fs.existsSync(DATA_FILE)) {
+    return [];
+  }
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-/* ================= DB ================= */
-// ✅ Safety check (add this)
-if (!process.env.DB_HOST) {
-  console.error("❌ DB_HOST missing!");
+  return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
 }
 
-// DB connection
-const db = mysql.createPool({
-  host: process.env.DB_HOST, // ❌ removed fallback
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  ssl: { rejectUnauthorized: false },
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+function writeCoupons(coupons) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(coupons, null, 2));
+}
 
-const pricingColumns = [
-  "ADD COLUMN team_size INT NULL",
-  "ADD COLUMN price_per_person DECIMAL(10,2) NULL",
-  "ADD COLUMN total_paid DECIMAL(10,2) NULL",
-];
+function normalizeCode(code) {
+  return String(code || "").trim().toUpperCase();
+}
 
-pricingColumns.forEach((definition) => {
-  db.query(`ALTER TABLE teams ${definition}`, (err) => {
-    if (err && err.code !== "ER_DUP_FIELDNAME") {
-      console.error("Failed to ensure pricing column:", definition, err);
-    }
+function toPublicQrPath(qrImage) {
+  if (!qrImage) return "";
+  if (qrImage.startsWith("/payments/")) return qrImage;
+  return `/payments/${qrImage}`;
+}
+
+function serializeCoupon(coupon) {
+  return {
+    id: coupon.id,
+    code: coupon.code,
+    discountPercentage: Number(coupon.discountPercentage),
+    savedAmount: Number(coupon.savedAmount),
+    finalPrice: Number(coupon.finalPrice),
+    qrImage: coupon.qrImage,
+    active: Boolean(coupon.active),
+  };
+}
+
+function saveQrUpload({ code, qrImageDataUrl, qrImageName }) {
+  if (!qrImageDataUrl) return "";
+
+  const match = String(qrImageDataUrl).match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
+  if (!match) {
+    throw new Error("QR image upload must be an image file.");
+  }
+
+  const extension = path.extname(qrImageName || "").replace(".", "") || match[1].replace("jpeg", "jpg");
+  const safeExtension = extension.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  const fileName = `${normalizeCode(code).toLowerCase()}-${Date.now()}.${safeExtension}`;
+  const filePath = path.join(PAYMENTS_DIR, fileName);
+
+  fs.writeFileSync(filePath, Buffer.from(match[2], "base64"));
+  return fileName;
+}
+
+app.post("/api/coupons/validate", (req, res) => {
+  const code = normalizeCode(req.body.code);
+  const coupon = readCoupons().find((item) => item.code === code && item.active);
+
+  if (!coupon) {
+    return res.status(404).json({
+      valid: false,
+      message: "Invalid or expired coupon",
+    });
+  }
+
+  return res.json({
+    valid: true,
+    discount: Number(coupon.discountPercentage),
+    savedAmount: Number(coupon.savedAmount),
+    finalAmount: Number(coupon.finalPrice),
+    qrImage: toPublicQrPath(coupon.qrImage),
+    message: `Congratulations! You saved $${Number(coupon.savedAmount).toFixed(2)} 🎉`,
   });
 });
 
- //db.getConnection((err, connection) => {
- // if (err) {
- //   console.error("DB Connection Error:", err);
- //   // ❗ DO NOT crash app
-// return;
- // }
- // console.log("MySQL Connected ✅");
-//connection.release();
- // });
-
-/* ================= AUTH ================= */
-app.post("/api/admin/login", (req, res) => {
-  const { adminId, password } = req.body;
-
-  if (
-    adminId === process.env.ADMIN_ID &&
-    password === process.env.ADMIN_PASSWORD
-  ) {
-    const token = jwt.sign({ role: "admin" }, process.env.JWT_SECRET, { expiresIn: "8h" });
-    return res.json({ token });
-  }
-
-  return res.status(401).json({ message: "Invalid credentials" });
+app.get("/api/admin/coupons", (_req, res) => {
+  res.json({ coupons: readCoupons().map(serializeCoupon) });
 });
 
-/* ================= MIDDLEWARE ================= */
-const verify = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Invalid token format" });
-  }
-
-  const token = authHeader.split(" ")[1];
-
+app.post("/api/admin/coupons", (req, res) => {
   try {
-    jwt.verify(token, process.env.JWT_SECRET);
-    next();
-  } catch (err) {
-    console.error("JWT error:", err);
-    return res.status(401).json({ error: "Invalid token" });
-  }
-};
+    const code = normalizeCode(req.body.code);
+    const discountPercentage = Number(req.body.discountPercentage);
+    const finalPrice = Number(req.body.finalPrice);
 
-/* ================= GET TEAMS ================= */
-app.get("/api/admin/teams", verify, (req, res) => {
-  console.log("Fetching all teams...");
-  const sql = `
-    SELECT t.id as team_id, t.team_name, t.payment_method, t.payment_status, t.transaction_ref, t.referral_code,
-           t.team_size, t.price_per_person, t.total_paid, p.name, p.email, p.college, p.country
-    FROM teams t
-    LEFT JOIN participants p ON t.id = p.team_id
-    ORDER BY t.id
-  `;
-
-  db.query(sql, (err, rows) => {
-    if (err) {
-      console.error("SQL Error fetching teams:", err);
-      return res.status(500).json({ error: "Database error fetching teams" });
+    if (!code || Number.isNaN(discountPercentage) || Number.isNaN(finalPrice)) {
+      return res.status(400).json({ message: "Code, discount %, and final price are required." });
     }
 
-    const grouped = {};
-
-    rows.forEach((row) => {
-      if (!grouped[row.team_id]) {
-        grouped[row.team_id] = {
-          id: row.team_id,
-          team_name: row.team_name,
-          payment_method: row.payment_method,
-          payment_status: row.payment_status,
-          transaction_ref: row.transaction_ref, // ✅ fixed: was row.utr
-          referral_code: row.referral_code,
-          teamSize: row.team_size,
-          pricePerPerson: row.price_per_person,
-          totalPaid: row.total_paid,
-          members: [],
-        };
-      }
-
-      if (row.name) {
-        grouped[row.team_id].members.push({
-          name: row.name,
-          email: row.email,
-          college: row.college,
-          country: row.country,
-        });
-      }
+    const qrImage = saveQrUpload({
+      code,
+      qrImageDataUrl: req.body.qrImageDataUrl,
+      qrImageName: req.body.qrImageName,
     });
 
-    res.json(Object.values(grouped));
+    if (!qrImage) {
+      return res.status(400).json({ message: "Upload a static QR image for this coupon." });
+    }
+
+    const coupons = readCoupons();
+    const existingIndex = coupons.findIndex((coupon) => coupon.code === code);
+    const savedAmount = Math.max(0, ORIGINAL_PRICE - finalPrice);
+    const nextCoupon = {
+      id: existingIndex >= 0 ? coupons[existingIndex].id : Date.now(),
+      code,
+      discountPercentage,
+      savedAmount,
+      finalPrice,
+      qrImage,
+      active: Boolean(req.body.active),
+    };
+
+    if (existingIndex >= 0) {
+      coupons[existingIndex] = nextCoupon;
+    } else {
+      coupons.push(nextCoupon);
+    }
+
+    writeCoupons(coupons);
+
+    return res.status(201).json({
+      message: "Coupon saved successfully.",
+      coupon: serializeCoupon(nextCoupon),
+      coupons: coupons.map(serializeCoupon),
+    });
+  } catch (error) {
+    return res.status(400).json({ message: error.message || "Unable to save coupon." });
+  }
+});
+
+app.patch("/api/admin/coupons/:id", (req, res) => {
+  const coupons = readCoupons();
+  const couponIndex = coupons.findIndex((coupon) => String(coupon.id) === String(req.params.id));
+
+  if (couponIndex === -1) {
+    return res.status(404).json({ message: "Coupon not found." });
+  }
+
+  coupons[couponIndex] = {
+    ...coupons[couponIndex],
+    active: Boolean(req.body.active),
+  };
+
+  writeCoupons(coupons);
+
+  return res.json({
+    message: "Coupon updated successfully.",
+    coupon: serializeCoupon(coupons[couponIndex]),
+    coupons: coupons.map(serializeCoupon),
   });
 });
 
-/* ================= REGISTER ================= */
-app.post("/api/register-upi", (req, res) => {
-  console.log("Incoming request body:", req.body);
-  
-  const { team_name, members, utr, referral_code, referralCode, paymentAmount } = req.body;
-
-  if (!team_name || !utr || !Array.isArray(members)) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
-  if (members.length !== TEAM_MEMBER_COUNT) {
-    return res.status(400).json({ error: `Team must contain exactly ${TEAM_MEMBER_COUNT} members` });
-  }
-
-  if (Number(paymentAmount) !== TOTAL_TEAM_PRICE) {
-    return res.status(400).json({ error: `Payment amount must be exactly $${TOTAL_TEAM_PRICE}` });
-  }
-
-  const validMembers = members.filter((m) => m.name?.trim() && m.email?.trim());
-  if (validMembers.length !== TEAM_MEMBER_COUNT) {
-    return res.status(400).json({ error: `Name and email are required for all ${TEAM_MEMBER_COUNT} members` });
-  }
-
-  console.log("Registering team:", { team_name, utr, memberCount: validMembers.length });
-
-  // Normalize referral code: fallback to camelCase, trim, uppercase, or set to null
-  let rawReferralCode = referral_code || referralCode;
-  let normalizedReferralCode = null;
-  if (rawReferralCode && typeof rawReferralCode === 'string') {
-    const trimmed = rawReferralCode.trim();
-    if (trimmed) normalizedReferralCode = trimmed.toUpperCase();
-  }
-  console.log("Normalized referral code:", normalizedReferralCode);
-
-  const queryValues = [
-    team_name,
-    "upi",
-    "pending",
-    utr,
-    normalizedReferralCode,
-    TEAM_MEMBER_COUNT,
-    PRICE_PER_PERSON,
-    TOTAL_TEAM_PRICE,
-  ];
-  console.log("Final query values:", queryValues);
-
-  db.query(
-    "INSERT INTO teams (team_name, payment_method, payment_status, transaction_ref, referral_code, team_size, price_per_person, total_paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    queryValues,
-    (err, result) => {
-      if (err) {
-        console.error("SQL Error inserting team:", err);
-        return res.status(500).json({ error: "Failed to insert team" });
-      }
-
-      const teamId = result.insertId;
-      console.log(`Team created with ID: ${teamId}`);
-
-      const values = validMembers.map((m) => [
-        teamId,
-        m.name.trim(),
-        m.email.trim(),
-        m.college || null,
-        m.country || null,
-      ]);
-
-      db.query(
-        "INSERT INTO participants (team_id, name, email, college, country) VALUES ?",
-        [values],
-        (err) => {
-          if (err) {
-            console.error("SQL Error inserting participants:", err);
-            // Roll back the team too
-            db.query("DELETE FROM teams WHERE id = ?", [teamId]);
-            return res.status(500).json({
-              error: err.code === "ER_DUP_ENTRY"
-                ? "One or more email addresses are already registered."
-                : "Failed to insert participants",
-            });
-          }
-          console.log("Participants added successfully!");
-          res.json({ message: "Registered successfully" });
-        }
-      );
-    }
-  );
-});
-
-/* ================= VERIFY TEAM ================= */
-app.put("/api/admin/verify/:id", verify, (req, res) => {
-  const teamId = req.params.id;
-  db.query(
-    "UPDATE teams SET payment_status = 'verified' WHERE id = ? OR team_name = ?",
-    [teamId, teamId],
-    (err) => {
-      if (err) {
-        console.error("SQL Error verifying team:", err);
-        return res.status(500).json({ error: "Database error verifying team" });
-      }
-      res.json({ message: "Team verified successfully" });
-    }
-  );
-});
-
-/* ================= HEALTH CHECK ================= */
-app.get("/", (req, res) => {
-  res.status(200).send("OK");
-});
-
-/* ================= 404 HANDLER ================= */
-app.use((req, res) => {
-  res.status(404).send("Not Found");
-});
-
-/* ================= GLOBAL ERROR HANDLER ================= */
-app.use((err, req, res, next) => {
-  console.error("GLOBAL ERROR:", err);
-  res.status(500).send("Internal Server Error");
-});
-
-/* ================= SERVER ================= */
-
-const PORT = process.env.PORT;
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT} 🔥`);
+app.listen(PORT, () => {
+  console.log(`MedInnovate backend running on port ${PORT}`);
 });

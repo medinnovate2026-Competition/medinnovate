@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Laksh">
+  <defs>
+    <linearGradient id="g" x1="28" x2="212" y1="20" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#06b6d4"/>
+      <stop offset="0.55" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" rx="120" fill="url(#g)"/>
+  <circle cx="182" cy="60" r="42" fill="#ffffff" opacity="0.18"/>
+  <circle cx="60" cy="184" r="50" fill="#ffffff" opacity="0.14"/>
+  <text x="120" y="137" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="78" font-weight="800" fill="#ffffff">L</text>
+</svg>
