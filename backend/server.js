@@ -1,10 +1,11 @@
-require("dotenv").config();
-
 const cors = require("cors");
 const crypto = require("crypto");
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+
+require("dotenv").config();
+require("dotenv").config({ path: path.join(__dirname, ".env"), override: false });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,6 +20,10 @@ const REQUIRED_DB_ENV = [
   "MYSQL_PASSWORD",
   "MYSQL_DATABASE",
 ];
+
+console.log("MYSQL_HOST:", process.env.MYSQL_HOST);
+console.log("MYSQL_PORT:", process.env.MYSQL_PORT);
+console.log("ALL ENV KEYS:", Object.keys(process.env));
 
 const missingDbEnv = REQUIRED_DB_ENV.filter((key) => !process.env[key]);
 
