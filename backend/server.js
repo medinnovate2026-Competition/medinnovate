@@ -1,31 +1,53 @@
 const cors = require("cors");
+const crypto = require("crypto");
 const express = require("express");
 const fs = require("fs");
+const mysql = require("mysql2/promise");
 const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 const ORIGINAL_PRICE = 15;
-const DATA_FILE = path.join(__dirname, "coupons-store.json");
 const PAYMENTS_DIR = path.join(__dirname, "public", "payments");
+const MEDIA_DIR = path.join(__dirname, "public", "media");
+const JSON_FIELDS = new Set(["social_links", "theme_colors", "highlights", "stats", "announcements", "metadata"]);
+const REQUIRED_DB_ENV = [
+  "MYSQL_HOST",
+  "MYSQL_PORT",
+  "MYSQL_USER",
+  "MYSQL_PASSWORD",
+  "MYSQL_DATABASE",
+];
+
+const missingDbEnv = REQUIRED_DB_ENV.filter((key) => !process.env[key]);
+
+if (!PORT) {
+  throw new Error("PORT environment variable is required.");
+}
+
+if (missingDbEnv.length > 0) {
+  throw new Error(`Missing required database environment variables: ${missingDbEnv.join(", ")}`);
+}
+
+const db = mysql.createPool({
+  host: process.env.MYSQL_HOST,
+  port: Number(process.env.MYSQL_PORT),
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  ssl: { rejectUnauthorized: true },
+});
 
 fs.mkdirSync(PAYMENTS_DIR, { recursive: true });
+fs.mkdirSync(MEDIA_DIR, { recursive: true });
 
 app.use(cors());
 app.use(express.json({ limit: "8mb" }));
 app.use("/payments", express.static(PAYMENTS_DIR));
-
-function readCoupons() {
-  if (!fs.existsSync(DATA_FILE)) {
-    return [];
-  }
-
-  return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-}
-
-function writeCoupons(coupons) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(coupons, null, 2));
-}
+app.use("/media", express.static(MEDIA_DIR));
 
 function normalizeCode(code) {
   return String(code || "").trim().toUpperCase();
@@ -33,6 +55,7 @@ function normalizeCode(code) {
 
 function toPublicQrPath(qrImage) {
   if (!qrImage) return "";
+  if (/^https?:\/\//i.test(qrImage)) return qrImage;
   if (qrImage.startsWith("/payments/")) return qrImage;
   return `/payments/${qrImage}`;
 }
@@ -41,12 +64,387 @@ function serializeCoupon(coupon) {
   return {
     id: coupon.id,
     code: coupon.code,
-    discountPercentage: Number(coupon.discountPercentage),
-    savedAmount: Number(coupon.savedAmount),
-    finalPrice: Number(coupon.finalPrice),
-    qrImage: coupon.qrImage,
+    discountPercentage: Number(coupon.discount_percentage),
+    savedAmount: Number(coupon.saved_amount),
+    finalPrice: Number(coupon.final_price),
+    qrImage: coupon.qr_image,
     active: Boolean(coupon.active),
   };
+}
+
+async function tableExists(tableName) {
+  const [rows] = await db.query(
+    `SELECT COUNT(*) AS count
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE() AND table_name = ?`,
+    [tableName],
+  );
+  return Number(rows[0].count) > 0;
+}
+
+async function columnExists(tableName, columnName) {
+  const [rows] = await db.query(
+    `SELECT COUNT(*) AS count
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?`,
+    [tableName, columnName],
+  );
+  return Number(rows[0].count) > 0;
+}
+
+async function ensureSchema() {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS coupons (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      code VARCHAR(64) NOT NULL UNIQUE,
+      discount_percentage DECIMAL(5, 2) NOT NULL,
+      saved_amount DECIMAL(10, 2) NOT NULL,
+      final_price DECIMAL(10, 2) NOT NULL,
+      qr_image VARCHAR(255) NOT NULL,
+      active BOOLEAN NOT NULL DEFAULT TRUE
+    )
+  `);
+
+  await db.query(`
+    INSERT INTO coupons (code, discount_percentage, saved_amount, final_price, qr_image, active)
+    VALUES
+      ('MED10', 10, 1.50, 13.50, 'qr13_5.png', TRUE),
+      ('EARLY20', 20, 3.00, 12.00, 'qr12.png', TRUE),
+      ('MEDIN10', 10, 1.50, 13.50, 'https://i.postimg.cc/7h71GTXp/fcrits-QR.jpg', TRUE)
+    ON DUPLICATE KEY UPDATE
+      discount_percentage = VALUES(discount_percentage),
+      saved_amount = VALUES(saved_amount),
+      final_price = VALUES(final_price),
+      qr_image = VALUES(qr_image),
+      active = VALUES(active)
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS payment_settings (
+      id INT PRIMARY KEY DEFAULT 1,
+      default_qr_image VARCHAR(500) NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.query(`
+    INSERT INTO payment_settings (id, default_qr_image)
+    VALUES (1, 'https://i.postimg.cc/sg82803c/1500QR.jpg')
+    ON DUPLICATE KEY UPDATE id = id
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS teams (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      team_name VARCHAR(255) NOT NULL,
+      utr VARCHAR(255) NOT NULL,
+      coupon_code VARCHAR(64) NULL,
+      total_paid DECIMAL(10, 2) NOT NULL,
+      team_size INT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  if ((await tableExists("team_members")) && (await columnExists("team_members", "team_id")) && !(await tableExists("registration_members"))) {
+    await db.query("RENAME TABLE team_members TO registration_members");
+  }
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS registration_members (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      team_id INT NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      college VARCHAR(255) NULL,
+      country VARCHAR(255) NULL,
+      FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
+    )
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS site_settings (
+      id INT PRIMARY KEY DEFAULT 1,
+      website_name VARCHAR(255) NOT NULL DEFAULT 'Medinnovate',
+      tagline VARCHAR(255) NULL,
+      logo_url VARCHAR(500) NULL,
+      favicon_url VARCHAR(500) NULL,
+      seo_title VARCHAR(255) NULL,
+      seo_description TEXT NULL,
+      contact_email VARCHAR(255) NULL,
+      contact_phone VARCHAR(100) NULL,
+      social_links JSON NULL,
+      footer_content TEXT NULL,
+      copyright_text VARCHAR(255) NULL,
+      announcement_bar TEXT NULL,
+      theme_colors JSON NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  if (!(await columnExists("site_settings", "footer_text"))) {
+    await db.query("ALTER TABLE site_settings ADD COLUMN footer_text TEXT NULL");
+  }
+
+  if (!(await columnExists("site_settings", "instagram_url"))) {
+    await db.query("ALTER TABLE site_settings ADD COLUMN instagram_url VARCHAR(500) NULL");
+  }
+
+  if (!(await columnExists("site_settings", "linkedin_url"))) {
+    await db.query("ALTER TABLE site_settings ADD COLUMN linkedin_url VARCHAR(500) NULL");
+  }
+
+  if (!(await columnExists("site_settings", "announcement"))) {
+    await db.query("ALTER TABLE site_settings ADD COLUMN announcement TEXT NULL");
+  }
+
+  await db.query(`
+    INSERT INTO site_settings (
+      id,
+      website_name,
+      tagline,
+      seo_title,
+      seo_description,
+      footer_text,
+      contact_email,
+      instagram_url,
+      linkedin_url,
+      theme_colors,
+      announcement
+    )
+    VALUES (
+      1,
+      'Medinnovate',
+      'International Healthcare Innovation Hackathon',
+      'Medinnovate',
+      'International healthcare innovation hackathon',
+      'A global platform bringing together future healthcare leaders and innovators to solve real-world challenges.',
+      'medinnovate2026@gmail.com',
+      '',
+      '',
+      JSON_OBJECT('primary', '#7C3AED', 'accent', '#EC4899', 'background', '#F7F3FF'),
+      'Registration is open for MedInnovate 2026.'
+    )
+    ON DUPLICATE KEY UPDATE id = id
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS homepage_content (
+      id INT PRIMARY KEY DEFAULT 1,
+      hero_title VARCHAR(255) NULL,
+      hero_subtitle VARCHAR(255) NULL,
+      hero_description TEXT NULL,
+      primary_cta_label VARCHAR(100) NULL,
+      primary_cta_url VARCHAR(500) NULL,
+      secondary_cta_label VARCHAR(100) NULL,
+      secondary_cta_url VARCHAR(500) NULL,
+      hero_media_url VARCHAR(500) NULL,
+      highlights JSON NULL,
+      stats JSON NULL,
+      announcements JSON NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.query(`
+    INSERT INTO homepage_content (id, hero_title, hero_subtitle, hero_description, primary_cta_label, primary_cta_url)
+    VALUES (1, 'Medinnovate', 'International Healthcare Innovation Hackathon', 'Build practical healthcare solutions with global mentors, clinical insight, and cross-border teams.', 'Register Now', '#registration')
+    ON DUPLICATE KEY UPDATE id = id
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS navigation (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      label VARCHAR(255) NOT NULL,
+      url VARCHAR(500) NOT NULL,
+      location VARCHAR(100) NOT NULL DEFAULT 'navbar',
+      parent_id INT NULL,
+      display_order INT NOT NULL DEFAULT 0,
+      is_external BOOLEAN NOT NULL DEFAULT FALSE,
+      is_published BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  if (!(await columnExists("navigation", "path"))) {
+    await db.query("ALTER TABLE navigation ADD COLUMN path VARCHAR(500) NULL");
+  }
+
+  if (!(await columnExists("navigation", "order_index"))) {
+    await db.query("ALTER TABLE navigation ADD COLUMN order_index INT NOT NULL DEFAULT 0");
+  }
+
+  if (!(await columnExists("navigation", "visible"))) {
+    await db.query("ALTER TABLE navigation ADD COLUMN visible BOOLEAN NOT NULL DEFAULT TRUE");
+  }
+
+  if (!(await columnExists("navigation", "target"))) {
+    await db.query("ALTER TABLE navigation ADD COLUMN target VARCHAR(100) NOT NULL DEFAULT '_self'");
+  }
+
+  await db.query("UPDATE navigation SET path = url WHERE path IS NULL OR path = ''");
+  await db.query("UPDATE navigation SET order_index = display_order WHERE order_index = 0 AND display_order <> 0");
+  await db.query("UPDATE navigation SET visible = is_published WHERE is_published IS NOT NULL");
+
+  const [[navigationCount]] = await db.query("SELECT COUNT(*) AS count FROM navigation");
+  if (Number(navigationCount.count) === 0) {
+    await db.query(
+      `INSERT INTO navigation (label, url, path, location, parent_id, display_order, order_index, is_external, is_published, visible, target)
+       VALUES ?`,
+      [[
+        ["About", "#about", "#about", "navbar", null, 1, 1, false, true, true, "_self"],
+        ["Why Attend", "#why-attend", "#why-attend", "navbar", null, 2, 2, false, true, true, "_self"],
+        ["Who Can Join", "#participants", "#participants", "navbar", null, 3, 3, false, true, true, "_self"],
+        ["Judges", "#judges", "#judges", "navbar", null, 4, 4, false, true, true, "_self"],
+        ["Organising Committee", "/organising-committee", "/organising-committee", "navbar", null, 5, 5, false, true, true, "_self"],
+        ["Register", "/registration", "/registration", "navbar", null, 6, 6, false, true, true, "_self"],
+      ]],
+    );
+  }
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS media (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      file_name VARCHAR(255) NOT NULL,
+      original_name VARCHAR(255) NULL,
+      url VARCHAR(500) NOT NULL,
+      mime_type VARCHAR(100) NULL,
+      folder VARCHAR(255) NULL,
+      alt_text VARCHAR(255) NULL,
+      size_bytes INT NULL,
+      metadata JSON NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS academic_partners (
+      id CHAR(36) PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      country VARCHAR(255) NULL,
+      description TEXT NULL,
+      logo_url TEXT NULL,
+      website TEXT NULL,
+      display_order INT NOT NULL DEFAULT 0,
+      is_visible BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  const [[academicPartnerCount]] = await db.query("SELECT COUNT(*) AS count FROM academic_partners");
+  if (Number(academicPartnerCount.count) === 0) {
+    await db.query(
+      `INSERT INTO academic_partners (id, name, country, description, logo_url, website, display_order, is_visible)
+       VALUES ?`,
+      [[
+        [makeUuid(), "GAIMS Academic Wing", "India", "Academic collaboration partner", "", "", 1, true],
+        [makeUuid(), "FAMSA Medical Education Network", "Africa", "Medical student collaboration partner", "", "", 2, true],
+      ]],
+    );
+  }
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS faq (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      question TEXT NOT NULL,
+      answer TEXT NOT NULL,
+      category VARCHAR(255) NULL,
+      display_order INT NOT NULL DEFAULT 0,
+      is_published BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  if (!(await columnExists("faq", "status"))) {
+    await db.query("ALTER TABLE faq ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Published'");
+  }
+
+  if (!(await columnExists("faq", "order_index"))) {
+    await db.query("ALTER TABLE faq ADD COLUMN order_index INT NOT NULL DEFAULT 0");
+  }
+
+  await db.query("UPDATE faq SET status = IF(is_published = TRUE, 'Published', 'Draft') WHERE status IS NULL OR status = ''");
+  await db.query("UPDATE faq SET order_index = display_order WHERE order_index = 0 AND display_order <> 0");
+
+  const [[faqCount]] = await db.query("SELECT COUNT(*) AS count FROM faq");
+  if (Number(faqCount.count) === 0) {
+    await db.query(
+      `INSERT INTO faq (question, answer, category, display_order, order_index, is_published, status)
+       VALUES ?`,
+      [[
+        ["Is Medinnovate an online or offline event?", "Medinnovate will follow a hybrid format. Phase 1 will be conducted online, and the Grand Finale will be held offline in India with a virtual presentation option for eligible participants who cannot attend in person.", "Format", 1, 1, true, "Published"],
+        ["Can I participate solo?", "No. Participation requires a team of exactly 5 undergraduate students.", "Eligibility", 2, 2, true, "Published"],
+        ["Who can participate?", "Undergraduate students from Africa and India can participate.", "Eligibility", 3, 3, true, "Published"],
+        ["Can team members be from different colleges or countries?", "Yes. Team members can be from different colleges, disciplines, or countries, as long as all members meet the eligibility criteria.", "Team", 4, 4, true, "Published"],
+        ["Is there any registration fee?", "Yes. The registration fee is $3 per participant or $15 per team of 5 members.", "Payment", 5, 5, true, "Published"],
+        ["Will certificates be provided?", "Yes. Certificates will be provided based on participation and completion criteria.", "Benefits", 6, 6, true, "Published"],
+        ["What is the selection process?", "The selection process follows registration, submission, screening, mentorship, and final pitch.", "Selection", 7, 7, true, "Published"],
+        ["What happens if I cannot attend the final round in person?", "A virtual option will be available for participants who cannot attend the final round in person.", "Finale", 8, 8, true, "Published"],
+        ["What kind of ideas can we submit?", "You can submit healthcare innovation ideas that address meaningful real-world healthcare challenges.", "Ideas", 9, 9, true, "Published"],
+        ["How can I contact the team for support?", "You can contact the team through email, Instagram, or WhatsApp.", "Support", 10, 10, true, "Published"],
+      ]],
+    );
+  }
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS team_members (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      role VARCHAR(255) NULL,
+      group_name VARCHAR(255) NULL,
+      email VARCHAR(255) NULL,
+      phone VARCHAR(100) NULL,
+      bio TEXT NULL,
+      image_url VARCHAR(500) NULL,
+      display_order INT NOT NULL DEFAULT 0,
+      is_published BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  if (!(await columnExists("team_members", "organization"))) {
+    await db.query("ALTER TABLE team_members ADD COLUMN organization VARCHAR(255) NULL");
+  }
+
+  if (!(await columnExists("team_members", "photo_url"))) {
+    await db.query("ALTER TABLE team_members ADD COLUMN photo_url VARCHAR(500) NULL");
+  }
+
+  if (!(await columnExists("team_members", "instagram"))) {
+    await db.query("ALTER TABLE team_members ADD COLUMN instagram VARCHAR(500) NULL");
+  }
+
+  if (!(await columnExists("team_members", "linkedin"))) {
+    await db.query("ALTER TABLE team_members ADD COLUMN linkedin VARCHAR(500) NULL");
+  }
+
+  if (!(await columnExists("team_members", "status"))) {
+    await db.query("ALTER TABLE team_members ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Published'");
+  }
+
+  await db.query("UPDATE team_members SET organization = group_name WHERE (organization IS NULL OR organization = '') AND group_name IS NOT NULL");
+  await db.query("UPDATE team_members SET photo_url = image_url WHERE (photo_url IS NULL OR photo_url = '') AND image_url IS NOT NULL");
+  await db.query("UPDATE team_members SET status = IF(is_published = TRUE, 'Published', 'Draft') WHERE status IS NULL OR status = ''");
+
+  const [[teamMemberCount]] = await db.query("SELECT COUNT(*) AS count FROM team_members");
+  if (Number(teamMemberCount.count) === 0) {
+    await db.query(
+      `INSERT INTO team_members (name, role, organization, group_name, photo_url, image_url, email, instagram, linkedin, display_order, is_published, status)
+       VALUES ?`,
+      [[
+        ["Abhishek Kashyap", "GAIMS President", "GAIMS", "Leadership", "", "", "", "", "", 1, true, "Published"],
+        ["Oluwasola Victor", "CEO of BlueOzone", "Blue Ozone Health", "Leadership", "", "", "", "", "", 2, true, "Published"],
+        ["Girik Subudhi", "Organising Secretary GAIMS", "GAIMS", "Program Leads", "", "", "giriksubudhi@gmail.com", "", "", 3, true, "Published"],
+        ["Sofiyullah Salaudeen", "Organising Secretary NiMSA", "NIMSA", "Program Leads", "", "", "sofiyullahopeyemi@gmail.com", "", "", 4, true, "Published"],
+        ["Elton M Mahulu", "Organising Secretary FAMSA", "FAMSA", "Program Leads", "", "", "mahuluelton007@gmail.com", "", "", 5, true, "Published"],
+        ["Ogunka Favour", "Organising Secretary BlueOzone Health", "Blue Ozone Health", "Program Leads", "", "", "ogunkafavour@gmail.com", "", "", 6, true, "Published"],
+        ["Sushmit Morey", "IT Cell Lead", "MedInnovate", "Digital Operations", "", "", "", "", "", 7, true, "Published"],
+      ]],
+    );
+  }
 }
 
 function saveQrUpload({ code, qrImageDataUrl, qrImageName }) {
@@ -66,9 +464,151 @@ function saveQrUpload({ code, qrImageDataUrl, qrImageName }) {
   return fileName;
 }
 
-app.post("/api/coupons/validate", (req, res) => {
+function saveMediaUpload({ fileDataUrl, originalName }) {
+  if (!fileDataUrl) return null;
+
+  const match = String(fileDataUrl).match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) {
+    throw new Error("Media upload must be a valid base64 data URL.");
+  }
+
+  const mimeType = match[1];
+  const extension = path.extname(originalName || "").replace(".", "") || mimeType.split("/")[1] || "bin";
+  const safeExtension = extension.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  const baseName = path.basename(originalName || "media", path.extname(originalName || "")).replace(/[^a-zA-Z0-9-]/g, "-").toLowerCase();
+  const fileName = `${baseName || "media"}-${Date.now()}.${safeExtension}`;
+  const filePath = path.join(MEDIA_DIR, fileName);
+  const buffer = Buffer.from(match[2], "base64");
+
+  fs.writeFileSync(filePath, buffer);
+
+  return {
+    fileName,
+    url: `/media/${fileName}`,
+    mimeType,
+    sizeBytes: buffer.length,
+  };
+}
+
+function pickFields(body, fields) {
+  return fields.reduce((values, field) => {
+    if (Object.prototype.hasOwnProperty.call(body, field)) {
+      const value = body[field];
+      if (JSON_FIELDS.has(field)) {
+        values[field] = value === "" || value == null ? null : typeof value === "string" ? value : JSON.stringify(value);
+      } else {
+        values[field] = value;
+      }
+    }
+    return values;
+  }, {});
+}
+
+function toDbBoolean(value) {
+  return value === true || value === "true" || value === 1 || value === "1";
+}
+
+function makeUuid() {
+  return crypto.randomUUID();
+}
+
+async function updateSingleRecord(table, fields, body) {
+  const values = pickFields(body, fields);
+  const keys = Object.keys(values);
+
+  if (keys.length === 0) return;
+
+  const assignments = keys.map((key) => `${key} = ?`).join(", ");
+  await db.query(`UPDATE ${table} SET ${assignments} WHERE id = 1`, keys.map((key) => values[key]));
+}
+
+function createCollectionRoutes({ route, table, fields, orderBy = "display_order ASC, id DESC", booleanFields = [] }) {
+  app.get(route, async (req, res) => {
+    const search = String(req.query.search || "").trim();
+    const page = Math.max(1, Number(req.query.page || 1));
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit || 50)));
+    const offset = (page - 1) * limit;
+    const searchFields = fields.filter((field) => !booleanFields.includes(field));
+
+    let where = "";
+    let params = [];
+
+    if (search && searchFields.length > 0) {
+      where = `WHERE ${searchFields.map((field) => `${field} LIKE ?`).join(" OR ")}`;
+      params = searchFields.map(() => `%${search}%`);
+    }
+
+    const [countRows] = await db.query(`SELECT COUNT(*) AS total FROM ${table} ${where}`, params);
+    const [items] = await db.query(
+      `SELECT * FROM ${table} ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
+      [...params, limit, offset],
+    );
+
+    res.json({ items, total: Number(countRows[0].total), page, limit });
+  });
+
+  app.post(route, async (req, res) => {
+    const values = pickFields(req.body, fields);
+    booleanFields.forEach((field) => {
+      if (Object.prototype.hasOwnProperty.call(values, field)) values[field] = toDbBoolean(values[field]);
+    });
+
+    const keys = Object.keys(values);
+    if (keys.length === 0) {
+      return res.status(400).json({ message: "No fields provided." });
+    }
+
+    const placeholders = keys.map(() => "?").join(", ");
+    const [result] = await db.query(
+      `INSERT INTO ${table} (${keys.join(", ")}) VALUES (${placeholders})`,
+      keys.map((key) => values[key]),
+    );
+    const [rows] = await db.query(`SELECT * FROM ${table} WHERE id = ?`, [result.insertId]);
+
+    return res.status(201).json({ item: rows[0] });
+  });
+
+  app.put(`${route}/:id`, async (req, res) => {
+    const values = pickFields(req.body, fields);
+    booleanFields.forEach((field) => {
+      if (Object.prototype.hasOwnProperty.call(values, field)) values[field] = toDbBoolean(values[field]);
+    });
+
+    const keys = Object.keys(values);
+    if (keys.length === 0) {
+      return res.status(400).json({ message: "No fields provided." });
+    }
+
+    const assignments = keys.map((key) => `${key} = ?`).join(", ");
+    const [result] = await db.query(
+      `UPDATE ${table} SET ${assignments} WHERE id = ?`,
+      [...keys.map((key) => values[key]), req.params.id],
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Item not found." });
+    }
+
+    const [rows] = await db.query(`SELECT * FROM ${table} WHERE id = ?`, [req.params.id]);
+    return res.json({ item: rows[0] });
+  });
+
+  app.delete(`${route}/:id`, async (req, res) => {
+    const [result] = await db.query(`DELETE FROM ${table} WHERE id = ?`, [req.params.id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Item not found." });
+    }
+    return res.json({ success: true });
+  });
+}
+
+app.post("/api/coupons/validate", async (req, res) => {
   const code = normalizeCode(req.body.code);
-  const coupon = readCoupons().find((item) => item.code === code && item.active);
+  const [coupons] = await db.query(
+    "SELECT * FROM coupons WHERE code = ? AND active = TRUE LIMIT 1",
+    [code],
+  );
+  const coupon = coupons[0];
 
   if (!coupon) {
     return res.status(404).json({
@@ -79,19 +619,46 @@ app.post("/api/coupons/validate", (req, res) => {
 
   return res.json({
     valid: true,
-    discount: Number(coupon.discountPercentage),
-    savedAmount: Number(coupon.savedAmount),
-    finalAmount: Number(coupon.finalPrice),
-    qrImage: toPublicQrPath(coupon.qrImage),
-    message: `Congratulations! You saved $${Number(coupon.savedAmount).toFixed(2)} 🎉`,
+    discount: Number(coupon.discount_percentage),
+    savedAmount: Number(coupon.saved_amount),
+    finalAmount: Number(coupon.final_price),
+    qrImage: toPublicQrPath(coupon.qr_image),
+    message: `Congratulations! You saved $${Number(coupon.saved_amount).toFixed(2)}`,
   });
 });
 
-app.get("/api/admin/coupons", (_req, res) => {
-  res.json({ coupons: readCoupons().map(serializeCoupon) });
+app.get("/api/payment-settings", async (_req, res) => {
+  const [rows] = await db.query("SELECT * FROM payment_settings WHERE id = 1");
+  res.json({ defaultQrImage: toPublicQrPath(rows[0]?.default_qr_image) });
 });
 
-app.post("/api/admin/coupons", (req, res) => {
+app.get("/api/admin/payment-settings", async (_req, res) => {
+  const [rows] = await db.query("SELECT * FROM payment_settings WHERE id = 1");
+  res.json({ settings: rows[0] });
+});
+
+app.put("/api/admin/payment-settings", async (req, res) => {
+  const defaultQrImage = String(req.body.defaultQrImage || "").trim();
+
+  if (!defaultQrImage) {
+    return res.status(400).json({ message: "Default QR image URL is required." });
+  }
+
+  await db.query(
+    "UPDATE payment_settings SET default_qr_image = ? WHERE id = 1",
+    [defaultQrImage],
+  );
+
+  const [rows] = await db.query("SELECT * FROM payment_settings WHERE id = 1");
+  res.json({ settings: rows[0] });
+});
+
+app.get("/api/admin/coupons", async (_req, res) => {
+  const [coupons] = await db.query("SELECT * FROM coupons ORDER BY code ASC");
+  res.json({ coupons: coupons.map(serializeCoupon) });
+});
+
+app.post("/api/admin/coupons", async (req, res) => {
   try {
     const code = normalizeCode(req.body.code);
     const discountPercentage = Number(req.body.discountPercentage);
@@ -101,40 +668,38 @@ app.post("/api/admin/coupons", (req, res) => {
       return res.status(400).json({ message: "Code, discount %, and final price are required." });
     }
 
-    const qrImage = saveQrUpload({
+    const uploadedQrImage = saveQrUpload({
       code,
       qrImageDataUrl: req.body.qrImageDataUrl,
       qrImageName: req.body.qrImageName,
     });
+    const qrImageUrl = String(req.body.qrImageUrl || "").trim();
+    const qrImage = uploadedQrImage || qrImageUrl;
 
     if (!qrImage) {
-      return res.status(400).json({ message: "Upload a static QR image for this coupon." });
+      return res.status(400).json({ message: "Upload a static QR image or provide a QR image URL for this coupon." });
     }
 
-    const coupons = readCoupons();
-    const existingIndex = coupons.findIndex((coupon) => coupon.code === code);
     const savedAmount = Math.max(0, ORIGINAL_PRICE - finalPrice);
-    const nextCoupon = {
-      id: existingIndex >= 0 ? coupons[existingIndex].id : Date.now(),
-      code,
-      discountPercentage,
-      savedAmount,
-      finalPrice,
-      qrImage,
-      active: Boolean(req.body.active),
-    };
 
-    if (existingIndex >= 0) {
-      coupons[existingIndex] = nextCoupon;
-    } else {
-      coupons.push(nextCoupon);
-    }
+    await db.query(
+      `INSERT INTO coupons (code, discount_percentage, saved_amount, final_price, qr_image, active)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         discount_percentage = VALUES(discount_percentage),
+         saved_amount = VALUES(saved_amount),
+         final_price = VALUES(final_price),
+         qr_image = VALUES(qr_image),
+         active = VALUES(active)`,
+      [code, discountPercentage, savedAmount, finalPrice, qrImage, Boolean(req.body.active)],
+    );
 
-    writeCoupons(coupons);
+    const [savedCoupons] = await db.query("SELECT * FROM coupons WHERE code = ? LIMIT 1", [code]);
+    const [coupons] = await db.query("SELECT * FROM coupons ORDER BY code ASC");
 
     return res.status(201).json({
       message: "Coupon saved successfully.",
-      coupon: serializeCoupon(nextCoupon),
+      coupon: serializeCoupon(savedCoupons[0]),
       coupons: coupons.map(serializeCoupon),
     });
   } catch (error) {
@@ -142,28 +707,721 @@ app.post("/api/admin/coupons", (req, res) => {
   }
 });
 
-app.patch("/api/admin/coupons/:id", (req, res) => {
-  const coupons = readCoupons();
-  const couponIndex = coupons.findIndex((coupon) => String(coupon.id) === String(req.params.id));
+app.patch("/api/admin/coupons/:id", async (req, res) => {
+  const [result] = await db.query(
+    "UPDATE coupons SET active = ? WHERE id = ?",
+    [Boolean(req.body.active), req.params.id],
+  );
 
-  if (couponIndex === -1) {
+  if (result.affectedRows === 0) {
     return res.status(404).json({ message: "Coupon not found." });
   }
 
-  coupons[couponIndex] = {
-    ...coupons[couponIndex],
-    active: Boolean(req.body.active),
-  };
-
-  writeCoupons(coupons);
+  const [updatedCoupon] = await db.query("SELECT * FROM coupons WHERE id = ? LIMIT 1", [req.params.id]);
+  const [coupons] = await db.query("SELECT * FROM coupons ORDER BY code ASC");
 
   return res.json({
     message: "Coupon updated successfully.",
-    coupon: serializeCoupon(coupons[couponIndex]),
+    coupon: serializeCoupon(updatedCoupon[0]),
     coupons: coupons.map(serializeCoupon),
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`MedInnovate backend running on port ${PORT}`);
+app.post("/api/register-upi", async (req, res) => {
+  const teamName = String(req.body.team_name || "").trim();
+  const utr = String(req.body.utr || "").trim();
+  const members = Array.isArray(req.body.members) ? req.body.members : [];
+  const couponCode = normalizeCode(req.body.coupon_code);
+  const amountPaid = Number(req.body.amount_paid);
+
+  if (!teamName || !utr || members.length === 0 || Number.isNaN(amountPaid)) {
+    return res.status(400).json({ error: "Team name, members, UTR, and amount paid are required." });
+  }
+
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const [teamResult] = await connection.query(
+      `INSERT INTO teams (team_name, utr, coupon_code, total_paid, team_size)
+       VALUES (?, ?, ?, ?, ?)`,
+      [teamName, utr, couponCode || null, amountPaid, members.length],
+    );
+
+    const teamId = teamResult.insertId;
+    const memberRows = members.map((member) => [
+      teamId,
+      String(member.name || "").trim(),
+      String(member.email || "").trim(),
+      String(member.college || "").trim() || null,
+      String(member.country || "").trim() || null,
+    ]);
+
+    if (memberRows.some((member) => !member[1] || !member[2])) {
+      throw new Error("Every team member must include a name and email.");
+    }
+
+    await connection.query(
+      "INSERT INTO registration_members (team_id, name, email, college, country) VALUES ?",
+      [memberRows],
+    );
+
+    await connection.commit();
+
+    return res.status(201).json({
+      message: "Registration successful.",
+      teamId,
+    });
+  } catch (error) {
+    await connection.rollback();
+    return res.status(400).json({ error: error.message || "Registration failed." });
+  } finally {
+    connection.release();
+  }
 });
+
+app.get("/api/admin/teams", async (_req, res) => {
+  const [teams] = await db.query("SELECT * FROM teams ORDER BY created_at DESC");
+  const [members] = await db.query("SELECT * FROM registration_members ORDER BY id ASC");
+  const membersByTeam = members.reduce((groups, member) => {
+    groups[member.team_id] = groups[member.team_id] || [];
+    groups[member.team_id].push(member);
+    return groups;
+  }, {});
+
+  return res.json({
+    teams: teams.map((team) => ({
+      ...team,
+      members: membersByTeam[team.id] || [],
+    })),
+  });
+});
+
+function serializeRegistration(team, members = []) {
+  const leader = members[0] || {};
+
+  return {
+    id: team.id,
+    team_id: team.id,
+    team_name: team.team_name,
+    leader: leader.name || team.team_name,
+    leader_email: leader.email || "",
+    members,
+    member_count: members.length || Number(team.team_size || 0),
+    country: leader.country || "",
+    coupon: team.coupon_code || "",
+    payment_status: team.utr ? "Paid" : "Pending",
+    amount: Number(team.total_paid || 0),
+    utr: team.utr || "",
+    date: team.created_at,
+    stage: "Registered",
+  };
+}
+
+async function loadRegistrations({ id, search = "", page = 1, limit = 10 } = {}) {
+  const params = [];
+  const where = [];
+
+  if (id) {
+    where.push("t.id = ?");
+    params.push(id);
+  }
+
+  if (search) {
+    where.push(`(
+      t.team_name LIKE ?
+      OR t.coupon_code LIKE ?
+      OR t.utr LIKE ?
+      OR EXISTS (
+        SELECT 1 FROM registration_members rm
+        WHERE rm.team_id = t.id
+          AND (rm.name LIKE ? OR rm.email LIKE ? OR rm.country LIKE ? OR rm.college LIKE ?)
+      )
+    )`);
+    params.push(...Array(7).fill(`%${search}%`));
+  }
+
+  const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  const offset = (page - 1) * limit;
+  const [countRows] = await db.query(`SELECT COUNT(*) AS total FROM teams t ${whereClause}`, params);
+  const [teams] = await db.query(
+    `SELECT t.* FROM teams t ${whereClause} ORDER BY t.created_at DESC LIMIT ? OFFSET ?`,
+    [...params, limit, offset],
+  );
+
+  const ids = teams.map((team) => team.id);
+  const membersByTeam = {};
+
+  if (ids.length > 0) {
+    const [members] = await db.query(
+      `SELECT * FROM registration_members WHERE team_id IN (${ids.map(() => "?").join(", ")}) ORDER BY id ASC`,
+      ids,
+    );
+
+    members.forEach((member) => {
+      membersByTeam[member.team_id] = membersByTeam[member.team_id] || [];
+      membersByTeam[member.team_id].push(member);
+    });
+  }
+
+  return {
+    registrations: teams.map((team) => serializeRegistration(team, membersByTeam[team.id] || [])),
+    total: Number(countRows[0].total),
+    page,
+    limit,
+  };
+}
+
+app.get("/api/admin/dashboard", async (_req, res) => {
+  const [[registrations]] = await db.query("SELECT COUNT(*) AS count FROM teams");
+  const [[payments]] = await db.query("SELECT COUNT(*) AS count, COALESCE(SUM(total_paid), 0) AS revenue FROM teams WHERE utr IS NOT NULL AND utr <> ''");
+  const [[coupons]] = await db.query("SELECT COUNT(*) AS count FROM teams WHERE coupon_code IS NOT NULL AND coupon_code <> ''");
+  const recent = await loadRegistrations({ page: 1, limit: 5 });
+
+  const recentPayments = recent.registrations
+    .filter((registration) => registration.payment_status === "Paid")
+    .map((registration) => ({
+      id: registration.id,
+      team_id: registration.team_id,
+      team_name: registration.team_name,
+      leader: registration.leader,
+      amount: registration.amount,
+      utr: registration.utr,
+      date: registration.date,
+    }));
+
+  res.json({
+    registrations_count: Number(registrations.count),
+    team_count: Number(registrations.count),
+    payment_count: Number(payments.count),
+    revenue: Number(payments.revenue || 0),
+    coupon_count: Number(coupons.count),
+    recent_registrations: recent.registrations,
+    recent_payments: recentPayments,
+    recent_activity: recent.registrations.map((registration) => ({
+      id: `registration-${registration.id}`,
+      label: `New registration: ${registration.team_name}`,
+      date: registration.date,
+    })),
+  });
+});
+
+app.get("/api/admin/registrations", async (req, res) => {
+  const search = String(req.query.search || "").trim();
+  const page = Math.max(1, Number(req.query.page || 1));
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit || 10)));
+  const data = await loadRegistrations({ search, page, limit });
+
+  res.json(data);
+});
+
+app.get("/api/admin/registrations/:id", async (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!id) return res.status(400).json({ message: "Invalid registration id." });
+
+  const data = await loadRegistrations({ id, page: 1, limit: 1 });
+
+  if (data.registrations.length === 0) {
+    return res.status(404).json({ message: "Registration not found." });
+  }
+
+  return res.json({ registration: data.registrations[0] });
+});
+
+app.get("/api/admin/site-settings", async (_req, res) => {
+  const [rows] = await db.query("SELECT * FROM site_settings WHERE id = 1");
+  res.json({ settings: rows[0] });
+});
+
+app.put("/api/admin/site-settings", async (req, res) => {
+  await updateSingleRecord("site_settings", [
+    "website_name",
+    "tagline",
+    "logo_url",
+    "favicon_url",
+    "seo_title",
+    "seo_description",
+    "footer_text",
+    "contact_email",
+    "instagram_url",
+    "linkedin_url",
+    "theme_colors",
+    "announcement",
+  ], req.body);
+  const [rows] = await db.query("SELECT * FROM site_settings WHERE id = 1");
+  res.json({ settings: rows[0] });
+});
+
+app.get("/api/admin/homepage-content", async (_req, res) => {
+  const [rows] = await db.query("SELECT * FROM homepage_content WHERE id = 1");
+  res.json({ content: rows[0] });
+});
+
+app.put("/api/admin/homepage-content", async (req, res) => {
+  await updateSingleRecord("homepage_content", [
+    "hero_title",
+    "hero_subtitle",
+    "hero_description",
+    "primary_cta_label",
+    "primary_cta_url",
+    "secondary_cta_label",
+    "secondary_cta_url",
+    "hero_media_url",
+    "highlights",
+    "stats",
+    "announcements",
+  ], req.body);
+  const [rows] = await db.query("SELECT * FROM homepage_content WHERE id = 1");
+  res.json({ content: rows[0] });
+});
+
+function normalizeStatus(status, fallback = "Draft") {
+  const normalized = String(status || fallback).trim();
+  return normalized || fallback;
+}
+
+function serializeFaq(row) {
+  return {
+    id: row.id,
+    question: row.question,
+    answer: row.answer,
+    category: row.category || "",
+    status: row.status || (row.is_published ? "Published" : "Draft"),
+    order_index: Number(row.order_index ?? row.display_order ?? 0),
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+async function listFaqs({ search = "", category = "", page = 1, limit = 10 } = {}) {
+  const where = [];
+  const params = [];
+
+  if (search) {
+    where.push("(question LIKE ? OR answer LIKE ? OR category LIKE ?)");
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+  }
+
+  if (category && category !== "All") {
+    where.push("category = ?");
+    params.push(category);
+  }
+
+  const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  const offset = (page - 1) * limit;
+  const [countRows] = await db.query(`SELECT COUNT(*) AS total FROM faq ${whereClause}`, params);
+  const [rows] = await db.query(
+    `SELECT * FROM faq ${whereClause} ORDER BY order_index ASC, id DESC LIMIT ? OFFSET ?`,
+    [...params, limit, offset],
+  );
+
+  return {
+    items: rows.map(serializeFaq),
+    total: Number(countRows[0].total),
+    page,
+    limit,
+  };
+}
+
+app.get("/api/admin/faq", async (req, res) => {
+  const data = await listFaqs({
+    search: String(req.query.search || "").trim(),
+    category: String(req.query.category || "").trim(),
+    page: Math.max(1, Number(req.query.page || 1)),
+    limit: Math.min(100, Math.max(1, Number(req.query.limit || 10))),
+  });
+  const [categories] = await db.query("SELECT DISTINCT category FROM faq WHERE category IS NOT NULL AND category <> '' ORDER BY category ASC");
+
+  res.json({ ...data, categories: categories.map((row) => row.category) });
+});
+
+app.post("/api/admin/faq", async (req, res) => {
+  const question = String(req.body.question || "").trim();
+  const answer = String(req.body.answer || "").trim();
+  const category = String(req.body.category || "").trim();
+  const status = normalizeStatus(req.body.status, "Draft");
+  const orderIndex = Number(req.body.order_index || 0);
+
+  if (!question || !answer) {
+    return res.status(400).json({ message: "Question and answer are required." });
+  }
+
+  const [result] = await db.query(
+    `INSERT INTO faq (question, answer, category, status, order_index, display_order, is_published)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [question, answer, category, status, orderIndex, orderIndex, status === "Published"],
+  );
+  const [rows] = await db.query("SELECT * FROM faq WHERE id = ?", [result.insertId]);
+
+  return res.status(201).json({ item: serializeFaq(rows[0]) });
+});
+
+app.put("/api/admin/faq/:id", async (req, res) => {
+  const status = normalizeStatus(req.body.status, "Draft");
+  const orderIndex = Number(req.body.order_index || 0);
+  const [result] = await db.query(
+    `UPDATE faq
+     SET question = ?, answer = ?, category = ?, status = ?, order_index = ?, display_order = ?, is_published = ?
+     WHERE id = ?`,
+    [
+      String(req.body.question || "").trim(),
+      String(req.body.answer || "").trim(),
+      String(req.body.category || "").trim(),
+      status,
+      orderIndex,
+      orderIndex,
+      status === "Published",
+      req.params.id,
+    ],
+  );
+
+  if (result.affectedRows === 0) return res.status(404).json({ message: "FAQ not found." });
+  const [rows] = await db.query("SELECT * FROM faq WHERE id = ?", [req.params.id]);
+  return res.json({ item: serializeFaq(rows[0]) });
+});
+
+app.delete("/api/admin/faq/:id", async (req, res) => {
+  const [result] = await db.query("DELETE FROM faq WHERE id = ?", [req.params.id]);
+  if (result.affectedRows === 0) return res.status(404).json({ message: "FAQ not found." });
+  return res.json({ success: true });
+});
+
+function serializeTeamMember(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role || "",
+    organization: row.organization || row.group_name || "",
+    photo_url: row.photo_url || row.image_url || "",
+    email: row.email || "",
+    instagram: row.instagram || "",
+    linkedin: row.linkedin || "",
+    display_order: Number(row.display_order || 0),
+    status: row.status || (row.is_published ? "Published" : "Draft"),
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+app.get("/api/admin/team", async (req, res) => {
+  const search = String(req.query.search || "").trim();
+  const role = String(req.query.role || "").trim();
+  const where = [];
+  const params = [];
+
+  if (search) {
+    where.push("(name LIKE ? OR role LIKE ? OR organization LIKE ? OR email LIKE ?)");
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+  }
+
+  if (role && role !== "All") {
+    where.push("role = ?");
+    params.push(role);
+  }
+
+  const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  const [rows] = await db.query(`SELECT * FROM team_members ${whereClause} ORDER BY display_order ASC, id DESC`, params);
+  const [roles] = await db.query("SELECT DISTINCT role FROM team_members WHERE role IS NOT NULL AND role <> '' ORDER BY role ASC");
+
+  res.json({ items: rows.map(serializeTeamMember), roles: roles.map((row) => row.role) });
+});
+
+app.post("/api/admin/team", async (req, res) => {
+  const name = String(req.body.name || "").trim();
+  const status = normalizeStatus(req.body.status, "Draft");
+
+  if (!name) return res.status(400).json({ message: "Name is required." });
+
+  const [result] = await db.query(
+    `INSERT INTO team_members (name, role, organization, group_name, photo_url, image_url, email, instagram, linkedin, display_order, status, is_published)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      name,
+      String(req.body.role || "").trim(),
+      String(req.body.organization || "").trim(),
+      String(req.body.organization || "").trim(),
+      String(req.body.photo_url || "").trim(),
+      String(req.body.photo_url || "").trim(),
+      String(req.body.email || "").trim(),
+      String(req.body.instagram || "").trim(),
+      String(req.body.linkedin || "").trim(),
+      Number(req.body.display_order || 0),
+      status,
+      status === "Published",
+    ],
+  );
+  const [rows] = await db.query("SELECT * FROM team_members WHERE id = ?", [result.insertId]);
+
+  res.status(201).json({ item: serializeTeamMember(rows[0]) });
+});
+
+app.put("/api/admin/team/:id", async (req, res) => {
+  const status = normalizeStatus(req.body.status, "Draft");
+  const [result] = await db.query(
+    `UPDATE team_members
+     SET name = ?, role = ?, organization = ?, group_name = ?, photo_url = ?, image_url = ?, email = ?, instagram = ?, linkedin = ?, display_order = ?, status = ?, is_published = ?
+     WHERE id = ?`,
+    [
+      String(req.body.name || "").trim(),
+      String(req.body.role || "").trim(),
+      String(req.body.organization || "").trim(),
+      String(req.body.organization || "").trim(),
+      String(req.body.photo_url || "").trim(),
+      String(req.body.photo_url || "").trim(),
+      String(req.body.email || "").trim(),
+      String(req.body.instagram || "").trim(),
+      String(req.body.linkedin || "").trim(),
+      Number(req.body.display_order || 0),
+      status,
+      status === "Published",
+      req.params.id,
+    ],
+  );
+
+  if (result.affectedRows === 0) return res.status(404).json({ message: "Team member not found." });
+  const [rows] = await db.query("SELECT * FROM team_members WHERE id = ?", [req.params.id]);
+  return res.json({ item: serializeTeamMember(rows[0]) });
+});
+
+app.delete("/api/admin/team/:id", async (req, res) => {
+  const [result] = await db.query("DELETE FROM team_members WHERE id = ?", [req.params.id]);
+  if (result.affectedRows === 0) return res.status(404).json({ message: "Team member not found." });
+  return res.json({ success: true });
+});
+
+function serializeNavigationItem(row) {
+  return {
+    id: row.id,
+    label: row.label,
+    path: row.path || row.url,
+    parent_id: row.parent_id,
+    order_index: Number(row.order_index ?? row.display_order ?? 0),
+    visible: Boolean(row.visible ?? row.is_published),
+    target: row.target || "_self",
+    location: row.location || "navbar",
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+app.get("/api/admin/navigation", async (req, res) => {
+  const location = String(req.query.location || "").trim();
+  const where = location && location !== "All" ? "WHERE location = ?" : "";
+  const params = where ? [location] : [];
+  const [rows] = await db.query(`SELECT * FROM navigation ${where} ORDER BY location ASC, parent_id ASC, order_index ASC, id DESC`, params);
+
+  res.json({ items: rows.map(serializeNavigationItem) });
+});
+
+app.post("/api/admin/navigation", async (req, res) => {
+  const label = String(req.body.label || "").trim();
+  const pathValue = String(req.body.path || "").trim();
+
+  if (!label || !pathValue) return res.status(400).json({ message: "Label and path are required." });
+
+  const [result] = await db.query(
+    `INSERT INTO navigation (label, url, path, location, parent_id, display_order, order_index, is_external, is_published, visible, target)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      label,
+      pathValue,
+      pathValue,
+      String(req.body.location || "navbar").trim(),
+      req.body.parent_id || null,
+      Number(req.body.order_index || 0),
+      Number(req.body.order_index || 0),
+      pathValue.startsWith("http"),
+      Boolean(req.body.visible ?? true),
+      Boolean(req.body.visible ?? true),
+      String(req.body.target || "_self").trim(),
+    ],
+  );
+  const [rows] = await db.query("SELECT * FROM navigation WHERE id = ?", [result.insertId]);
+
+  res.status(201).json({ item: serializeNavigationItem(rows[0]) });
+});
+
+app.put("/api/admin/navigation/:id", async (req, res) => {
+  const pathValue = String(req.body.path || "").trim();
+  const visible = Boolean(req.body.visible);
+  const orderIndex = Number(req.body.order_index || 0);
+  const [result] = await db.query(
+    `UPDATE navigation
+     SET label = ?, url = ?, path = ?, location = ?, parent_id = ?, display_order = ?, order_index = ?, is_external = ?, is_published = ?, visible = ?, target = ?
+     WHERE id = ?`,
+    [
+      String(req.body.label || "").trim(),
+      pathValue,
+      pathValue,
+      String(req.body.location || "navbar").trim(),
+      req.body.parent_id || null,
+      orderIndex,
+      orderIndex,
+      pathValue.startsWith("http"),
+      visible,
+      visible,
+      String(req.body.target || "_self").trim(),
+      req.params.id,
+    ],
+  );
+
+  if (result.affectedRows === 0) return res.status(404).json({ message: "Navigation item not found." });
+  const [rows] = await db.query("SELECT * FROM navigation WHERE id = ?", [req.params.id]);
+  return res.json({ item: serializeNavigationItem(rows[0]) });
+});
+
+app.delete("/api/admin/navigation/:id", async (req, res) => {
+  const [result] = await db.query("DELETE FROM navigation WHERE id = ?", [req.params.id]);
+  if (result.affectedRows === 0) return res.status(404).json({ message: "Navigation item not found." });
+  return res.json({ success: true });
+});
+
+function serializeAcademicPartner(row) {
+  return {
+    id: row.id,
+    name: row.name || "",
+    country: row.country || "",
+    description: row.description || "",
+    logo_url: row.logo_url || "",
+    website: row.website || "",
+    display_order: Number(row.display_order || 0),
+    is_visible: Boolean(row.is_visible),
+    created_at: row.created_at,
+  };
+}
+
+app.get("/api/academic-partners", async (_req, res) => {
+  const [rows] = await db.query(
+    "SELECT * FROM academic_partners WHERE is_visible = TRUE ORDER BY display_order ASC, created_at DESC",
+  );
+
+  res.json({ items: rows.map(serializeAcademicPartner) });
+});
+
+app.get("/api/admin/academic-partners", async (req, res) => {
+  const search = String(req.query.search || "").trim();
+  const where = [];
+  const params = [];
+
+  if (search) {
+    where.push("(name LIKE ? OR country LIKE ? OR description LIKE ?)");
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+  }
+
+  const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  const [countRows] = await db.query(`SELECT COUNT(*) AS total FROM academic_partners ${whereClause}`, params);
+  const [rows] = await db.query(
+    `SELECT * FROM academic_partners ${whereClause} ORDER BY display_order ASC, created_at DESC`,
+    params,
+  );
+
+  res.json({ items: rows.map(serializeAcademicPartner), total: Number(countRows[0].total) });
+});
+
+app.post("/api/admin/academic-partners", async (req, res) => {
+  const name = String(req.body.name || "").trim();
+  if (!name) return res.status(400).json({ message: "Institution name is required." });
+
+  const id = makeUuid();
+  await db.query(
+    `INSERT INTO academic_partners (id, name, country, description, logo_url, website, display_order, is_visible)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id,
+      name,
+      String(req.body.country || "").trim(),
+      String(req.body.description || "").trim(),
+      String(req.body.logo_url || req.body.logo || "").trim(),
+      String(req.body.website || "").trim(),
+      Number(req.body.display_order || 0),
+      toDbBoolean(req.body.is_visible ?? true),
+    ],
+  );
+  const [rows] = await db.query("SELECT * FROM academic_partners WHERE id = ?", [id]);
+
+  res.status(201).json({ item: serializeAcademicPartner(rows[0]) });
+});
+
+app.put("/api/admin/academic-partners/:id", async (req, res) => {
+  const name = String(req.body.name || "").trim();
+  if (!name) return res.status(400).json({ message: "Institution name is required." });
+
+  const [result] = await db.query(
+    `UPDATE academic_partners
+     SET name = ?, country = ?, description = ?, logo_url = ?, website = ?, display_order = ?, is_visible = ?
+     WHERE id = ?`,
+    [
+      name,
+      String(req.body.country || "").trim(),
+      String(req.body.description || "").trim(),
+      String(req.body.logo_url || req.body.logo || "").trim(),
+      String(req.body.website || "").trim(),
+      Number(req.body.display_order || 0),
+      toDbBoolean(req.body.is_visible ?? true),
+      req.params.id,
+    ],
+  );
+
+  if (result.affectedRows === 0) return res.status(404).json({ message: "Academic partner not found." });
+  const [rows] = await db.query("SELECT * FROM academic_partners WHERE id = ?", [req.params.id]);
+  return res.json({ item: serializeAcademicPartner(rows[0]) });
+});
+
+app.delete("/api/admin/academic-partners/:id", async (req, res) => {
+  const [result] = await db.query("DELETE FROM academic_partners WHERE id = ?", [req.params.id]);
+  if (result.affectedRows === 0) return res.status(404).json({ message: "Academic partner not found." });
+  return res.json({ success: true });
+});
+
+app.post("/api/admin/media/upload", async (req, res) => {
+  try {
+    const upload = saveMediaUpload({
+      fileDataUrl: req.body.fileDataUrl,
+      originalName: req.body.originalName,
+    });
+
+    if (!upload) {
+      return res.status(400).json({ message: "Upload a media file." });
+    }
+
+    const [result] = await db.query(
+      `INSERT INTO media (file_name, original_name, url, mime_type, folder, alt_text, size_bytes, metadata)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        upload.fileName,
+        req.body.originalName || upload.fileName,
+        upload.url,
+        upload.mimeType,
+        req.body.folder || null,
+        req.body.alt_text || null,
+        upload.sizeBytes,
+        req.body.metadata || null,
+      ],
+    );
+    const [rows] = await db.query("SELECT * FROM media WHERE id = ?", [result.insertId]);
+
+    return res.status(201).json({ item: rows[0] });
+  } catch (error) {
+    return res.status(400).json({ message: error.message || "Unable to upload media." });
+  }
+});
+
+createCollectionRoutes({
+  route: "/api/admin/media",
+  table: "media",
+  fields: ["file_name", "original_name", "url", "mime_type", "folder", "alt_text", "size_bytes", "metadata"],
+  orderBy: "created_at DESC, id DESC",
+});
+
+ensureSchema()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`MedInnovate backend running on port ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("Failed to initialize MedInnovate backend:", error);
+    process.exit(1);
+  });

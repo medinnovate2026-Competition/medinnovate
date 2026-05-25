@@ -1,8 +1,10 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+import { API_BASE } from "./config/api";
+
+export const API_BASE_URL = API_BASE;
 
 export function resolveAssetUrl(path) {
   if (!path) return "";
-  if (/^https?:\/\//i.test(path)) return path;
-  if (path.startsWith("/payments")) return `${API_BASE_URL}${path}`;
+  if (/^(https?:|data:)/i.test(path)) return path;
+  if (path.startsWith("/payments") || path.startsWith("/media")) return `${API_BASE}${path}`;
   return `${import.meta.env.BASE_URL}${path.replace(/^\//, "")}`;
 }

@@ -1,37 +1,69 @@
+import { motion } from "framer-motion"
+
 const benefits = [
-  { title: 'Cash prizes', detail: 'Awards for the strongest healthcare innovation pitches.' },
-  { title: 'Certificates', detail: 'Participation and finalist recognition for portfolios.' },
-  { title: 'Networking', detail: 'Connect with mentors, judges, peers, and collaborators.' },
-  { title: 'Exposure / internships', detail: 'Visibility for teams seeking pilots and opportunities.' },
+  {
+    icon: '01',
+    title: 'Global Networking',
+    detail: 'Connect with undergraduate students, public health thinkers, engineers, designers, and young professionals across countries.',
+  },
+  {
+    icon: '02',
+    title: 'Global Stage',
+    detail: 'Pitch your healthcare solution to an international audience and receive visibility beyond your local ecosystem.',
+  },
+  {
+    icon: '03',
+    title: 'Certification',
+    detail: 'Receive recognition for your participation and contribution to a real healthcare innovation challenge.',
+  },
+  {
+    icon: '04',
+    title: 'Mentorship',
+    detail: 'Refine your problem statement, feasibility, impact model, and final pitch with guidance from mentors and domain experts.',
+  },
 ]
 
 function Prizes() {
   return (
-    <section id="prizes" className="px-4 py-24 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="max-w-3xl">
-          <p className="text-sm font-bold uppercase tracking-[0.24em] text-fuchsia-200">
-            Prizes & benefits
+    <motion.section
+      id="prizes"
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.55, ease: "easeOut" }}
+      className="relative overflow-hidden bg-white px-4 py-24 sm:px-6 lg:px-8"
+    >
+      <div className="absolute left-1/2 top-0 h-80 w-80 -translate-x-1/2 rounded-full bg-[#EC4899]/10 blur-3xl" />
+      <div className="relative mx-auto max-w-7xl">
+        <div className="mx-auto max-w-4xl text-center">
+          <p className="text-sm font-black uppercase tracking-[0.24em] text-[#7C3AED]">Benefits</p>
+          <h2 className="mt-5 text-4xl font-black tracking-tight text-[#111827] sm:text-6xl">Why Attend?</h2>
+          <p className="mt-8 text-xl leading-8 text-slate-600 sm:text-2xl">
+            A focused hackathon experience designed to give your idea visibility, expert input, and international credibility.
           </p>
-          <h2 className="mt-4 font-display text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-[#00dcff] sm:text-6xl">
-            More than a competition.
-          </h2>
         </div>
 
-        <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {benefits.map((benefit) => (
-            <article
+        <div className="mt-20 grid gap-7 md:grid-cols-2 lg:grid-cols-4">
+          {benefits.map((benefit, index) => (
+            <motion.article
               key={benefit.title}
-              className="rounded-3xl border border-fuchsia-300/20 bg-fuchsia-300/[0.07] p-7 shadow-[0_0_40px_rgba(168,85,247,0.12)] transition hover:-translate-y-1 hover:border-fuchsia-300/55 hover:shadow-[0_0_48px_rgba(236,72,153,0.2)]"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.25 }}
+              transition={{ duration: 0.45, ease: "easeOut", delay: index * 0.06 }}
+              whileHover={{ y: -6 }}
+              className="rounded-3xl border border-violet-100 bg-white/90 p-10 shadow-[0_18px_55px_rgba(124,58,237,0.08)] transition hover:border-fuchsia-200 hover:shadow-[0_28px_80px_rgba(236,72,153,0.14)]"
             >
-              <div className="mb-6 h-1 w-14 rounded-full bg-gradient-to-r from-fuchsia-300 to-cyan-300" />
-              <h3 className="font-display text-2xl font-black text-white">{benefit.title}</h3>
-              <p className="mt-4 leading-7 text-slate-300">{benefit.detail}</p>
-            </article>
+              <div className="grid h-14 w-14 place-items-center rounded-2xl border border-violet-100 bg-gradient-to-br from-white to-fuchsia-50 text-sm font-black text-[#7C3AED] shadow-sm">
+                {benefit.icon}
+              </div>
+              <h3 className="mt-10 text-2xl font-black text-[#111827]">{benefit.title}</h3>
+              <p className="mt-6 text-lg leading-9 text-slate-700">{benefit.detail}</p>
+            </motion.article>
           ))}
         </div>
       </div>
-    </section>
+    </motion.section>
   )
 }
 

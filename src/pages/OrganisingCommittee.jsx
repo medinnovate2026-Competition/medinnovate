@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 import abhishekKashyap from "../OC/abhishekkashyap.jpeg";
 import amritPundir from "../OC/Amrit Pundir .jpeg";
@@ -21,7 +22,7 @@ import toluwaseOgundipe from "../OC/Toluwase O. Ogundipe.jpeg";
 import wahidaAli from "../OC/Wahida Ali.jpeg";
 import Footer from "../components/Footer";
 
-const committeeSections = [
+export const committeeSections = [
   {
     title: "Presidents",
     description: "Strategic leadership guiding Medinnovate's vision, partnerships, and execution.",
@@ -87,13 +88,13 @@ function Avatar({ member }) {
         alt={member.name}
         loading="lazy"
         onError={() => setHasImageError(true)}
-        className="h-24 w-24 rounded-full border-4 border-white object-cover shadow-md ring-1 ring-slate-200 sm:h-28 sm:w-28"
+        className="h-24 w-24 rounded-full border-4 border-white object-cover shadow-[0_18px_45px_rgba(124,58,237,0.14)] ring-1 ring-violet-100 sm:h-28 sm:w-28"
       />
     );
   }
 
   return (
-    <div className="grid h-24 w-24 place-items-center rounded-full border-4 border-white bg-blue-50 text-xl font-black text-blue-700 shadow-md ring-1 ring-slate-200 sm:h-28 sm:w-28">
+    <div className="grid h-24 w-24 place-items-center rounded-full border-4 border-white bg-violet-50 text-xl font-black text-[#7C3AED] shadow-[0_18px_45px_rgba(124,58,237,0.14)] ring-1 ring-violet-100 sm:h-28 sm:w-28">
       {getInitials(member.name)}
     </div>
   );
@@ -109,10 +110,10 @@ function ContactLinks({ member }) {
       {member.phone && (
         <a
           href={`tel:${member.phone.replace(/\s+/g, "")}`}
-          className="group/contact flex min-w-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md"
+          className="group/contact flex min-w-0 items-center gap-2 rounded-2xl border border-violet-100 bg-white px-3 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-fuchsia-200 hover:bg-violet-50 hover:text-[#7C3AED] hover:shadow-md"
           title={member.phone}
         >
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-blue-700 text-white shadow-sm transition group-hover/contact:bg-blue-800">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#EC4899] text-white shadow-sm">
             <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M6.62 10.79c1.44 2.83 3.76 5.15 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.56 3.58.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.19 2.46.56 3.58a1 1 0 0 1-.25 1.01l-2.19 2.2Z" />
             </svg>
@@ -126,10 +127,10 @@ function ContactLinks({ member }) {
       {member.email && (
         <a
           href={`mailto:${member.email}`}
-          className="group/contact flex min-w-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-cyan-50 hover:text-blue-700 hover:shadow-md"
+          className="group/contact flex min-w-0 items-center gap-2 rounded-2xl border border-violet-100 bg-white px-3 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-fuchsia-200 hover:bg-violet-50 hover:text-[#7C3AED] hover:shadow-md"
           title={member.email}
         >
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-gradient-to-br from-blue-700 to-cyan-500 text-white shadow-sm">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#EC4899] text-white shadow-sm">
             <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm-.4 4.25-6.54 4.9a1.75 1.75 0 0 1-2.12 0L4.4 8.25A1 1 0 1 1 5.6 6.65L12 11.45l6.4-4.8a1 1 0 1 1 1.2 1.6Z" />
             </svg>
@@ -146,9 +147,16 @@ function ContactLinks({ member }) {
 
 function MemberCard({ member }) {
   return (
-    <article className="group relative flex min-h-64 flex-col items-center justify-start overflow-hidden rounded-xl border border-slate-200 bg-white p-7 text-center shadow-sm transition hover:-translate-y-1 hover:border-blue-300 hover:shadow-md">
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-700 via-cyan-400 to-indigo-500 opacity-80" />
-      <div className="absolute inset-x-8 top-0 h-24 rounded-b-full bg-blue-50/80 blur-2xl transition group-hover:bg-cyan-50" />
+    <motion.article
+      initial={{ opacity: 0, y: 22 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.45, ease: "easeOut" }}
+      whileHover={{ y: -6 }}
+      className="group relative flex min-h-64 flex-col items-center justify-start overflow-hidden rounded-[28px] border border-violet-100 bg-white/90 p-7 text-center shadow-[0_18px_55px_rgba(124,58,237,0.08)] transition hover:border-fuchsia-200 hover:shadow-[0_28px_80px_rgba(236,72,153,0.16)]"
+    >
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] opacity-90" />
+      <div className="absolute inset-x-8 top-0 h-24 rounded-b-full bg-violet-50/80 blur-2xl transition group-hover:bg-fuchsia-50" />
       <div className="relative">
         <Avatar member={member} />
       </div>
@@ -159,50 +167,84 @@ function MemberCard({ member }) {
         {member.role}
       </p>
       <ContactLinks member={member} />
-    </article>
+    </motion.article>
   );
 }
 
 function SectionHeader({ subtitle, title, description }) {
   return (
-    <div className="relative z-10 mx-auto mb-16 max-w-3xl text-center">
-      <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-700">
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.35 }}
+      transition={{ duration: 0.55, ease: "easeOut" }}
+      className="relative z-10 mx-auto mb-16 max-w-3xl text-center"
+    >
+      <p className="mb-3 text-sm font-black uppercase tracking-[0.24em] text-[#7C3AED]">
         {subtitle}
       </p>
-      <h2 className="mb-5 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl lg:text-5xl">
+      <h2 className="mb-5 text-3xl font-black tracking-tight text-[#111827] md:text-4xl lg:text-5xl">
         {title}
       </h2>
       <p className="text-lg leading-relaxed text-slate-600">
         {description}
       </p>
-    </div>
+    </motion.div>
   );
 }
 
 function CommitteeSection({ section }) {
   return (
-    <section className="px-4 py-16 sm:px-6 lg:px-8">
+    <motion.section
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, amount: 0.12 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="relative px-4 py-16 sm:px-6 lg:px-8"
+    >
+      <div className="absolute left-8 top-8 h-56 w-56 rounded-full bg-[#EC4899]/8 blur-3xl" />
+      <div className="absolute bottom-8 right-8 h-60 w-60 rounded-full bg-[#7C3AED]/8 blur-3xl" />
       <div className="mx-auto max-w-7xl">
         <SectionHeader subtitle="Committee" title={section.title} description={section.description} />
-        <div className="mt-12 grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-4">
+        <motion.div
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.15 }}
+          variants={{
+            hidden: {},
+            show: { transition: { staggerChildren: 0.06 } },
+          }}
+          className="mt-12 grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-4"
+        >
           {section.members.map((member) => (
-            <MemberCard key={member.name} member={member} />
+            <motion.div
+              key={member.name}
+              variants={{
+                hidden: { opacity: 0, y: 22 },
+                show: { opacity: 1, y: 0 },
+              }}
+              transition={{ duration: 0.42, ease: "easeOut" }}
+            >
+              <MemberCard member={member} />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
-    </section>
+    </motion.section>
   );
 }
 
 function LightNavbar() {
+  const mainPageHref = (hash) => `${import.meta.env.BASE_URL}${hash}`;
+
   return (
     <nav
-      className="fixed top-0 left-0 z-50 w-full border-b"
+      className="fixed left-0 top-0 z-50 w-full border-b"
       style={{
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
-        backgroundColor: "rgba(255,255,255,0.8)",
-        borderColor: "rgba(0,0,0,0.05)",
+        backgroundColor: "rgba(255,255,255,0.72)",
+        borderColor: "rgba(124,58,237,0.12)",
       }}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
@@ -212,17 +254,17 @@ function LightNavbar() {
             alt="MedInnovate Logo"
             className="h-9 w-9 object-contain drop-shadow-md"
           />
-          <span className="text-lg font-bold tracking-tight text-slate-900">Medinnovate</span>
+          <span className="bg-gradient-to-r from-[#7C3AED] to-[#EC4899] bg-clip-text text-lg font-black tracking-tight text-transparent">Medinnovate</span>
         </Link>
         <div className="hidden items-center gap-8 text-sm text-slate-700 md:flex">
-          <Link to="/#about" className="font-medium transition hover:text-blue-700">About</Link>
-          <Link to="/#why" className="font-medium transition hover:text-blue-700">Why Attend</Link>
-          <Link to="/#features" className="font-medium transition hover:text-blue-700">Who Can Join</Link>
-          <Link to="/#speakers" className="font-medium transition hover:text-blue-700">Judges</Link>
-          <Link to="/organising-committee" className="font-medium text-blue-700 transition">Organising Committee</Link>
+          <a href={mainPageHref("#about")} className="font-semibold transition hover:text-[#A855F7]">About</a>
+          <a href={mainPageHref("#prizes")} className="font-semibold transition hover:text-[#A855F7]">Why Attend</a>
+          <a href={mainPageHref("#participants")} className="font-semibold transition hover:text-[#A855F7]">Who Can Join</a>
+          <a href={mainPageHref("#speakers")} className="font-semibold transition hover:text-[#A855F7]">Judges</a>
+          <Link to="/organising-committee" className="font-semibold text-[#7C3AED] transition">Organising Committee</Link>
           <Link
-            to="/register"
-            className="rounded-md bg-blue-700 px-5 py-2 font-semibold text-white shadow-sm transition-colors hover:bg-blue-800"
+            to="/registration"
+            className="rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-5 py-2 font-black text-white shadow-[0_14px_34px_rgba(168,85,247,0.25)] transition hover:-translate-y-0.5"
           >
             Register
           </Link>
@@ -234,34 +276,44 @@ function LightNavbar() {
 
 function OrganisingCommittee() {
   const gridStyle = {
-    backgroundImage: "linear-gradient(rgba(59,130,246,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.05) 1px, transparent 1px)",
+    backgroundImage: "linear-gradient(rgba(124,58,237,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.05) 1px, transparent 1px)",
     backgroundSize: "60px 60px",
   };
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[#f8fafc] font-sans text-slate-900 antialiased selection:bg-blue-200 selection:text-slate-900" style={gridStyle}>
+    <div className="min-h-screen overflow-hidden bg-[#fbf9ff] font-sans text-slate-900 antialiased selection:bg-fuchsia-200 selection:text-slate-900" style={gridStyle}>
       <div className="relative z-10">
         <LightNavbar />
         <main>
-          <section className="relative overflow-hidden border-t border-slate-200 bg-slate-50 px-4 pb-24 pt-32 shadow-sm sm:px-6 lg:px-8">
-            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "linear-gradient(to right, #f1f5f9 1px, transparent 1px), linear-gradient(to bottom, #f1f5f9 1px, transparent 1px)", backgroundSize: "4rem 4rem" }} />
-            <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-blue-400/10 blur-3xl" />
-            <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-indigo-400/10 blur-3xl" />
-            <div className="relative mx-auto max-w-7xl text-center">
+          <motion.section
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.55, ease: "easeOut" }}
+            className="relative overflow-hidden border-t border-violet-100 bg-[#fbf9ff] px-4 pb-24 pt-32 shadow-sm sm:px-6 lg:px-8"
+          >
+            <div className="pointer-events-none absolute inset-0" style={{ backgroundImage: "linear-gradient(to right, rgba(124,58,237,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(124,58,237,0.05) 1px, transparent 1px)", backgroundSize: "4rem 4rem" }} />
+            <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-[#EC4899]/12 blur-3xl" />
+            <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#7C3AED]/12 blur-3xl" />
+            <motion.div
+              initial={{ opacity: 0, y: 28 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, ease: "easeOut", delay: 0.08 }}
+              className="relative mx-auto max-w-7xl text-center"
+            >
               <div className="mx-auto max-w-4xl">
-                <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700 shadow-sm">
-                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-violet-200 bg-white/75 px-5 py-2 text-xs font-black uppercase tracking-[0.24em] text-slate-700 shadow-[0_12px_34px_rgba(124,58,237,0.12)] backdrop-blur">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#EC4899] shadow-[0_0_16px_rgba(236,72,153,0.9)]" />
                   <span>Medinnovate 2026</span>
                 </div>
-                <h1 className="text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
+                <h1 className="bg-gradient-to-r from-[#111827] via-[#7C3AED] to-[#EC4899] bg-clip-text text-5xl font-black tracking-tight text-transparent sm:text-6xl lg:text-7xl">
                   Organising Committee
                 </h1>
                 <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
                   The people coordinating Medinnovate across leadership, secretariat, technology, and operations.
                 </p>
               </div>
-            </div>
-          </section>
+            </motion.div>
+          </motion.section>
 
           {committeeSections.map((section) => (
             <CommitteeSection key={section.title} section={section} />
