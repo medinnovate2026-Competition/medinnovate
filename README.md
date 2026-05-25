@@ -1,16 +1,47 @@
-# React + Vite
+# MedInnovate
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+MedInnovate uses a React + Vite frontend and a Node/Express backend.
 
-Currently, two official plugins are available:
+## Backend Deployment Variables
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The Railway backend must be configured with Aiven MySQL credentials. No localhost defaults or hardcoded credentials are used.
 
-## React Compiler
+Required:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```env
+MYSQL_HOST=
+MYSQL_PORT=
+MYSQL_USER=
+MYSQL_PASSWORD=
+MYSQL_DATABASE=
+```
 
-## Expanding the ESLint configuration
+Optional:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```env
+MYSQL_SSL=
+PORT=
+NODE_ENV=
+```
+
+For Aiven MySQL, set:
+
+```env
+MYSQL_SSL=true
+```
+
+Keep real secrets in Railway environment variables or a local `.env` file. Only `.env.example` should be committed.
+
+## Frontend API Target
+
+The frontend API base is configured in:
+
+```txt
+src/config/api.js
+```
+
+It points to the Railway backend:
+
+```txt
+https://medinnovate-production.up.railway.app
+```

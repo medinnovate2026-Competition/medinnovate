@@ -1,12 +1,13 @@
+require("dotenv").config();
+
 const cors = require("cors");
 const crypto = require("crypto");
 const express = require("express");
 const fs = require("fs");
-const mysql = require("mysql2/promise");
 const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5000;
 const ORIGINAL_PRICE = 15;
 const PAYMENTS_DIR = path.join(__dirname, "public", "payments");
 const MEDIA_DIR = path.join(__dirname, "public", "media");
@@ -21,25 +22,12 @@ const REQUIRED_DB_ENV = [
 
 const missingDbEnv = REQUIRED_DB_ENV.filter((key) => !process.env[key]);
 
-if (!PORT) {
-  throw new Error("PORT environment variable is required.");
-}
-
 if (missingDbEnv.length > 0) {
-  throw new Error(`Missing required database environment variables: ${missingDbEnv.join(", ")}`);
+  console.error("Missing environment variables:", ...missingDbEnv);
+  process.exit(1);
 }
 
-const db = mysql.createPool({
-  host: process.env.MYSQL_HOST,
-  port: Number(process.env.MYSQL_PORT),
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  ssl: { rejectUnauthorized: true },
-});
+const db = require("./config/database");
 
 fs.mkdirSync(PAYMENTS_DIR, { recursive: true });
 fs.mkdirSync(MEDIA_DIR, { recursive: true });
