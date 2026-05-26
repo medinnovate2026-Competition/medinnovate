@@ -27,6 +27,7 @@ import CouponsCmsPage from './admin/pages/CouponsCmsPage';
 import RegistrationsPage from './admin/pages/RegistrationsPage';
 import AcademicPartnersPage from './admin/pages/AcademicPartnersPage';
 import OrganisingCommitteeCmsPage from './admin/pages/OrganisingCommitteeCmsPage';
+import AnalyticsPage from './admin/pages/AnalyticsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { API_BASE_URL } from './config';
 import { defaultHomepageContent, normalizeHomepageContent } from './data/homepageContent';
@@ -122,7 +123,7 @@ function App() {
         <Route path="homepage" element={<HomepageCmsEditor />} />
         <Route path="registrations" element={<RegistrationsPage />} />
         <Route path="coupons" element={<CouponsCmsPage />} />
-        <Route path="analytics" element={<CmsPlaceholderPage title="Analytics" description="Traffic, conversion, campaign, registration, and content performance views." variant="table" />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="settings" element={<CmsPlaceholderPage title="Settings" description="System preferences, access controls, integrations, maintenance mode, and admin defaults." />} />
       </Route>
     </Routes>

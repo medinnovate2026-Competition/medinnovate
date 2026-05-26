@@ -1157,6 +1157,25 @@ async function loadRecentVerifiedPayments(limit = 5) {
   return teams.map((team) => serializeRegistration(team, membersByTeam[team.id] || []));
 }
 
+async function loadParticipantTotal() {
+  const [[teamSizeRows]] = await db.query("SELECT COALESCE(SUM(team_size), 0) AS total FROM teams WHERE team_size IS NOT NULL AND team_size > 0");
+  let total = Number(teamSizeRows.total || 0);
+
+  for (const table of ["registration_members", "participants"]) {
+    if (!(await tableExists(table)) || !(await columnExists(table, "team_id"))) continue;
+
+    const [[memberRows]] = await db.query(`
+      SELECT COUNT(*) AS total
+      FROM ${table} m
+      JOIN teams t ON t.id = m.team_id
+      WHERE t.team_size IS NULL OR t.team_size = 0
+    `);
+    total += Number(memberRows.total || 0);
+  }
+
+  return total;
+}
+
 app.get("/api/admin/dashboard", async (_req, res) => {
   console.log("Dashboard hit");
 
@@ -1210,6 +1229,89 @@ app.get("/api/admin/dashboard", async (_req, res) => {
     console.error("Dashboard error:", error);
     return res.status(500).json({
       message: "Unable to load dashboard.",
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/admin/analytics", async (_req, res) => {
+  try {
+    const [[summary]] = await db.query(`
+      SELECT
+        COUNT(*) AS registrations,
+        SUM(CASE WHEN t.payment_verified = TRUE THEN 1 ELSE 0 END) AS verified_payments,
+        SUM(CASE WHEN t.payment_verified = FALSE THEN 1 ELSE 0 END) AS not_verified_payments,
+        SUM(CASE WHEN t.coupon_code IS NOT NULL AND t.coupon_code <> '' THEN 1 ELSE 0 END) AS coupon_registrations,
+        SUM(CASE WHEN t.coupon_code IS NULL OR t.coupon_code = '' THEN 1 ELSE 0 END) AS main_qr_registrations,
+        COALESCE(SUM(CASE WHEN t.payment_verified = TRUE THEN t.verified_amount ELSE 0 END), 0) AS verified_revenue,
+        COALESCE(SUM(t.total_paid), 0) AS submitted_revenue,
+        COALESCE(SUM(CASE WHEN t.payment_verified = TRUE AND t.coupon_code IS NOT NULL AND t.coupon_code <> '' THEN t.verified_amount ELSE 0 END), 0) AS coupon_revenue,
+        COALESCE(SUM(CASE WHEN t.payment_verified = TRUE AND (t.coupon_code IS NULL OR t.coupon_code = '') THEN t.verified_amount ELSE 0 END), 0) AS main_qr_revenue
+      FROM teams t
+      LEFT JOIN (
+        SELECT team_id, COUNT(*) AS member_count
+        FROM registration_members
+        GROUP BY team_id
+      ) member_counts ON member_counts.team_id = t.id
+    `);
+    const participantTotal = await loadParticipantTotal();
+
+    const [couponRows] = await db.query(`
+      SELECT
+        COALESCE(NULLIF(coupon_code, ''), 'No coupon') AS coupon,
+        COUNT(*) AS registrations,
+        SUM(CASE WHEN payment_verified = TRUE THEN 1 ELSE 0 END) AS verified_payments,
+        COALESCE(SUM(CASE WHEN payment_verified = TRUE THEN verified_amount ELSE 0 END), 0) AS revenue
+      FROM teams
+      GROUP BY COALESCE(NULLIF(coupon_code, ''), 'No coupon')
+      ORDER BY registrations DESC, coupon ASC
+    `);
+
+    const [recentRows] = await db.query(`
+      SELECT *
+      FROM teams
+      WHERE payment_verified = TRUE
+      ORDER BY verified_at DESC, created_at DESC
+      LIMIT 10
+    `);
+    const recentIds = recentRows.map((team) => team.id);
+    const recentMembers = await loadRegistrationMembers(recentIds);
+    const recentPayments = recentRows.map((team) => serializeRegistration(team, recentMembers[team.id] || []));
+
+    return res.json({
+      summary: {
+        registrations: Number(summary.registrations || 0),
+        participants: participantTotal,
+        verified_payments: Number(summary.verified_payments || 0),
+        not_verified_payments: Number(summary.not_verified_payments || 0),
+        coupon_registrations: Number(summary.coupon_registrations || 0),
+        main_qr_registrations: Number(summary.main_qr_registrations || 0),
+        verified_revenue: Number(summary.verified_revenue || 0),
+        submitted_revenue: Number(summary.submitted_revenue || 0),
+        coupon_revenue: Number(summary.coupon_revenue || 0),
+        main_qr_revenue: Number(summary.main_qr_revenue || 0),
+      },
+      coupon_breakdown: couponRows.map((row) => ({
+        coupon: row.coupon,
+        registrations: Number(row.registrations || 0),
+        verified_payments: Number(row.verified_payments || 0),
+        revenue: Number(row.revenue || 0),
+      })),
+      recent_payments: recentPayments.map((registration) => ({
+        id: registration.id,
+        team_id: registration.team_id,
+        team_name: registration.team_name,
+        leader: registration.leader,
+        coupon: registration.coupon || "No coupon",
+        amount: registration.verified_amount ?? registration.amount,
+        utr: registration.utr,
+        date: registration.verified_at || registration.date,
+      })),
+    });
+  } catch (error) {
+    console.error("Analytics error:", error);
+    return res.status(500).json({
+      message: "Unable to load analytics.",
       error: error.message,
     });
   }
