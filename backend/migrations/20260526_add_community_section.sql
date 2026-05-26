@@ -23,8 +23,9 @@ VALUES (
   'Get In Contact With Us',
   'Stay connected with MedInnovate.\nJoin our community for updates, announcements, opportunities and event discussions.',
   '',
-  '',
+  'https://chat.whatsapp.com/KaUGYIbIMDr2HASOrnD7vp?mode=gi_t',
   '↓ Scroll down for registration',
   TRUE
 )
-ON DUPLICATE KEY UPDATE id = id;
+ON DUPLICATE KEY UPDATE
+  whatsapp_link = IF(whatsapp_link IS NULL OR whatsapp_link = '', VALUES(whatsapp_link), whatsapp_link);

@@ -104,6 +104,7 @@ function HomePage() {
         <PrizeReveal />
       </section>
       <Timeline content={content} />
+      <CommunitySection section={communitySection} loading={loadingCommunity} />
       <section className="relative overflow-hidden bg-[#fbf9ff] px-4 py-20 sm:px-6 lg:px-8">
         <div className="relative mx-auto max-w-5xl rounded-[32px] border border-violet-100 bg-white/86 p-8 text-center shadow-[0_24px_80px_rgba(124,58,237,0.10)] sm:p-12">
           <p className="text-sm font-black uppercase tracking-[0.24em] text-[#7C3AED]">Next Step</p>
@@ -111,7 +112,6 @@ function HomePage() {
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">{content.cta_description}</p>
         </div>
       </section>
-      <CommunitySection section={communitySection} loading={loadingCommunity} />
       <Registration />
       <FAQ />
       <Footer content={content} />

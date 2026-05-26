@@ -21,6 +21,7 @@ const ORIGINAL_PRICE = 15;
 const PAYMENTS_DIR = path.join(__dirname, "public", "payments");
 const MEDIA_DIR = path.join(__dirname, "public", "media");
 const JSON_FIELDS = new Set(["social_links", "theme_colors", "highlights", "stats", "announcements", "metadata", "stats_json", "timeline_json", "why_participate_json", "contact_json"]);
+const DEFAULT_WHATSAPP_INVITE_LINK = "https://chat.whatsapp.com/KaUGYIbIMDr2HASOrnD7vp?mode=gi_t";
 const REQUIRED_DB_ENV = [
   ["DB_HOST", "MYSQL_HOST"],
   ["DB_USER", "MYSQL_USER"],
@@ -172,7 +173,7 @@ function serializeCommunitySection(row = {}) {
     title: row.title || "Get In Contact With Us",
     description: row.description || "Stay connected with MedInnovate.\nJoin our community for updates, announcements, opportunities and event discussions.",
     image_url: row.image_url || "",
-    whatsapp_link: row.whatsapp_link || "",
+    whatsapp_link: row.whatsapp_link || DEFAULT_WHATSAPP_INVITE_LINK,
     scroll_text: row.scroll_text || "↓ Scroll down for registration",
     visible: row.visible == null ? true : Boolean(row.visible),
     updated_at: row.updated_at || null,
@@ -504,11 +505,12 @@ async function ensureSchema() {
       'Get In Contact With Us',
       'Stay connected with MedInnovate.\nJoin our community for updates, announcements, opportunities and event discussions.',
       '',
-      '',
+      '${DEFAULT_WHATSAPP_INVITE_LINK}',
       '↓ Scroll down for registration',
       TRUE
     )
-    ON DUPLICATE KEY UPDATE id = id
+    ON DUPLICATE KEY UPDATE
+      whatsapp_link = IF(whatsapp_link IS NULL OR whatsapp_link = '', VALUES(whatsapp_link), whatsapp_link)
   `);
 
   await db.query(`
