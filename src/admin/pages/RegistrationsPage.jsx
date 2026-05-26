@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, Eye, Filter, RefreshCw, Search, X } from "lucide-react";
+import { CheckCircle2, Download, Eye, Filter, RefreshCw, Search, X } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import { cmsFetchJson, isCmsApiUnavailable } from "../utils/cmsApi";
 
@@ -17,9 +17,10 @@ function csvValue(value) {
 }
 
 function StatusPill({ status }) {
-  const active = status === "Paid";
+  const active = status === "Verified";
+  const pendingReview = status === "Pending Verification";
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-black ${active ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+    <span className={`rounded-full px-3 py-1 text-xs font-black ${active ? "bg-emerald-100 text-emerald-700" : pendingReview ? "bg-sky-100 text-sky-700" : "bg-amber-100 text-amber-700"}`}>
       {status}
     </span>
   );
@@ -40,6 +41,8 @@ function RegistrationsPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState("");
+  const [detailsMessage, setDetailsMessage] = useState("");
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -85,6 +88,7 @@ function RegistrationsPage() {
   const loadRegistrationDetails = async (id) => {
     setError("");
     setDetailsError("");
+    setDetailsMessage("");
     setSelected(null);
     setDetailsOpen(true);
     setDetailsLoading(true);
@@ -108,10 +112,35 @@ function RegistrationsPage() {
     setDetailsOpen(false);
     setSelected(null);
     setDetailsError("");
+    setDetailsMessage("");
+  };
+
+  const verifyPayment = async () => {
+    if (!selected) return;
+
+    setVerifyingPayment(true);
+    setDetailsError("");
+    setDetailsMessage("");
+
+    try {
+      const data = await cmsFetchJson(`/api/admin/registrations/${selected.id}/verify-payment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      setSelected(data.registration);
+      setRegistrations((current) => current.map((registration) => (
+        registration.id === data.registration.id ? data.registration : registration
+      )));
+      setDetailsMessage(data.message || "Payment verified.");
+    } catch (verifyError) {
+      setDetailsError(verifyError.message || "Unable to verify payment.");
+    } finally {
+      setVerifyingPayment(false);
+    }
   };
 
   const exportCsv = () => {
-    const headers = ["Team ID", "Team Name", "Leader", "Leader Email", "Leader Phone", "College", "Discipline", "Year", "Members", "Country", "Referral", "Coupon", "Payment Status", "Amount", "UTR", "Date", "Stage"];
+    const headers = ["Team ID", "Team Name", "Leader", "Leader Email", "Leader Phone", "College", "Discipline", "Year", "Members", "Country", "Referral", "Coupon", "Payment Status", "Expected Amount", "Verified Amount", "UTR", "Date", "Stage"];
     const rows = filteredRegistrations.map((registration) => [
       registration.team_id,
       registration.team_name,
@@ -127,6 +156,7 @@ function RegistrationsPage() {
       registration.coupon || "None",
       registration.payment_status,
       registration.amount,
+      registration.verified_amount || "",
       registration.utr,
       registration.date,
       registration.stage,
@@ -190,7 +220,8 @@ function RegistrationsPage() {
             <Filter size={16} className="text-violet-500" />
             <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="bg-transparent outline-none">
               <option value="all">All payments</option>
-              <option value="Paid">Paid</option>
+              <option value="Verified">Verified</option>
+              <option value="Pending Verification">Pending verification</option>
               <option value="Pending">Pending</option>
             </select>
           </label>
@@ -200,7 +231,7 @@ function RegistrationsPage() {
           <table className="w-full min-w-[1080px] text-left text-sm">
             <thead className="bg-[#f5f2ff] text-xs uppercase tracking-[0.16em] text-[#9b93b4]">
               <tr>
-                {["Team ID", "Leader", "Phone", "College", "Members", "Country", "Referral", "Coupon", "Payment status", "Amount", "Date"].map((head) => (
+                {["Team ID", "Leader", "Phone", "College", "Members", "Country", "Referral", "Coupon", "Payment status", "Expected", "Verified", "Date"].map((head) => (
                   <th key={head} className="px-5 py-4">{head}</th>
                 ))}
               </tr>
@@ -208,7 +239,7 @@ function RegistrationsPage() {
             <tbody>
               {filteredRegistrations.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-5 py-10 text-center font-bold text-slate-400">
+                  <td colSpan={12} className="px-5 py-10 text-center font-bold text-slate-400">
                     {loading ? "Loading registrations..." : "No registrations found."}
                   </td>
                 </tr>
@@ -241,6 +272,7 @@ function RegistrationsPage() {
                   <td className="px-5 py-4 text-slate-600">{registration.coupon || "None"}</td>
                   <td className="px-5 py-4"><StatusPill status={registration.payment_status} /></td>
                   <td className="px-5 py-4 font-black text-slate-700">{formatMoney(registration.amount)}</td>
+                  <td className="px-5 py-4 font-black text-slate-700">{registration.verified_amount ? formatMoney(registration.verified_amount) : "Not verified"}</td>
                   <td className="px-5 py-4 text-slate-500">{formatDate(registration.date)}</td>
                 </tr>
               ))}
@@ -283,18 +315,41 @@ function RegistrationsPage() {
               </div>
             )}
 
+            {detailsMessage && (
+              <div className="rounded-3xl border border-emerald-100 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-700">
+                {detailsMessage}
+              </div>
+            )}
+
             {selected && !detailsLoading && (
               <div className="space-y-5">
                 <section className="rounded-3xl border border-violet-100 bg-violet-50/50 p-4">
-                  <h4 className="text-sm font-black uppercase tracking-[0.16em] text-[#514aa3]">Transaction details</h4>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h4 className="text-sm font-black uppercase tracking-[0.16em] text-[#514aa3]">Transaction details</h4>
+                    <StatusPill status={selected.payment_status} />
+                  </div>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <DetailRow label="Transaction ID" value={selected.utr} />
-                    <DetailRow label="Payment" value={selected.payment_status} />
-                    <DetailRow label="Amount" value={formatMoney(selected.amount)} />
+                    <DetailRow label="Payment status" value={selected.payment_status} />
+                    <DetailRow label="QR used" value={selected.payment_qr_type} />
+                    <DetailRow label="Expected amount" value={formatMoney(selected.expected_amount ?? selected.amount)} />
+                    <DetailRow label="Verified amount" value={selected.verified_amount ? formatMoney(selected.verified_amount) : "Not verified"} />
                     <DetailRow label="Coupon" value={selected.coupon || "None"} />
                     <DetailRow label="Referral" value={selected.referral_code || "None"} />
+                    <DetailRow label="Verified at" value={selected.verified_at ? formatDate(selected.verified_at) : "Not verified"} />
                     <DetailRow label="Created at" value={formatDate(selected.date)} />
                   </div>
+                  {!selected.payment_verified && (
+                    <button
+                      type="button"
+                      onClick={verifyPayment}
+                      className="admin-button mt-4"
+                      disabled={verifyingPayment || !selected.utr}
+                    >
+                      <CheckCircle2 size={16} />
+                      {verifyingPayment ? "Verifying..." : "Verify Payment"}
+                    </button>
+                  )}
                 </section>
 
                 <section className="rounded-3xl border border-violet-100 bg-white p-4">

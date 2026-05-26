@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS teams (
   coupon_code VARCHAR(64) NULL,
   referral_code VARCHAR(100) NULL,
   total_paid DECIMAL(10, 2) NOT NULL,
+  payment_verified BOOLEAN NOT NULL DEFAULT FALSE,
+  verified_amount DECIMAL(10, 2) NULL,
+  verified_at TIMESTAMP NULL,
+  payment_qr_type VARCHAR(50) NULL,
   team_size INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

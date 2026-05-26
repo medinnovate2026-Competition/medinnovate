@@ -93,8 +93,8 @@ function Dashboard() {
   const stats = [
     { title: "Total registrations", value: dashboard.registrations_count, detail: "All submitted registration records.", icon: UserRoundCheck, tone: "lavender" },
     { title: "Teams", value: dashboard.team_count, detail: "Registered teams in the current database.", icon: UsersRound, tone: "cyan" },
-    { title: "Payments", value: dashboard.payment_count, detail: "Registrations with transaction references.", icon: CreditCard, tone: "mint" },
-    { title: "Revenue", value: formatMoney(dashboard.revenue), detail: "Total recorded registration revenue.", icon: CircleDollarSign, tone: "amber" },
+    { title: "Payments", value: dashboard.payment_count, detail: "Manually verified registration payments.", icon: CreditCard, tone: "mint" },
+    { title: "Revenue", value: formatMoney(dashboard.revenue), detail: "Total verified registration revenue.", icon: CircleDollarSign, tone: "amber" },
     { title: "Coupons used", value: dashboard.coupon_count, detail: "Registrations submitted with a coupon.", icon: BadgePercent, tone: "rose" },
   ];
 

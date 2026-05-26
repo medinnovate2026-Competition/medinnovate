@@ -192,6 +192,22 @@ async function ensureSchema() {
     await db.query("ALTER TABLE teams ADD COLUMN referral_code VARCHAR(100) NULL AFTER coupon_code");
   }
 
+  if (!(await columnExists("teams", "payment_verified"))) {
+    await db.query("ALTER TABLE teams ADD COLUMN payment_verified BOOLEAN NOT NULL DEFAULT FALSE AFTER total_paid");
+  }
+
+  if (!(await columnExists("teams", "verified_amount"))) {
+    await db.query("ALTER TABLE teams ADD COLUMN verified_amount DECIMAL(10, 2) NULL AFTER payment_verified");
+  }
+
+  if (!(await columnExists("teams", "verified_at"))) {
+    await db.query("ALTER TABLE teams ADD COLUMN verified_at TIMESTAMP NULL AFTER verified_amount");
+  }
+
+  if (!(await columnExists("teams", "payment_qr_type"))) {
+    await db.query("ALTER TABLE teams ADD COLUMN payment_qr_type VARCHAR(50) NULL AFTER verified_at");
+  }
+
   if ((await columnExists("teams", "transaction_ref"))) {
     await db.query("UPDATE teams SET utr = transaction_ref WHERE (utr IS NULL OR utr = '') AND transaction_ref IS NOT NULL");
   }
@@ -884,6 +900,8 @@ app.get("/api/admin/teams", async (_req, res) => {
 
 function serializeRegistration(team, members = []) {
   const leader = members.find((member) => Boolean(member.is_leader)) || members[0] || {};
+  const paymentVerified = Boolean(team.payment_verified);
+  const hasTransaction = Boolean(team.utr);
 
   return {
     id: team.id,
@@ -901,11 +919,39 @@ function serializeRegistration(team, members = []) {
     country: leader.country || "",
     coupon: team.coupon_code || "",
     referral_code: team.referral_code || "",
-    payment_status: team.utr ? "Paid" : "Pending",
+    payment_status: paymentVerified ? "Verified" : (hasTransaction ? "Pending Verification" : "Pending"),
+    payment_verified: paymentVerified,
     amount: Number(team.total_paid || 0),
+    expected_amount: Number(team.total_paid || 0),
+    verified_amount: team.verified_amount === null || team.verified_amount === undefined ? null : Number(team.verified_amount),
+    verified_at: team.verified_at,
+    payment_qr_type: team.payment_qr_type || (team.coupon_code ? "Coupon QR" : "Main QR"),
     utr: team.utr || "",
     date: team.created_at,
     stage: "Registered",
+  };
+}
+
+async function resolveVerifiedPayment(team) {
+  if (team.coupon_code) {
+    const [coupons] = await db.query("SELECT final_price FROM coupons WHERE code = ? LIMIT 1", [team.coupon_code]);
+
+    if (coupons[0]) {
+      return {
+        amount: Number(coupons[0].final_price || 0),
+        qrType: "Coupon QR",
+      };
+    }
+
+    return {
+      amount: Number(team.total_paid || ORIGINAL_PRICE),
+      qrType: "Coupon QR",
+    };
+  }
+
+  return {
+    amount: Number(team.total_paid || ORIGINAL_PRICE),
+    qrType: "Main QR",
   };
 }
 
@@ -990,6 +1036,17 @@ async function loadRegistrations({ id, search = "", page = 1, limit = 10 } = {})
   };
 }
 
+async function loadRecentVerifiedPayments(limit = 5) {
+  const [teams] = await db.query(
+    "SELECT * FROM teams WHERE payment_verified = TRUE ORDER BY verified_at DESC, created_at DESC LIMIT ?",
+    [limit],
+  );
+  const ids = teams.map((team) => team.id);
+  const membersByTeam = await loadRegistrationMembers(ids);
+
+  return teams.map((team) => serializeRegistration(team, membersByTeam[team.id] || []));
+}
+
 app.get("/api/admin/dashboard", async (_req, res) => {
   console.log("Dashboard hit");
 
@@ -999,7 +1056,7 @@ app.get("/api/admin/dashboard", async (_req, res) => {
     console.log("After DB query");
 
     console.log("Before DB query");
-    const [[payments]] = await db.query("SELECT COUNT(*) AS count, COALESCE(SUM(total_paid), 0) AS revenue FROM teams WHERE utr IS NOT NULL AND utr <> ''");
+    const [[payments]] = await db.query("SELECT COUNT(*) AS count, COALESCE(SUM(verified_amount), 0) AS revenue FROM teams WHERE payment_verified = TRUE");
     console.log("After DB query");
 
     console.log("Before DB query");
@@ -1010,16 +1067,19 @@ app.get("/api/admin/dashboard", async (_req, res) => {
     const recent = await loadRegistrations({ page: 1, limit: 5 });
     console.log("After DB query");
 
-    const recentPayments = recent.registrations
-      .filter((registration) => registration.payment_status === "Paid")
+    console.log("Before DB query");
+    const verifiedPayments = await loadRecentVerifiedPayments(5);
+    console.log("After DB query");
+
+    const recentPayments = verifiedPayments
       .map((registration) => ({
         id: registration.id,
         team_id: registration.team_id,
         team_name: registration.team_name,
         leader: registration.leader,
-        amount: registration.amount,
+        amount: registration.verified_amount ?? registration.amount,
         utr: registration.utr,
-        date: registration.date,
+        date: registration.verified_at || registration.date,
       }));
 
     return res.json({
@@ -1066,6 +1126,32 @@ app.get("/api/admin/registrations/:id", async (req, res) => {
   }
 
   return res.json({ registration: data.registrations[0] });
+});
+
+app.post("/api/admin/registrations/:id/verify-payment", async (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!id) return res.status(400).json({ message: "Invalid registration id." });
+
+  const [teams] = await db.query("SELECT * FROM teams WHERE id = ? LIMIT 1", [id]);
+  const team = teams[0];
+
+  if (!team) return res.status(404).json({ message: "Registration not found." });
+  if (!team.utr) return res.status(400).json({ message: "A transaction ID is required before payment can be verified." });
+
+  const payment = await resolveVerifiedPayment(team);
+
+  await db.query(
+    "UPDATE teams SET payment_verified = TRUE, verified_amount = ?, verified_at = NOW(), payment_qr_type = ? WHERE id = ?",
+    [payment.amount, payment.qrType, id],
+  );
+
+  const data = await loadRegistrations({ id, page: 1, limit: 1 });
+
+  return res.json({
+    message: `Payment verified. ${payment.qrType} amount added.`,
+    registration: data.registrations[0],
+  });
 });
 
 app.get("/api/admin/site-settings", async (_req, res) => {
