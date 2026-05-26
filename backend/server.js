@@ -330,22 +330,15 @@ async function ensureSchema() {
       description TEXT NULL,
       logo_url TEXT NULL,
       website TEXT NULL,
+      partner_type VARCHAR(100) NOT NULL DEFAULT 'academic',
       display_order INT NOT NULL DEFAULT 0,
       is_visible BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
-  const [[academicPartnerCount]] = await db.query("SELECT COUNT(*) AS count FROM academic_partners");
-  if (Number(academicPartnerCount.count) === 0) {
-    await db.query(
-      `INSERT INTO academic_partners (id, name, country, description, logo_url, website, display_order, is_visible)
-       VALUES ?`,
-      [[
-        [makeUuid(), "GAIMS Academic Wing", "India", "Academic collaboration partner", "", "", 1, true],
-        [makeUuid(), "FAMSA Medical Education Network", "Africa", "Medical student collaboration partner", "", "", 2, true],
-      ]],
-    );
+  if (!(await columnExists("academic_partners", "partner_type"))) {
+    await db.query("ALTER TABLE academic_partners ADD COLUMN partner_type VARCHAR(100) NOT NULL DEFAULT 'academic'");
   }
 
   await db.query(`
@@ -1282,6 +1275,13 @@ app.delete("/api/admin/navigation/:id", async (req, res) => {
   return res.json({ success: true });
 });
 
+const PARTNER_TYPES = new Set(["academic", "research", "innovation", "title", "knowledge"]);
+
+function normalizePartnerType(type) {
+  const normalized = String(type || "academic").trim().toLowerCase();
+  return PARTNER_TYPES.has(normalized) ? normalized : "academic";
+}
+
 function serializeAcademicPartner(row) {
   return {
     id: row.id,
@@ -1290,6 +1290,7 @@ function serializeAcademicPartner(row) {
     description: row.description || "",
     logo_url: row.logo_url || "",
     website: row.website || "",
+    partner_type: normalizePartnerType(row.partner_type),
     display_order: Number(row.display_order || 0),
     is_visible: Boolean(row.is_visible),
     created_at: row.created_at,
@@ -1298,7 +1299,7 @@ function serializeAcademicPartner(row) {
 
 app.get("/api/academic-partners", async (_req, res) => {
   const [rows] = await db.query(
-    "SELECT * FROM academic_partners WHERE is_visible = TRUE ORDER BY display_order ASC, created_at DESC",
+    "SELECT * FROM academic_partners WHERE is_visible = TRUE ORDER BY partner_type ASC, display_order ASC, created_at DESC",
   );
 
   res.json({ items: rows.map(serializeAcademicPartner) });
@@ -1310,14 +1311,14 @@ app.get("/api/admin/academic-partners", async (req, res) => {
   const params = [];
 
   if (search) {
-    where.push("(name LIKE ? OR country LIKE ? OR description LIKE ?)");
-    params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    where.push("(name LIKE ? OR country LIKE ? OR description LIKE ? OR partner_type LIKE ?)");
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
   }
 
   const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
   const [countRows] = await db.query(`SELECT COUNT(*) AS total FROM academic_partners ${whereClause}`, params);
   const [rows] = await db.query(
-    `SELECT * FROM academic_partners ${whereClause} ORDER BY display_order ASC, created_at DESC`,
+    `SELECT * FROM academic_partners ${whereClause} ORDER BY partner_type ASC, display_order ASC, created_at DESC`,
     params,
   );
 
@@ -1330,8 +1331,8 @@ app.post("/api/admin/academic-partners", async (req, res) => {
 
   const id = makeUuid();
   await db.query(
-    `INSERT INTO academic_partners (id, name, country, description, logo_url, website, display_order, is_visible)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO academic_partners (id, name, country, description, logo_url, website, partner_type, display_order, is_visible)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       name,
@@ -1339,6 +1340,7 @@ app.post("/api/admin/academic-partners", async (req, res) => {
       String(req.body.description || "").trim(),
       String(req.body.logo_url || req.body.logo || "").trim(),
       String(req.body.website || "").trim(),
+      normalizePartnerType(req.body.partner_type),
       Number(req.body.display_order || 0),
       toDbBoolean(req.body.is_visible ?? true),
     ],
@@ -1354,7 +1356,7 @@ app.put("/api/admin/academic-partners/:id", async (req, res) => {
 
   const [result] = await db.query(
     `UPDATE academic_partners
-     SET name = ?, country = ?, description = ?, logo_url = ?, website = ?, display_order = ?, is_visible = ?
+     SET name = ?, country = ?, description = ?, logo_url = ?, website = ?, partner_type = ?, display_order = ?, is_visible = ?
      WHERE id = ?`,
     [
       name,
@@ -1362,6 +1364,7 @@ app.put("/api/admin/academic-partners/:id", async (req, res) => {
       String(req.body.description || "").trim(),
       String(req.body.logo_url || req.body.logo || "").trim(),
       String(req.body.website || "").trim(),
+      normalizePartnerType(req.body.partner_type),
       Number(req.body.display_order || 0),
       toDbBoolean(req.body.is_visible ?? true),
       req.params.id,

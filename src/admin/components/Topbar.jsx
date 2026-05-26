@@ -7,7 +7,7 @@ const searchableSections = [
   { title: "Dashboard", description: "Stats, registrations, payments, recent activity", path: "/admin/dashboard", tags: "overview command center analytics" },
   { title: "Site Settings", description: "Brand, SEO, footer, socials, announcement", path: "/admin/site-settings", tags: "website settings theme contact logo favicon" },
   { title: "Navigation", description: "Navbar, footer links, visibility, ordering", path: "/admin/navigation", tags: "menu links footer navbar" },
-  { title: "Academic Partners", description: "Institutions, logos, visibility, ordering", path: "/admin/academic-partners", tags: "partners institutions academic universities logos" },
+  { title: "Partner Sections", description: "Academic, research, innovation, title, and knowledge partners", path: "/admin/academic-partners", tags: "partners institutions academic research innovation title knowledge logos" },
   { title: "Organising Committee", description: "Committee members, roles, contacts, photos", path: "/admin/organising-committee", tags: "committee people members organisers organizing" },
   { title: "Homepage", description: "Hero, highlights, stats, timeline, FAQ", path: "/admin/homepage", tags: "home landing content editor" },
   { title: "FAQ", description: "Questions, answers, categories, publish state", path: "/admin/faq", tags: "help questions support" },

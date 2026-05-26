@@ -21,7 +21,7 @@ const links = [
   { label: "Website", to: "/admin/website", icon: Globe2 },
   { label: "Site Settings", to: "/admin/site-settings", icon: Settings },
   { label: "Navigation", to: "/admin/navigation", icon: Layers3 },
-  { label: "Academic Partners", to: "/admin/academic-partners", icon: GraduationCap },
+  { label: "Partner Sections", to: "/admin/academic-partners", icon: GraduationCap },
   { label: "Homepage", to: "/admin/homepage", icon: Home },
   { label: "FAQ", to: "/admin/faq", icon: Activity },
   { label: "Registrations", to: "/admin/registrations", icon: Activity },

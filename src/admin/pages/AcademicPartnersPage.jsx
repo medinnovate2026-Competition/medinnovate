@@ -7,21 +7,35 @@ import { resolveAssetUrl } from "../../config";
 
 const STORAGE_KEY = "medinnovate_academic_partners_cms";
 
+const partnerTypeOptions = [
+  { value: "academic", label: "Academic partners" },
+  { value: "research", label: "Research partner" },
+  { value: "innovation", label: "Innovation partner" },
+  { value: "title", label: "Title partner" },
+  { value: "knowledge", label: "Knowledge partner" },
+];
+
 const emptyPartner = {
   name: "",
   country: "",
   description: "",
   logo_url: "",
   website: "",
+  partner_type: "academic",
   display_order: 0,
   is_visible: true,
 };
+
+function getPartnerTypeLabel(type) {
+  return partnerTypeOptions.find((option) => option.value === type)?.label || "Academic partners";
+}
 
 function normalizePartner(partner, index = 0) {
   return {
     ...emptyPartner,
     ...partner,
     id: partner.id || `local-${Date.now()}-${index}`,
+    partner_type: partner.partner_type || "academic",
     display_order: Number(partner.display_order ?? index + 1),
     is_visible: Boolean(partner.is_visible ?? true),
   };
@@ -57,7 +71,7 @@ function AcademicPartnersPage() {
       if (isCmsApiUnavailable(loadError)) {
         const localItems = readLocalCms(STORAGE_KEY, []);
         const filtered = localItems
-          .filter((partner) => !nextQuery || `${partner.name} ${partner.country} ${partner.description}`.toLowerCase().includes(nextQuery.toLowerCase()))
+          .filter((partner) => !nextQuery || `${partner.name} ${partner.country} ${partner.description} ${partner.partner_type}`.toLowerCase().includes(nextQuery.toLowerCase()))
           .sort((a, b) => a.display_order - b.display_order)
           .map(normalizePartner);
         setPartners(filtered);
@@ -232,8 +246,8 @@ function AcademicPartnersPage() {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Admin / Academic Partners"
-        title="Academic Partners"
-        description="Control the public Academic Partners section, logos, ordering, visibility, and institution links."
+        title="Partner Sections"
+        description="Control academic, research, innovation, title, and knowledge partner cards on the public website."
         actions={(
           <button onClick={startCreate} className="admin-primary-button">
             <Plus size={18} />
@@ -244,7 +258,7 @@ function AcademicPartnersPage() {
 
       {usingFallback && (
         <div className="rounded-[24px] border border-amber-200 bg-amber-50/80 px-6 py-4 text-sm font-bold text-amber-700">
-          Production academic partners API is not available yet. This page is temporarily using a local browser draft.
+          Production partner sections API is not available yet. This page is temporarily using a local browser draft.
         </div>
       )}
       {error && <div className="rounded-[24px] border border-rose-100 bg-rose-50 px-6 py-4 text-sm font-bold text-rose-600">{error}</div>}
@@ -261,7 +275,7 @@ function AcademicPartnersPage() {
                   loadPartners(event.target.value);
                 }}
                 className="admin-field pl-14"
-                placeholder="Search institutions, countries, descriptions..."
+                placeholder="Search institutions, countries, descriptions, partner types..."
               />
             </div>
             <button onClick={() => loadPartners(query)} className="admin-secondary-button">Refresh</button>
@@ -269,9 +283,9 @@ function AcademicPartnersPage() {
 
           <div className="mt-6 space-y-3">
             {loading ? (
-              <div className="rounded-[28px] bg-violet-50/70 p-8 text-center text-sm font-black text-violet-300">Loading academic partners...</div>
+              <div className="rounded-[28px] bg-violet-50/70 p-8 text-center text-sm font-black text-violet-300">Loading partners...</div>
             ) : partners.length === 0 ? (
-              <div className="rounded-[28px] bg-violet-50/70 p-8 text-center text-sm font-black text-violet-300">No academic partners yet.</div>
+              <div className="rounded-[28px] bg-violet-50/70 p-8 text-center text-sm font-black text-violet-300">No partners yet.</div>
             ) : partners.map((partner) => (
               <article
                 key={partner.id}
@@ -293,6 +307,7 @@ function AcademicPartnersPage() {
                     <StatusBadge status={partner.is_visible ? "Published" : "Draft"} />
                   </div>
                   <p className="mt-1 text-sm font-bold text-slate-500">{partner.country || "Country not set"}</p>
+                  <p className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-fuchsia-500">{getPartnerTypeLabel(partner.partner_type)}</p>
                   <p className="mt-2 line-clamp-2 text-sm text-slate-400">{partner.description || "No description added."}</p>
                 </div>
                 <div className="flex items-center gap-2 md:justify-end">
@@ -313,20 +328,32 @@ function AcademicPartnersPage() {
 
         <aside className="rounded-[32px] bg-white/78 p-6 shadow-[0_22px_80px_rgba(91,76,143,0.09)] backdrop-blur">
           <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-300">Live preview</p>
-          <h2 className="mt-3 text-2xl font-black text-[#514aa3]">OUR ACADEMIC PARTNERS</h2>
-          <p className="mt-2 text-sm font-semibold text-slate-400">Institutions supporting healthcare innovation and collaboration.</p>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-            {visiblePartners.slice(0, 4).map((partner) => (
-              <div key={partner.id} className="rounded-[26px] border border-violet-100 bg-white p-5 text-center shadow-sm">
-                <div className="mx-auto grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-violet-50 text-violet-600">
-                  {partner.logo_url ? <img src={resolveAssetUrl(partner.logo_url)} alt="" className="h-full w-full object-contain p-2" /> : partner.name.slice(0, 1)}
+          <h2 className="mt-3 text-2xl font-black text-[#514aa3]">OUR PARTNERS</h2>
+          <p className="mt-2 text-sm font-semibold text-slate-400">Only sections with visible cards appear publicly.</p>
+          <div className="mt-6 space-y-5">
+            {partnerTypeOptions.map((type) => {
+              const typePartners = visiblePartners.filter((partner) => partner.partner_type === type.value);
+              if (typePartners.length === 0) return null;
+
+              return (
+                <div key={type.value}>
+                  <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-violet-400">{type.label}</p>
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+                    {typePartners.slice(0, 2).map((partner) => (
+                      <div key={partner.id} className="rounded-[26px] border border-violet-100 bg-white p-5 text-center shadow-sm">
+                        <div className="mx-auto grid h-16 w-16 place-items-center overflow-hidden rounded-2xl bg-violet-50 text-violet-600">
+                          {partner.logo_url ? <img src={resolveAssetUrl(partner.logo_url)} alt="" className="h-full w-full object-contain p-2" /> : partner.name.slice(0, 1)}
+                        </div>
+                        <h3 className="mt-4 font-black text-slate-900">{partner.name}</h3>
+                        <p className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-fuchsia-500">{partner.country}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <h3 className="mt-4 font-black text-slate-900">{partner.name}</h3>
-                <p className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-fuchsia-500">{partner.country}</p>
-              </div>
-            ))}
+              );
+            })}
             {visiblePartners.length === 0 && (
-              <div className="rounded-[26px] bg-violet-50/70 p-8 text-center text-sm font-black text-violet-300">Visible partners will preview here.</div>
+              <div className="rounded-[26px] bg-violet-50/70 p-8 text-center text-sm font-black text-violet-300">The public partner section stays hidden until a visible card is added.</div>
             )}
           </div>
         </aside>
@@ -338,7 +365,7 @@ function AcademicPartnersPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-300">{editingId ? "Edit" : "Create"}</p>
-                <h2 className="mt-2 text-3xl font-black text-[#514aa3]">Academic partner</h2>
+                <h2 className="mt-2 text-3xl font-black text-[#514aa3]">Partner card</h2>
               </div>
               <button type="button" onClick={() => setEditorOpen(false)} className="admin-icon-button" aria-label="Close editor">
                 <X size={20} />
@@ -347,6 +374,14 @@ function AcademicPartnersPage() {
 
             <div className="mt-8 grid gap-5">
               <label className="admin-label">Institution name<input className="admin-field mt-2" value={selected.name} onChange={(event) => updateSelected("name", event.target.value)} required /></label>
+              <label className="admin-label">
+                Partner section
+                <select className="admin-field mt-2" value={selected.partner_type} onChange={(event) => updateSelected("partner_type", event.target.value)}>
+                  {partnerTypeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
               <label className="admin-label">Country<input className="admin-field mt-2" value={selected.country} onChange={(event) => updateSelected("country", event.target.value)} /></label>
               <label className="admin-label">Description<textarea className="admin-field mt-2 min-h-32" value={selected.description} onChange={(event) => updateSelected("description", event.target.value)} /></label>
               <label className="admin-label">Website<input className="admin-field mt-2" value={selected.website} onChange={(event) => updateSelected("website", event.target.value)} placeholder="https://..." /></label>

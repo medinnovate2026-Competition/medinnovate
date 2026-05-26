@@ -160,17 +160,11 @@ CREATE TABLE IF NOT EXISTS academic_partners (
   description TEXT NULL,
   logo_url TEXT NULL,
   website TEXT NULL,
+  partner_type VARCHAR(100) NOT NULL DEFAULT 'academic',
   display_order INT NOT NULL DEFAULT 0,
   is_visible BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-INSERT INTO academic_partners (id, name, country, description, logo_url, website, display_order, is_visible)
-SELECT * FROM (
-  SELECT UUID(), 'GAIMS Academic Wing', 'India', 'Academic collaboration partner', '', '', 1, TRUE
-  UNION ALL SELECT UUID(), 'FAMSA Medical Education Network', 'Africa', 'Medical student collaboration partner', '', '', 2, TRUE
-) AS seed
-WHERE NOT EXISTS (SELECT 1 FROM academic_partners);
 
 CREATE TABLE IF NOT EXISTS faq (
   id INT AUTO_INCREMENT PRIMARY KEY,
