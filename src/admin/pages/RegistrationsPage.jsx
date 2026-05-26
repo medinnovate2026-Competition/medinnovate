@@ -18,9 +18,8 @@ function csvValue(value) {
 
 function StatusPill({ status }) {
   const active = status === "Verified";
-  const pendingReview = status === "Pending Verification";
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-black ${active ? "bg-emerald-100 text-emerald-700" : pendingReview ? "bg-sky-100 text-sky-700" : "bg-amber-100 text-amber-700"}`}>
+    <span className={`rounded-full px-3 py-1 text-xs font-black ${active ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
       {status}
     </span>
   );
@@ -140,7 +139,7 @@ function RegistrationsPage() {
   };
 
   const exportCsv = () => {
-    const headers = ["Team ID", "Team Name", "Leader", "Leader Email", "Leader Phone", "College", "Discipline", "Year", "Members", "Country", "Referral", "Coupon", "Payment Status", "Expected Amount", "Verified Amount", "UTR", "Date", "Stage"];
+    const headers = ["Team ID", "Team Name", "Leader", "Leader Email", "Leader Phone", "College", "Discipline", "Year", "Members", "Country", "Referral", "Coupon", "Payment Status", "Amount", "UTR", "Date", "Stage"];
     const rows = filteredRegistrations.map((registration) => [
       registration.team_id,
       registration.team_name,
@@ -155,8 +154,7 @@ function RegistrationsPage() {
       registration.referral_code || "None",
       registration.coupon || "None",
       registration.payment_status,
-      registration.amount,
-      registration.verified_amount || "",
+      registration.verified_amount ?? registration.amount,
       registration.utr,
       registration.date,
       registration.stage,
@@ -221,8 +219,7 @@ function RegistrationsPage() {
             <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="bg-transparent outline-none">
               <option value="all">All payments</option>
               <option value="Verified">Verified</option>
-              <option value="Pending Verification">Pending verification</option>
-              <option value="Pending">Pending</option>
+              <option value="Not verified">Not verified</option>
             </select>
           </label>
         </div>
@@ -231,7 +228,7 @@ function RegistrationsPage() {
           <table className="w-full min-w-[1080px] text-left text-sm">
             <thead className="bg-[#f5f2ff] text-xs uppercase tracking-[0.16em] text-[#9b93b4]">
               <tr>
-                {["Team ID", "Leader", "Phone", "College", "Members", "Country", "Referral", "Coupon", "Payment status", "Expected", "Verified", "Date"].map((head) => (
+                {["Team ID", "Leader", "Phone", "College", "Members", "Country", "Referral", "Coupon", "Payment status", "Amount", "Date"].map((head) => (
                   <th key={head} className="px-5 py-4">{head}</th>
                 ))}
               </tr>
@@ -239,7 +236,7 @@ function RegistrationsPage() {
             <tbody>
               {filteredRegistrations.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-5 py-10 text-center font-bold text-slate-400">
+                  <td colSpan={11} className="px-5 py-10 text-center font-bold text-slate-400">
                     {loading ? "Loading registrations..." : "No registrations found."}
                   </td>
                 </tr>
@@ -271,8 +268,7 @@ function RegistrationsPage() {
                   <td className="px-5 py-4 text-slate-600">{registration.referral_code || "None"}</td>
                   <td className="px-5 py-4 text-slate-600">{registration.coupon || "None"}</td>
                   <td className="px-5 py-4"><StatusPill status={registration.payment_status} /></td>
-                  <td className="px-5 py-4 font-black text-slate-700">{formatMoney(registration.amount)}</td>
-                  <td className="px-5 py-4 font-black text-slate-700">{registration.verified_amount ? formatMoney(registration.verified_amount) : "Not verified"}</td>
+                  <td className="px-5 py-4 font-black text-slate-700">{formatMoney(registration.verified_amount ?? registration.amount)}</td>
                   <td className="px-5 py-4 text-slate-500">{formatDate(registration.date)}</td>
                 </tr>
               ))}
@@ -332,11 +328,9 @@ function RegistrationsPage() {
                     <DetailRow label="Transaction ID" value={selected.utr} />
                     <DetailRow label="Payment status" value={selected.payment_status} />
                     <DetailRow label="QR used" value={selected.payment_qr_type} />
-                    <DetailRow label="Expected amount" value={formatMoney(selected.expected_amount ?? selected.amount)} />
-                    <DetailRow label="Verified amount" value={selected.verified_amount ? formatMoney(selected.verified_amount) : "Not verified"} />
+                    <DetailRow label="Amount" value={formatMoney(selected.verified_amount ?? selected.expected_amount ?? selected.amount)} />
                     <DetailRow label="Coupon" value={selected.coupon || "None"} />
                     <DetailRow label="Referral" value={selected.referral_code || "None"} />
-                    <DetailRow label="Verified at" value={selected.verified_at ? formatDate(selected.verified_at) : "Not verified"} />
                     <DetailRow label="Created at" value={formatDate(selected.date)} />
                   </div>
                   {!selected.payment_verified && (

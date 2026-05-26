@@ -901,7 +901,6 @@ app.get("/api/admin/teams", async (_req, res) => {
 function serializeRegistration(team, members = []) {
   const leader = members.find((member) => Boolean(member.is_leader)) || members[0] || {};
   const paymentVerified = Boolean(team.payment_verified);
-  const hasTransaction = Boolean(team.utr);
 
   return {
     id: team.id,
@@ -919,7 +918,7 @@ function serializeRegistration(team, members = []) {
     country: leader.country || "",
     coupon: team.coupon_code || "",
     referral_code: team.referral_code || "",
-    payment_status: paymentVerified ? "Verified" : (hasTransaction ? "Pending Verification" : "Pending"),
+    payment_status: paymentVerified ? "Verified" : "Not verified",
     payment_verified: paymentVerified,
     amount: Number(team.total_paid || 0),
     expected_amount: Number(team.total_paid || 0),
