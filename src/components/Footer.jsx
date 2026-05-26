@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Camera, ChevronDown, Mail, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import { normalizeHomepageContent } from "../data/homepageContent";
 
 const quickLinks = [
   { label: "About", href: "#about" },
@@ -33,8 +34,12 @@ const socials = [
   { label: "Email", href: "mailto:medinnovate2026@gmail.com", icon: Mail },
 ];
 
-function Footer() {
+function Footer({ content }) {
   const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const homepage = normalizeHomepageContent(content);
+  const contact = homepage.contact_json;
+  const email = contact.email || "medinnovate2026@gmail.com";
+  const instagram = contact.instagram || instagramUrl;
 
   return (
     <footer id="footer" className="relative overflow-hidden border-t border-violet-100 bg-[#fbf9ff] px-4 py-14 sm:px-6 lg:px-8">
@@ -66,7 +71,7 @@ function Footer() {
               {socials.map((item) => (
                 <a
                   key={item.label}
-                  href={item.href}
+                  href={item.label === "Email" ? `mailto:${email}` : instagram}
                   aria-label={item.label}
                   className="grid h-11 w-11 place-items-center rounded-2xl border border-violet-100 bg-white text-[#7C3AED] shadow-sm transition hover:-translate-y-1 hover:border-fuchsia-200 hover:text-[#EC4899] hover:shadow-[0_14px_34px_rgba(236,72,153,0.14)]"
                 >
@@ -107,11 +112,11 @@ function Footer() {
           <section className="rounded-3xl border border-white/70 bg-white/82 p-6 shadow-[0_24px_70px_rgba(124,58,237,0.10)] backdrop-blur">
             <h3 className="text-lg font-black text-[#111827]">Contact</h3>
             <div className="mt-5 space-y-3 text-sm font-semibold text-slate-600">
-              <a href="mailto:medinnovate2026@gmail.com" className="flex items-center gap-3 rounded-2xl bg-white/80 px-4 py-3 transition hover:-translate-y-0.5 hover:text-[#7C3AED]">
+              <a href={`mailto:${email}`} className="flex items-center gap-3 rounded-2xl bg-white/80 px-4 py-3 transition hover:-translate-y-0.5 hover:text-[#7C3AED]">
                 <Mail size={17} />
-                <span className="break-all">medinnovate2026@gmail.com</span>
+                <span className="break-all">{email}</span>
               </a>
-              <a href={instagramUrl} className="flex items-center gap-3 rounded-2xl bg-white/80 px-4 py-3 transition hover:-translate-y-0.5 hover:text-[#EC4899]">
+              <a href={instagram} className="flex items-center gap-3 rounded-2xl bg-white/80 px-4 py-3 transition hover:-translate-y-0.5 hover:text-[#EC4899]">
                 <Camera size={17} />
                 <span>Instagram</span>
               </a>
@@ -123,7 +128,7 @@ function Footer() {
                   aria-expanded={whatsappOpen}
                 >
                   <MessageCircle size={17} />
-                  <span className="flex-1">WhatsApp support</span>
+                  <span className="flex-1">{contact.whatsapp_label || "WhatsApp support"}</span>
                   <ChevronDown className={`transition ${whatsappOpen ? "rotate-180" : ""}`} size={16} />
                 </button>
                 {whatsappOpen && (
@@ -146,7 +151,7 @@ function Footer() {
               </div>
             </div>
             <a
-              href="mailto:medinnovate2026@gmail.com"
+              href={`mailto:${email}`}
               className="mt-6 inline-flex rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-6 py-3 text-sm font-black text-white shadow-[0_18px_45px_rgba(124,58,237,0.22)] transition hover:-translate-y-1"
             >
               Need support? Contact the team

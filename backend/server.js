@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 5000;
 const ORIGINAL_PRICE = 15;
 const PAYMENTS_DIR = path.join(__dirname, "public", "payments");
 const MEDIA_DIR = path.join(__dirname, "public", "media");
-const JSON_FIELDS = new Set(["social_links", "theme_colors", "highlights", "stats", "announcements", "metadata"]);
+const JSON_FIELDS = new Set(["social_links", "theme_colors", "highlights", "stats", "announcements", "metadata", "stats_json", "timeline_json", "why_participate_json", "contact_json"]);
 const REQUIRED_DB_ENV = [
   ["DB_HOST", "MYSQL_HOST"],
   ["DB_USER", "MYSQL_USER"],
@@ -103,6 +103,66 @@ function serializeCoupon(coupon) {
     finalPrice: Number(coupon.final_price),
     qrImage: coupon.qr_image,
     active: Boolean(coupon.active),
+  };
+}
+
+function parseJsonValue(value, fallback) {
+  if (value == null || value === "") return fallback;
+  if (typeof value === "object") return value;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function serializeHomepageContent(row = {}) {
+  const stats = parseJsonValue(row.stats_json ?? row.stats, []);
+  const timeline = parseJsonValue(row.timeline_json, []);
+  const whyParticipate = parseJsonValue(row.why_participate_json, []);
+  const contact = parseJsonValue(row.contact_json, {});
+  const defaultContact = {
+    email: "medinnovate2026@gmail.com",
+    instagram: "https://www.instagram.com/medinnovate_26?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+    whatsapp_label: "WhatsApp support",
+  };
+  const defaultStats = [
+    { value: "20+", label: "Countries" },
+    { value: "5", label: "Members per team" },
+    { value: "2", label: "Competition phases" },
+  ];
+  const defaultTimeline = [
+    { title: "Registration", detail: "Sign up and form your team of five undergraduate students." },
+    { title: "Abstract Submission", detail: "Teams submit a first abstract outlining their healthcare innovation idea." },
+    { title: "Review & Selection", detail: "Expert panel reviews abstracts to shortlist the most feasible and impactful ideas." },
+    { title: "Mentorship & Guidance", detail: "Selected teams receive expert guidance to refine their solutions and prepare for their pitch." },
+    { title: "Grand Finale", detail: "Present your final solution in India. Hybrid format with online participation available." },
+  ];
+  const defaultWhyParticipate = [
+    { title: "Team of 5 is mandatory", detail: "Every submission must come from a team of exactly five members." },
+    { title: "All members should be undergraduate students", detail: "Each participant in the team must be an undergraduate student." },
+    { title: "Theme: Public Health", detail: "Ideas should address a meaningful public health challenge." },
+    { title: "Original and feasible idea", detail: "The solution must be your own concept and practical enough to be implemented." },
+  ];
+
+  return {
+    hero_title: row.hero_title || "Medinnovate",
+    hero_subtitle: row.hero_subtitle || "International Healthcare Innovation Hackathon",
+    hero_description: row.hero_description || "Build practical healthcare solutions with global mentors, clinical insight, and cross-border teams.",
+    about_text: row.about_text || "Medinnovate is an international healthcare innovation hackathon that brings together students and young professionals to develop feasible, scalable, and impactful solutions to real-world healthcare challenges.",
+    stats_json: Array.isArray(stats) && stats.length > 0 ? stats : defaultStats,
+    timeline_json: Array.isArray(timeline) && timeline.length > 0 ? timeline : defaultTimeline,
+    why_participate_json: Array.isArray(whyParticipate) && whyParticipate.length > 0 ? whyParticipate : defaultWhyParticipate,
+    cta_title: row.cta_title || "Ready to build for public health?",
+    cta_description: row.cta_description || "Register your team, submit your idea, and move through Phase 1 screening.",
+    contact_json: contact && typeof contact === "object" && !Array.isArray(contact) && Object.keys(contact).length > 0 ? contact : defaultContact,
+    primary_cta_label: row.primary_cta_label || "Submit Idea",
+    primary_cta_url: row.primary_cta_url || "/registration",
+    secondary_cta_label: row.secondary_cta_label || "Current Phase: PHASE 1",
+    secondary_cta_url: row.secondary_cta_url || "",
+    hero_media_url: row.hero_media_url || "",
+    updated_at: row.updated_at,
   };
 }
 
@@ -334,6 +394,13 @@ async function ensureSchema() {
       hero_title VARCHAR(255) NULL,
       hero_subtitle VARCHAR(255) NULL,
       hero_description TEXT NULL,
+      about_text TEXT NULL,
+      stats_json JSON NULL,
+      timeline_json JSON NULL,
+      why_participate_json JSON NULL,
+      cta_title VARCHAR(255) NULL,
+      cta_description TEXT NULL,
+      contact_json JSON NULL,
       primary_cta_label VARCHAR(100) NULL,
       primary_cta_url VARCHAR(500) NULL,
       secondary_cta_label VARCHAR(100) NULL,
@@ -346,9 +413,53 @@ async function ensureSchema() {
     )
   `);
 
+  const homepageColumns = [
+    ["about_text", "TEXT NULL AFTER hero_description"],
+    ["stats_json", "JSON NULL AFTER about_text"],
+    ["timeline_json", "JSON NULL AFTER stats_json"],
+    ["why_participate_json", "JSON NULL AFTER timeline_json"],
+    ["cta_title", "VARCHAR(255) NULL AFTER why_participate_json"],
+    ["cta_description", "TEXT NULL AFTER cta_title"],
+    ["contact_json", "JSON NULL AFTER cta_description"],
+  ];
+
+  for (const [column, definition] of homepageColumns) {
+    if (!(await columnExists("homepage_content", column))) {
+      await db.query(`ALTER TABLE homepage_content ADD COLUMN ${column} ${definition}`);
+    }
+  }
+
   await db.query(`
-    INSERT INTO homepage_content (id, hero_title, hero_subtitle, hero_description, primary_cta_label, primary_cta_url)
-    VALUES (1, 'Medinnovate', 'International Healthcare Innovation Hackathon', 'Build practical healthcare solutions with global mentors, clinical insight, and cross-border teams.', 'Register Now', '#registration')
+    INSERT INTO homepage_content (
+      id,
+      hero_title,
+      hero_subtitle,
+      hero_description,
+      about_text,
+      stats_json,
+      timeline_json,
+      why_participate_json,
+      cta_title,
+      cta_description,
+      contact_json,
+      primary_cta_label,
+      primary_cta_url
+    )
+    VALUES (
+      1,
+      'Medinnovate',
+      'International Healthcare Innovation Hackathon',
+      'Build practical healthcare solutions with global mentors, clinical insight, and cross-border teams.',
+      'Medinnovate is an international healthcare innovation hackathon that brings together students and young professionals from diverse disciplines, medicine, public health, engineering, design, and social sciences, to collaboratively develop feasible, scalable, and impactful solutions to real-world healthcare challenges.',
+      JSON_ARRAY(JSON_OBJECT('value', '20+', 'label', 'Countries'), JSON_OBJECT('value', '5', 'label', 'Members per team'), JSON_OBJECT('value', '2', 'label', 'Competition phases')),
+      JSON_ARRAY(JSON_OBJECT('title', 'Registration', 'detail', 'Sign up and form your team of five undergraduate students.'), JSON_OBJECT('title', 'Abstract Submission', 'detail', 'Teams submit a first abstract outlining their healthcare innovation idea.'), JSON_OBJECT('title', 'Review & Selection', 'detail', 'Expert panel reviews abstracts to shortlist the most feasible and impactful ideas.'), JSON_OBJECT('title', 'Mentorship & Guidance', 'detail', 'Selected teams receive expert guidance to refine their solutions and prepare for their pitch.'), JSON_OBJECT('title', 'Grand Finale', 'detail', 'Present your final solution in India. Hybrid format with online participation available.')),
+      JSON_ARRAY(JSON_OBJECT('title', 'Team of 5 is mandatory', 'detail', 'Every submission must come from a team of exactly five members.'), JSON_OBJECT('title', 'All members should be undergraduate students', 'detail', 'Each participant in the team must be an undergraduate student.'), JSON_OBJECT('title', 'Theme: Public Health', 'detail', 'Ideas should address a meaningful public health challenge.'), JSON_OBJECT('title', 'Original and feasible idea', 'detail', 'The solution must be your own concept and practical enough to be implemented.')),
+      'Ready to build for public health?',
+      'Register your team, submit your idea, and move through Phase 1 screening.',
+      JSON_OBJECT('email', 'medinnovate2026@gmail.com', 'instagram', 'https://www.instagram.com/medinnovate_26?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==', 'whatsapp_label', 'WhatsApp support'),
+      'Submit Idea',
+      '/registration'
+    )
     ON DUPLICATE KEY UPDATE id = id
   `);
 
@@ -1177,16 +1288,33 @@ app.put("/api/admin/site-settings", async (req, res) => {
   res.json({ settings: rows[0] });
 });
 
-app.get("/api/admin/homepage-content", async (_req, res) => {
+app.get("/api/homepage", async (_req, res) => {
   const [rows] = await db.query("SELECT * FROM homepage_content WHERE id = 1");
-  res.json({ content: rows[0] });
+  res.json({ content: serializeHomepageContent(rows[0]) });
 });
 
-app.put("/api/admin/homepage-content", async (req, res) => {
+app.get("/api/admin/homepage", async (_req, res) => {
+  const [rows] = await db.query("SELECT * FROM homepage_content WHERE id = 1");
+  res.json({ content: serializeHomepageContent(rows[0]) });
+});
+
+app.get("/api/admin/homepage-content", async (_req, res) => {
+  const [rows] = await db.query("SELECT * FROM homepage_content WHERE id = 1");
+  res.json({ content: serializeHomepageContent(rows[0]) });
+});
+
+app.put("/api/admin/homepage", async (req, res) => {
   await updateSingleRecord("homepage_content", [
     "hero_title",
     "hero_subtitle",
     "hero_description",
+    "about_text",
+    "stats_json",
+    "timeline_json",
+    "why_participate_json",
+    "cta_title",
+    "cta_description",
+    "contact_json",
     "primary_cta_label",
     "primary_cta_url",
     "secondary_cta_label",
@@ -1197,7 +1325,32 @@ app.put("/api/admin/homepage-content", async (req, res) => {
     "announcements",
   ], req.body);
   const [rows] = await db.query("SELECT * FROM homepage_content WHERE id = 1");
-  res.json({ content: rows[0] });
+  res.json({ content: serializeHomepageContent(rows[0]) });
+});
+
+app.put("/api/admin/homepage-content", async (req, res) => {
+  await updateSingleRecord("homepage_content", [
+    "hero_title",
+    "hero_subtitle",
+    "hero_description",
+    "about_text",
+    "stats_json",
+    "timeline_json",
+    "why_participate_json",
+    "cta_title",
+    "cta_description",
+    "contact_json",
+    "primary_cta_label",
+    "primary_cta_url",
+    "secondary_cta_label",
+    "secondary_cta_url",
+    "hero_media_url",
+    "highlights",
+    "stats",
+    "announcements",
+  ], req.body);
+  const [rows] = await db.query("SELECT * FROM homepage_content WHERE id = 1");
+  res.json({ content: serializeHomepageContent(rows[0]) });
 });
 
 function normalizeStatus(status, fallback = "Draft") {

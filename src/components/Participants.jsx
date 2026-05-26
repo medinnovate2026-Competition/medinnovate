@@ -1,25 +1,10 @@
 import { motion } from "framer-motion"
+import { defaultHomepageContent, normalizeHomepageContent } from "../data/homepageContent"
 
-const requirements = [
-  {
-    title: 'Team of 5 is mandatory',
-    detail: 'Every submission must come from a team of exactly five members.',
-  },
-  {
-    title: 'All members should be undergraduate students',
-    detail: 'Each participant in the team must be an undergraduate student.',
-  },
-  {
-    title: 'Theme: Public Health',
-    detail: 'Ideas should address a meaningful public health challenge.',
-  },
-  {
-    title: 'Original and feasible idea',
-    detail: 'The solution must be your own concept and practical enough to be implemented.',
-  },
-]
+function Participants({ content }) {
+  const homepage = normalizeHomepageContent(content)
+  const requirements = homepage.why_participate_json.length > 0 ? homepage.why_participate_json : defaultHomepageContent.why_participate_json
 
-function Participants() {
   return (
     <>
       <motion.section

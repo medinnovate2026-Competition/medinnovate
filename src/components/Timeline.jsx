@@ -1,29 +1,10 @@
 import { motion } from "framer-motion"
+import { defaultHomepageContent, normalizeHomepageContent } from "../data/homepageContent"
 
-const steps = [
-  {
-    title: 'Registration',
-    detail: 'Sign up and form your team of five undergraduate students.',
-  },
-  {
-    title: 'Abstract Submission',
-    detail: 'Teams submit a first abstract outlining their healthcare innovation idea.',
-  },
-  {
-    title: 'Review & Selection',
-    detail: 'Expert panel reviews abstracts to shortlist the most feasible and impactful ideas.',
-  },
-  {
-    title: 'Mentorship & Guidance',
-    detail: 'Selected teams receive expert guidance to refine their solutions and prepare for their pitch.',
-  },
-  {
-    title: 'Grand Finale',
-    detail: 'Present your final solution in India. Hybrid format with online participation available.',
-  },
-]
+function Timeline({ content }) {
+  const homepage = normalizeHomepageContent(content)
+  const steps = homepage.timeline_json.length > 0 ? homepage.timeline_json : defaultHomepageContent.timeline_json
 
-function Timeline() {
   return (
     <motion.section
       id="timeline"

@@ -1,17 +1,10 @@
 import { motion } from "framer-motion"
+import { defaultHomepageContent, normalizeHomepageContent } from "../data/homepageContent"
 
-const phases = [
-  {
-    title: 'Phase 1: Online Screening',
-    body: 'The event will be conducted in two phases. The first phase will be an online screening round, where after registration, all participating teams submit an abstract outlining the identified problem, proposed solution, basic feasibility, and potential impact.',
-  },
-  {
-    title: 'Phase 2: Offline Grand Finale',
-    body: 'The second phase will feature an offline Grand Finale, tentatively scheduled for late May or early June 2026 in India (exact date and venue to be announced). Shortlisted teams will present their final solutions through a PowerPoint presentation before an expert panel of judges. Participants unable to attend in person will have the option to present virtually, ensuring inclusivity for international teams.',
-  },
-]
+function About({ content }) {
+  const homepage = normalizeHomepageContent(content)
+  const phases = homepage.timeline_json.length > 0 ? homepage.timeline_json.slice(0, 2) : defaultHomepageContent.timeline_json.slice(0, 2)
 
-function About() {
   return (
     <motion.section
       id="about"
@@ -27,7 +20,7 @@ function About() {
           <p className="text-sm font-black uppercase tracking-[0.24em] text-[#7C3AED]">Learn More About Medinnovate</p>
           <h2 className="mt-4 text-3xl font-black tracking-tight text-[#111827] sm:text-4xl">About Medinnovate</h2>
           <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-700">
-            Medinnovate is an international healthcare innovation hackathon that brings together students and young professionals from diverse disciplines, medicine, public health, engineering, design, and social sciences, to collaboratively develop feasible, scalable, and impactful solutions to real-world healthcare challenges.
+            {homepage.about_text}
           </p>
 
           <div className="mt-7 space-y-4">
@@ -42,7 +35,7 @@ function About() {
                 className="rounded-3xl border border-violet-100 bg-white/85 p-5 shadow-[0_18px_55px_rgba(124,58,237,0.08)]"
               >
                 <h3 className="text-sm font-black uppercase tracking-[0.12em] text-[#7C3AED]">{phase.title}</h3>
-                <p className="mt-3 text-base leading-7 text-slate-700">{phase.body}</p>
+                <p className="mt-3 text-base leading-7 text-slate-700">{phase.body || phase.detail}</p>
               </motion.article>
             ))}
           </div>

@@ -1,9 +1,16 @@
 import { motion } from "framer-motion"
+import { resolveAssetUrl } from "../config"
+import { defaultHomepageContent, normalizeHomepageContent } from "../data/homepageContent"
 
-const highlights = ['Global mentors', 'Clinical review', 'Premium pitch stage']
 const currentPhase = 'PHASE 1'
 
-function Hero() {
+function Hero({ content }) {
+  const homepage = normalizeHomepageContent(content)
+  const highlights = homepage.stats_json.length > 0 ? homepage.stats_json : defaultHomepageContent.stats_json
+  const primaryHref = homepage.primary_cta_url?.startsWith("http")
+    ? homepage.primary_cta_url
+    : `${import.meta.env.BASE_URL}${String(homepage.primary_cta_url || "/registration").replace(/^\//, "")}`
+
   return (
     <motion.section
       id="hero"
@@ -27,21 +34,21 @@ function Hero() {
           </div>
 
           <h1 className="max-w-full bg-gradient-to-r from-[#111827] via-[#7C3AED] to-[#EC4899] bg-clip-text text-5xl font-black leading-[0.92] tracking-tight text-transparent sm:text-8xl lg:text-[5rem] xl:text-[5.75rem] 2xl:text-[6.25rem]">
-            Medinnovate
+            {homepage.hero_title}
           </h1>
           <p className="mx-auto mt-6 max-w-md text-xl font-semibold tracking-wide text-[#7C3AED] sm:max-w-none sm:text-2xl lg:mx-0">
-            International Healthcare Innovation Hackathon
+            {homepage.hero_subtitle}
           </p>
           <p className="mx-auto mt-5 max-w-md text-base leading-8 text-slate-600 sm:max-w-2xl sm:text-lg lg:mx-0">
-            Build practical healthcare solutions with global mentors, clinical insight, and cross-border teams.
+            {homepage.hero_description}
           </p>
 
           <div className="mx-auto mt-8 flex max-w-sm flex-col items-center gap-4 sm:max-w-none sm:flex-row lg:mx-0 lg:justify-start">
-            <a href={`${import.meta.env.BASE_URL}registration`} className="w-full rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-8 py-4 text-center text-sm font-black uppercase tracking-wide text-white shadow-[0_18px_45px_rgba(168,85,247,0.28)] transition hover:-translate-y-1 sm:w-auto">
-              Submit Idea
+            <a href={primaryHref} className="w-full rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-8 py-4 text-center text-sm font-black uppercase tracking-wide text-white shadow-[0_18px_45px_rgba(168,85,247,0.28)] transition hover:-translate-y-1 sm:w-auto">
+              {homepage.primary_cta_label}
             </a>
             <div className="w-full rounded-full border border-violet-100 bg-white/85 px-8 py-4 text-center text-sm font-black uppercase tracking-wide text-[#7C3AED] shadow-sm backdrop-blur sm:w-auto">
-              Current Phase: {currentPhase}
+              {homepage.secondary_cta_label || `Current Phase: ${currentPhase}`}
             </div>
           </div>
 
@@ -53,14 +60,14 @@ function Hero() {
           <div className="mx-auto mt-10 grid max-w-sm gap-3 sm:max-w-none sm:grid-cols-3 lg:mx-0">
             {highlights.map((item, index) => (
               <motion.div
-                key={item}
+                key={`${item.value || item}-${item.label || index}`}
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: "easeOut", delay: 0.28 + index * 0.08 }}
                 whileHover={{ y: -4 }}
                 className="rounded-3xl border border-violet-100 bg-white/75 px-4 py-3 text-center text-sm font-semibold text-slate-700 shadow-[0_12px_34px_rgba(124,58,237,0.08)] backdrop-blur"
               >
-                {item}
+                {item.value && item.label ? `${item.value} ${item.label}` : item.label || item.value || item}
               </motion.div>
             ))}
           </div>
@@ -78,7 +85,7 @@ function Hero() {
           <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-[#EC4899]/20 via-[#A855F7]/18 to-[#4F46E5]/16 blur-3xl" />
           <div className="absolute inset-6 grid place-items-center rounded-[1.75rem] border border-violet-100 bg-white/92 p-8 shadow-[0_24px_70px_rgba(124,58,237,0.18)] sm:inset-8 sm:p-10">
             <img
-              src={`${import.meta.env.BASE_URL}logo.png`}
+              src={resolveAssetUrl(homepage.hero_media_url) || `${import.meta.env.BASE_URL}logo.png`}
               alt="MedInnovate Logo"
               className="h-full w-full object-contain"
             />
