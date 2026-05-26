@@ -37,7 +37,18 @@ const db = require("./config/database");
 fs.mkdirSync(PAYMENTS_DIR, { recursive: true });
 fs.mkdirSync(MEDIA_DIR, { recursive: true });
 
-app.use(cors());
+const corsOptions = {
+  origin: [
+    "https://medinnovate2026-competition.github.io",
+    "http://localhost:5173",
+  ],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(express.json({ limit: "8mb" }));
 app.use("/payments", express.static(PAYMENTS_DIR));
 app.use("/media", express.static(MEDIA_DIR));
