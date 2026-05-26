@@ -36,7 +36,7 @@ export const defaultFaqs = [
   {
     id: 5,
     question: "Is there any registration fee?",
-    answer: "Yes. The registration fee is $3 per participant, with teams allowed to register 3 to 5 members.",
+    answer: "Yes. The registration fee is $10 per team, with teams allowed to register 3 to 5 members.",
     category: "Payment",
     status: "Published",
     order_index: 5,

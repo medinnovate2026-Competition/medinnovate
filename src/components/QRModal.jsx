@@ -3,8 +3,8 @@ import { resolveAssetUrl } from "../config";
 
 export default function QRModal({
   onClose,
-  qrImage = "payments/qr15.png",
-  finalAmount = 15,
+  qrImage = "payments/qr10.png",
+  finalAmount = 10,
   couponApplied = false,
 }) {
   const [imageFailed, setImageFailed] = React.useState(false);

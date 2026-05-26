@@ -10,9 +10,9 @@ CREATE TABLE IF NOT EXISTS coupons (
 
 INSERT INTO coupons (code, discount_percentage, saved_amount, final_price, qr_image, active)
 VALUES
-  ('MED10', 10, 1.50, 13.50, 'qr13_5.png', TRUE),
-  ('EARLY20', 20, 3.00, 12.00, 'qr12.png', TRUE),
-  ('MEDIN10', 10, 1.50, 13.50, 'https://i.postimg.cc/7h71GTXp/fcrits-QR.jpg', TRUE)
+  ('MED10', 10, 1.00, 9.00, 'qr9.png', TRUE),
+  ('EARLY20', 20, 2.00, 8.00, 'qr8.png', TRUE),
+  ('MEDIN10', 10, 1.00, 9.00, 'https://i.postimg.cc/7h71GTXp/fcrits-QR.jpg', TRUE)
 ON DUPLICATE KEY UPDATE
   discount_percentage = VALUES(discount_percentage),
   saved_amount = VALUES(saved_amount),
@@ -234,7 +234,7 @@ SELECT * FROM (
   UNION ALL SELECT 'Can I participate solo?', 'No. Participation requires a team of 3 to 5 undergraduate students.', 'Eligibility', 'Published', 2, 2, TRUE
   UNION ALL SELECT 'Who can participate?', 'Undergraduate students from Africa and India can participate.', 'Eligibility', 'Published', 3, 3, TRUE
   UNION ALL SELECT 'Can team members be from different colleges or countries?', 'Yes. Team members can be from different colleges, disciplines, or countries, as long as all members meet the eligibility criteria.', 'Team', 'Published', 4, 4, TRUE
-  UNION ALL SELECT 'Is there any registration fee?', 'Yes. The registration fee is $3 per participant, with teams allowed to register 3 to 5 members.', 'Payment', 'Published', 5, 5, TRUE
+  UNION ALL SELECT 'Is there any registration fee?', 'Yes. The registration fee is $10 per team, with teams allowed to register 3 to 5 members.', 'Payment', 'Published', 5, 5, TRUE
   UNION ALL SELECT 'Will certificates be provided?', 'Yes. Certificates will be provided based on participation and completion criteria.', 'Benefits', 'Published', 6, 6, TRUE
   UNION ALL SELECT 'What is the selection process?', 'The selection process follows registration, submission, screening, mentorship, and final pitch.', 'Selection', 'Published', 7, 7, TRUE
   UNION ALL SELECT 'What happens if I cannot attend the final round in person?', 'A virtual option will be available for participants who cannot attend the final round in person.', 'Finale', 'Published', 8, 8, TRUE

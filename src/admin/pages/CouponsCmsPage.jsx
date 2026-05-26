@@ -15,13 +15,14 @@ const initialForm = {
 
 const COUPONS_KEY = "medinnovate_coupons_cms";
 const PAYMENT_SETTINGS_KEY = "medinnovate_payment_settings_cms";
+const ORIGINAL_PRICE = 10;
 const seedCoupons = [
   {
     id: 1,
     code: "MEDIN10",
     discountPercentage: 10,
-    savedAmount: 1.5,
-    finalPrice: 13.5,
+    savedAmount: 1,
+    finalPrice: 9,
     qrImage: "https://i.postimg.cc/7h71GTXp/fcrits-QR.jpg",
     active: true,
   },
@@ -131,7 +132,7 @@ function CouponsCmsPage() {
           id: Date.now(),
           code: form.code.toUpperCase(),
           discountPercentage: Number(form.discountPercentage),
-          savedAmount: Math.max(0, 15 - finalPrice),
+          savedAmount: Math.max(0, ORIGINAL_PRICE - finalPrice),
           finalPrice,
           qrImage,
           active: form.active,

@@ -17,7 +17,7 @@ process.on("unhandledRejection", (err) => {
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const ORIGINAL_PRICE = 15;
+const ORIGINAL_PRICE = 10;
 const PAYMENTS_DIR = path.join(__dirname, "public", "payments");
 const MEDIA_DIR = path.join(__dirname, "public", "media");
 const JSON_FIELDS = new Set(["social_links", "theme_colors", "highlights", "stats", "announcements", "metadata", "stats_json", "timeline_json", "why_participate_json", "contact_json"]);
@@ -219,9 +219,9 @@ async function ensureSchema() {
   await db.query(`
     INSERT INTO coupons (code, discount_percentage, saved_amount, final_price, qr_image, active)
     VALUES
-      ('MED10', 10, 1.50, 13.50, 'qr13_5.png', TRUE),
-      ('EARLY20', 20, 3.00, 12.00, 'qr12.png', TRUE),
-      ('MEDIN10', 10, 1.50, 13.50, 'https://i.postimg.cc/7h71GTXp/fcrits-QR.jpg', TRUE)
+      ('MED10', 10, 1.00, 9.00, 'qr9.png', TRUE),
+      ('EARLY20', 20, 2.00, 8.00, 'qr8.png', TRUE),
+      ('MEDIN10', 10, 1.00, 9.00, 'https://i.postimg.cc/7h71GTXp/fcrits-QR.jpg', TRUE)
     ON DUPLICATE KEY UPDATE
       discount_percentage = VALUES(discount_percentage),
       saved_amount = VALUES(saved_amount),
@@ -625,6 +625,23 @@ async function ensureSchema() {
 
   await db.query("UPDATE faq SET status = IF(is_published = TRUE, 'Published', 'Draft') WHERE status IS NULL OR status = ''");
   await db.query("UPDATE faq SET order_index = display_order WHERE order_index = 0 AND display_order <> 0");
+  await db.query(
+    "UPDATE faq SET answer = ? WHERE question = ? AND (answer LIKE ? OR answer LIKE ?)",
+    [
+      "Yes. The registration fee is $10 per team, with teams allowed to register 3 to 5 members.",
+      "Is there any registration fee?",
+      "%$3 per participant%",
+      "%$15 per team%",
+    ],
+  );
+  await db.query(
+    "UPDATE faq SET answer = ? WHERE question = ? AND answer LIKE ?",
+    [
+      "No. Participation requires a team of 3 to 5 undergraduate students.",
+      "Can I participate solo?",
+      "%exactly 5%",
+    ],
+  );
 
   const [[faqCount]] = await db.query("SELECT COUNT(*) AS count FROM faq");
   if (Number(faqCount.count) === 0) {
@@ -636,7 +653,7 @@ async function ensureSchema() {
         ["Can I participate solo?", "No. Participation requires a team of 3 to 5 undergraduate students.", "Eligibility", 2, 2, true, "Published"],
         ["Who can participate?", "Undergraduate students from Africa and India can participate.", "Eligibility", 3, 3, true, "Published"],
         ["Can team members be from different colleges or countries?", "Yes. Team members can be from different colleges, disciplines, or countries, as long as all members meet the eligibility criteria.", "Team", 4, 4, true, "Published"],
-        ["Is there any registration fee?", "Yes. The registration fee is $3 per participant, with teams allowed to register 3 to 5 members.", "Payment", 5, 5, true, "Published"],
+        ["Is there any registration fee?", "Yes. The registration fee is $10 per team, with teams allowed to register 3 to 5 members.", "Payment", 5, 5, true, "Published"],
         ["Will certificates be provided?", "Yes. Certificates will be provided based on participation and completion criteria.", "Benefits", 6, 6, true, "Published"],
         ["What is the selection process?", "The selection process follows registration, submission, screening, mentorship, and final pitch.", "Selection", 7, 7, true, "Published"],
         ["What happens if I cannot attend the final round in person?", "A virtual option will be available for participants who cannot attend the final round in person.", "Finale", 8, 8, true, "Published"],

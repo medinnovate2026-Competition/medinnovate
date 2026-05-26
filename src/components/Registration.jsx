@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useInView, useMotionValue, useTransform, anima
 import { API_BASE_URL, resolveAssetUrl } from "../config";
 
 const DRAFT_KEY = "medinnovate_registration_draft";
-const ORIGINAL_PRICE = 15;
+const ORIGINAL_PRICE = 10;
 const MIN_TEAM_SIZE = 3;
 const MAX_TEAM_SIZE = 5;
 const REQUIRED_TEAMMATES = MIN_TEAM_SIZE - 1;
@@ -13,10 +13,10 @@ const LOCAL_COUPONS = {
   MEDIN10: {
     valid: true,
     discount: 10,
-    savedAmount: 1.5,
-    finalAmount: 13.5,
+    savedAmount: 1,
+    finalAmount: 9,
     qrImage: "https://i.postimg.cc/7h71GTXp/fcrits-QR.jpg",
-    message: "Congratulations! You saved $1.50",
+    message: "Congratulations! You saved $1.00",
   },
 };
 
@@ -67,6 +67,11 @@ function memberIsComplete(member) {
   );
 }
 
+function normalizeAppliedCoupon(coupon) {
+  if (!coupon || Number(coupon.finalAmount) > ORIGINAL_PRICE) return null;
+  return coupon;
+}
+
 function loadDraft() {
   try {
     const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}");
@@ -74,7 +79,7 @@ function loadDraft() {
       step: Number.isInteger(draft.step) ? Math.min(Math.max(draft.step, 0), 4) : 0,
       referralCode: draft.referralCode || "",
       couponCode: draft.couponCode || "",
-      appliedCoupon: draft.appliedCoupon || null,
+      appliedCoupon: normalizeAppliedCoupon(draft.appliedCoupon),
       couponError: draft.couponError || "",
       hasCoupon: draft.hasCoupon || "",
       defaultQrImage: draft.defaultQrImage || DEFAULT_QR_IMAGE,
@@ -116,37 +121,12 @@ function RegistrationSummary() {
 
         <div className="mx-auto mt-10 max-w-xl rounded-3xl border border-violet-100 bg-gradient-to-br from-white to-fuchsia-50/70 p-7 shadow-[0_18px_55px_rgba(124,58,237,0.08)]">
           <div className="flex flex-col items-center justify-center gap-2 sm:flex-row">
-            <span className="text-2xl font-black text-slate-400 line-through">$5</span>
-            <span className="text-lg font-bold text-slate-500">per person</span>
-            <span className="mx-2 hidden text-slate-300 sm:inline">to</span>
-            <span className="text-5xl font-black text-[#EC4899]">$3</span>
-            <span className="text-lg font-bold text-[#7C3AED]">per person</span>
+            <CountUpNumber value={10} prefix="$" className="text-5xl font-black text-[#EC4899]" />
+            <span className="text-lg font-bold text-[#7C3AED]">per team</span>
           </div>
 
-          <div className="mt-7 rounded-2xl border border-violet-100 bg-white/80 px-2 py-4 text-center text-[11px] font-bold leading-6 text-[#111827] shadow-sm sm:px-5 sm:text-base">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.45, ease: "easeOut" }}
-              className="flex flex-nowrap items-center justify-center gap-1 whitespace-nowrap sm:gap-2"
-            >
-              <CountUpNumber value={3} prefix="$" className="rounded-full bg-fuchsia-50 px-2.5 py-1.5 text-[#EC4899] sm:px-4 sm:py-2" />
-              <span className="text-slate-400">x</span>
-              <span className="rounded-full bg-violet-50 px-2.5 py-1.5 text-[#7C3AED] sm:px-4 sm:py-2">3 to 5 members</span>
-              <span className="text-slate-400">=</span>
-              <CountUpNumber value={15} prefix="USD " className="rounded-full bg-gradient-to-r from-[#7C3AED] to-[#EC4899] px-2.5 py-1.5 text-white sm:px-4 sm:py-2" />
-            </motion.div>
-          </div>
-
-          <div className="mt-7 h-px bg-gradient-to-r from-transparent via-violet-200 to-transparent" />
-
-          <div className="mt-7 flex flex-col items-center justify-center gap-2 sm:flex-row">
-            <span className="text-2xl font-black text-slate-400 line-through">$25</span>
-            <span className="text-lg font-bold text-slate-500">per team</span>
-            <span className="mx-2 hidden text-slate-300 sm:inline">to</span>
-            <span className="text-2xl font-black text-[#7C3AED]">$15</span>
-            <span className="text-sm font-bold text-[#EC4899]">per team</span>
+          <div className="mt-7 rounded-2xl border border-violet-100 bg-white/80 px-4 py-4 text-center text-sm font-bold leading-6 text-[#111827] shadow-sm sm:text-base">
+            <span className="rounded-full bg-violet-50 px-4 py-2 text-[#7C3AED]">3 to 5 members included</span>
           </div>
         </div>
 
