@@ -7,6 +7,14 @@ const path = require("path");
 require("dotenv").config();
 require("dotenv").config({ path: path.join(__dirname, ".env"), override: false });
 
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT:", err);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("REJECTION:", err);
+});
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 const ORIGINAL_PRICE = 15;
@@ -14,22 +22,31 @@ const PAYMENTS_DIR = path.join(__dirname, "public", "payments");
 const MEDIA_DIR = path.join(__dirname, "public", "media");
 const JSON_FIELDS = new Set(["social_links", "theme_colors", "highlights", "stats", "announcements", "metadata"]);
 const REQUIRED_DB_ENV = [
-  "DB_HOST",
-  "DB_PORT",
-  "DB_USER",
-  "DB_PASSWORD",
-  "DB_NAME",
+  ["DB_HOST", "MYSQL_HOST"],
+  ["DB_USER", "MYSQL_USER"],
+  ["DB_NAME", "MYSQL_DATABASE"],
 ];
 
-console.log("DB_HOST:", process.env.DB_HOST);
-console.log("DB_PORT:", process.env.DB_PORT);
-console.log("ALL ENV KEYS:", Object.keys(process.env));
+const dbEnv = {
+  host: process.env.DB_HOST || process.env.MYSQL_HOST,
+  port: process.env.DB_PORT || process.env.MYSQL_PORT,
+  user: process.env.DB_USER || process.env.MYSQL_USER,
+  password: process.env.DB_PASSWORD || process.env.MYSQL_PASSWORD,
+  database: process.env.DB_NAME || process.env.MYSQL_DATABASE,
+};
 
-const missingDbEnv = REQUIRED_DB_ENV.filter((key) => !process.env[key]);
+console.log("MYSQL_HOST exists?", Boolean(dbEnv.host));
+console.log("MYSQL_USER exists?", Boolean(dbEnv.user));
+console.log("MYSQL_DATABASE exists?", Boolean(dbEnv.database));
+console.log("DB_PORT:", dbEnv.port || "default");
+
+const missingDbEnv = REQUIRED_DB_ENV.filter(([dbKey, mysqlKey]) => !process.env[dbKey] && !process.env[mysqlKey]);
 
 if (missingDbEnv.length > 0) {
-  console.error("Missing environment variables:", ...missingDbEnv);
-  process.exit(1);
+  console.error(
+    "Missing database environment variables:",
+    missingDbEnv.map(([dbKey, mysqlKey]) => `${dbKey} or ${mysqlKey}`).join(", "),
+  );
 }
 
 const db = require("./config/database");
@@ -41,6 +58,7 @@ const corsOptions = {
   origin: [
     "https://medinnovate2026-competition.github.io",
     "http://localhost:5173",
+    "http://localhost:3000",
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -52,6 +70,18 @@ app.options("*", cors(corsOptions));
 app.use(express.json({ limit: "8mb" }));
 app.use("/payments", express.static(PAYMENTS_DIR));
 app.use("/media", express.static(MEDIA_DIR));
+
+app.get("/", (_req, res) => {
+  res.json({
+    status: "alive",
+    port: process.env.PORT,
+    env: process.env.NODE_ENV,
+  });
+});
+
+app.get("/health", (_req, res) => {
+  res.json({ ok: true });
+});
 
 function normalizeCode(code) {
   return String(code || "").trim().toUpperCase();
@@ -150,8 +180,20 @@ async function ensureSchema() {
     )
   `);
 
+  if (!(await columnExists("teams", "utr"))) {
+    await db.query("ALTER TABLE teams ADD COLUMN utr VARCHAR(255) NULL AFTER team_name");
+  }
+
+  if (!(await columnExists("teams", "coupon_code"))) {
+    await db.query("ALTER TABLE teams ADD COLUMN coupon_code VARCHAR(64) NULL AFTER utr");
+  }
+
   if (!(await columnExists("teams", "referral_code"))) {
     await db.query("ALTER TABLE teams ADD COLUMN referral_code VARCHAR(100) NULL AFTER coupon_code");
+  }
+
+  if ((await columnExists("teams", "transaction_ref"))) {
+    await db.query("UPDATE teams SET utr = transaction_ref WHERE (utr IS NULL OR utr = '') AND transaction_ref IS NOT NULL");
   }
 
   if ((await tableExists("team_members")) && (await columnExists("team_members", "team_id")) && !(await tableExists("registration_members"))) {
@@ -931,37 +973,58 @@ async function loadRegistrations({ id, search = "", page = 1, limit = 10 } = {})
 }
 
 app.get("/api/admin/dashboard", async (_req, res) => {
-  const [[registrations]] = await db.query("SELECT COUNT(*) AS count FROM teams");
-  const [[payments]] = await db.query("SELECT COUNT(*) AS count, COALESCE(SUM(total_paid), 0) AS revenue FROM teams WHERE utr IS NOT NULL AND utr <> ''");
-  const [[coupons]] = await db.query("SELECT COUNT(*) AS count FROM teams WHERE coupon_code IS NOT NULL AND coupon_code <> ''");
-  const recent = await loadRegistrations({ page: 1, limit: 5 });
+  console.log("Dashboard hit");
 
-  const recentPayments = recent.registrations
-    .filter((registration) => registration.payment_status === "Paid")
-    .map((registration) => ({
-      id: registration.id,
-      team_id: registration.team_id,
-      team_name: registration.team_name,
-      leader: registration.leader,
-      amount: registration.amount,
-      utr: registration.utr,
-      date: registration.date,
-    }));
+  try {
+    console.log("Before DB query");
+    const [[registrations]] = await db.query("SELECT COUNT(*) AS count FROM teams");
+    console.log("After DB query");
 
-  res.json({
-    registrations_count: Number(registrations.count),
-    team_count: Number(registrations.count),
-    payment_count: Number(payments.count),
-    revenue: Number(payments.revenue || 0),
-    coupon_count: Number(coupons.count),
-    recent_registrations: recent.registrations,
-    recent_payments: recentPayments,
-    recent_activity: recent.registrations.map((registration) => ({
-      id: `registration-${registration.id}`,
-      label: `New registration: ${registration.team_name}`,
-      date: registration.date,
-    })),
-  });
+    console.log("Before DB query");
+    const [[payments]] = await db.query("SELECT COUNT(*) AS count, COALESCE(SUM(total_paid), 0) AS revenue FROM teams WHERE utr IS NOT NULL AND utr <> ''");
+    console.log("After DB query");
+
+    console.log("Before DB query");
+    const [[coupons]] = await db.query("SELECT COUNT(*) AS count FROM teams WHERE coupon_code IS NOT NULL AND coupon_code <> ''");
+    console.log("After DB query");
+
+    console.log("Before DB query");
+    const recent = await loadRegistrations({ page: 1, limit: 5 });
+    console.log("After DB query");
+
+    const recentPayments = recent.registrations
+      .filter((registration) => registration.payment_status === "Paid")
+      .map((registration) => ({
+        id: registration.id,
+        team_id: registration.team_id,
+        team_name: registration.team_name,
+        leader: registration.leader,
+        amount: registration.amount,
+        utr: registration.utr,
+        date: registration.date,
+      }));
+
+    return res.json({
+      registrations_count: Number(registrations.count),
+      team_count: Number(registrations.count),
+      payment_count: Number(payments.count),
+      revenue: Number(payments.revenue || 0),
+      coupon_count: Number(coupons.count),
+      recent_registrations: recent.registrations,
+      recent_payments: recentPayments,
+      recent_activity: recent.registrations.map((registration) => ({
+        id: `registration-${registration.id}`,
+        label: `New registration: ${registration.team_name}`,
+        date: registration.date,
+      })),
+    });
+  } catch (error) {
+    console.error("Dashboard error:", error);
+    return res.status(500).json({
+      message: "Unable to load dashboard.",
+      error: error.message,
+    });
+  }
 });
 
 app.get("/api/admin/registrations", async (req, res) => {
@@ -1482,13 +1545,14 @@ createCollectionRoutes({
   orderBy: "created_at DESC, id DESC",
 });
 
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on ${PORT}`);
+});
+
 ensureSchema()
   .then(() => {
-    app.listen(PORT, () => {
-      console.log(`MedInnovate backend running on port ${PORT}`);
-    });
+    console.log("Database schema initialized");
   })
   .catch((error) => {
     console.error("Failed to initialize MedInnovate backend:", error);
-    process.exit(1);
   });
