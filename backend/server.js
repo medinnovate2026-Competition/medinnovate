@@ -133,7 +133,7 @@ function serializeHomepageContent(row = {}) {
   };
   const defaultStats = [
     { value: "20+", label: "Countries" },
-    { value: "3-5", label: "Members per team" },
+    { value: "3 to 5", label: "Members per team" },
     { value: "2", label: "Competition phases" },
   ];
   const defaultTimeline = [
@@ -144,7 +144,7 @@ function serializeHomepageContent(row = {}) {
     { title: "Grand Finale", detail: "Present your final solution in India. Hybrid format with online participation available." },
   ];
   const defaultWhyParticipate = [
-    { title: "Team of 3-5 is mandatory", detail: "Every submission must come from a team of at least three and at most five members." },
+    { title: "Team of 3 to 5 is mandatory", detail: "Every submission must come from a team of at least three and at most five members." },
     { title: "All members should be undergraduate students", detail: "Each participant in the team must be an undergraduate student." },
     { title: "Theme: Public Health", detail: "Ideas should address a meaningful public health challenge." },
     { title: "Original and feasible idea", detail: "The solution must be your own concept and practical enough to be implemented." },
@@ -468,9 +468,9 @@ async function ensureSchema() {
       'International Healthcare Innovation Hackathon',
       'Build practical healthcare solutions with global mentors, clinical insight, and cross-border teams.',
       'Medinnovate is an international healthcare innovation hackathon that brings together students and young professionals from diverse disciplines, medicine, public health, engineering, design, and social sciences, to collaboratively develop feasible, scalable, and impactful solutions to real-world healthcare challenges.',
-      JSON_ARRAY(JSON_OBJECT('value', '20+', 'label', 'Countries'), JSON_OBJECT('value', '3-5', 'label', 'Members per team'), JSON_OBJECT('value', '2', 'label', 'Competition phases')),
+      JSON_ARRAY(JSON_OBJECT('value', '20+', 'label', 'Countries'), JSON_OBJECT('value', '3 to 5', 'label', 'Members per team'), JSON_OBJECT('value', '2', 'label', 'Competition phases')),
       JSON_ARRAY(JSON_OBJECT('title', 'Registration', 'detail', 'Sign up and form your team of three to five undergraduate students.'), JSON_OBJECT('title', 'Abstract Submission', 'detail', 'Teams submit a first abstract outlining their healthcare innovation idea.'), JSON_OBJECT('title', 'Review & Selection', 'detail', 'Expert panel reviews abstracts to shortlist the most feasible and impactful ideas.'), JSON_OBJECT('title', 'Mentorship & Guidance', 'detail', 'Selected teams receive expert guidance to refine their solutions and prepare for their pitch.'), JSON_OBJECT('title', 'Grand Finale', 'detail', 'Present your final solution in India. Hybrid format with online participation available.')),
-      JSON_ARRAY(JSON_OBJECT('title', 'Team of 3-5 is mandatory', 'detail', 'Every submission must come from a team of at least three and at most five members.'), JSON_OBJECT('title', 'All members should be undergraduate students', 'detail', 'Each participant in the team must be an undergraduate student.'), JSON_OBJECT('title', 'Theme: Public Health', 'detail', 'Ideas should address a meaningful public health challenge.'), JSON_OBJECT('title', 'Original and feasible idea', 'detail', 'The solution must be your own concept and practical enough to be implemented.')),
+      JSON_ARRAY(JSON_OBJECT('title', 'Team of 3 to 5 is mandatory', 'detail', 'Every submission must come from a team of at least three and at most five members.'), JSON_OBJECT('title', 'All members should be undergraduate students', 'detail', 'Each participant in the team must be an undergraduate student.'), JSON_OBJECT('title', 'Theme: Public Health', 'detail', 'Ideas should address a meaningful public health challenge.'), JSON_OBJECT('title', 'Original and feasible idea', 'detail', 'The solution must be your own concept and practical enough to be implemented.')),
       'Ready to build for public health?',
       'Register your team, submit your idea, and move through Phase 1 screening.',
       JSON_OBJECT('email', 'medinnovate2026@gmail.com', 'instagram', 'https://www.instagram.com/medinnovate_26?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==', 'whatsapp_label', 'WhatsApp support'),

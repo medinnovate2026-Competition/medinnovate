@@ -133,7 +133,7 @@ function RegistrationSummary() {
             >
               <CountUpNumber value={3} prefix="$" className="rounded-full bg-fuchsia-50 px-2.5 py-1.5 text-[#EC4899] sm:px-4 sm:py-2" />
               <span className="text-slate-400">x</span>
-              <span className="rounded-full bg-violet-50 px-2.5 py-1.5 text-[#7C3AED] sm:px-4 sm:py-2">3-5 members</span>
+              <span className="rounded-full bg-violet-50 px-2.5 py-1.5 text-[#7C3AED] sm:px-4 sm:py-2">3 to 5 members</span>
               <span className="text-slate-400">=</span>
               <CountUpNumber value={15} prefix="USD " className="rounded-full bg-gradient-to-r from-[#7C3AED] to-[#EC4899] px-2.5 py-1.5 text-white sm:px-4 sm:py-2" />
             </motion.div>
@@ -321,7 +321,7 @@ function RegistrationForm() {
     }
 
     if (!teammatesComplete) {
-      setSubmitError(`Teams must have ${MIN_TEAM_SIZE}-${MAX_TEAM_SIZE} members total. Complete optional teammate cards or leave them blank.`);
+      setSubmitError(`Teams must have ${MIN_TEAM_SIZE} to ${MAX_TEAM_SIZE} members total. Complete optional teammate cards or leave them blank.`);
       return;
     }
 
@@ -477,7 +477,7 @@ function RegistrationForm() {
                 <div className="flex flex-wrap items-end justify-between gap-4">
                   <div>
                     <h2 className="text-3xl font-black text-[#111827]">Team Members</h2>
-                    <p className="mt-2 text-slate-500">Teams need {MIN_TEAM_SIZE}-{MAX_TEAM_SIZE} members total. Leader already counted; add at least {REQUIRED_TEAMMATES} teammates.</p>
+                    <p className="mt-2 text-slate-500">Teams need {MIN_TEAM_SIZE} to {MAX_TEAM_SIZE} members total. Leader already counted; add at least {REQUIRED_TEAMMATES} teammates.</p>
                   </div>
                   <div className="rounded-full bg-violet-50 px-4 py-2 text-sm font-black text-[#7C3AED]">{totalTeamSize}/{MAX_TEAM_SIZE} members</div>
                 </div>
