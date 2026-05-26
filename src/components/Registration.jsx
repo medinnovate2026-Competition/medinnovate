@@ -9,13 +9,14 @@ const MIN_TEAM_SIZE = 3;
 const MAX_TEAM_SIZE = 5;
 const REQUIRED_TEAMMATES = MIN_TEAM_SIZE - 1;
 const DEFAULT_QR_IMAGE = "https://i.postimg.cc/sg82803c/1500QR.jpg";
+const LEGACY_LOCAL_COUPON_QR = "https://i.postimg.cc/7h71GTXp/fcrits-QR.jpg";
 const LOCAL_COUPONS = {
   MEDIN10: {
     valid: true,
     discount: 10,
     savedAmount: 1,
     finalAmount: 9,
-    qrImage: "https://i.postimg.cc/7h71GTXp/fcrits-QR.jpg",
+    qrImage: LEGACY_LOCAL_COUPON_QR,
     message: "Congratulations! You saved $1.00",
   },
 };
@@ -67,8 +68,9 @@ function memberIsComplete(member) {
   );
 }
 
-function normalizeAppliedCoupon(coupon) {
+function normalizeAppliedCoupon(coupon, couponCode = "") {
   if (!coupon || Number(coupon.finalAmount) > ORIGINAL_PRICE) return null;
+  if (couponCode.trim().toUpperCase() === "MEDIN10" && coupon.qrImage === LEGACY_LOCAL_COUPON_QR) return null;
   return coupon;
 }
 
@@ -79,7 +81,7 @@ function loadDraft() {
       step: Number.isInteger(draft.step) ? Math.min(Math.max(draft.step, 0), 4) : 0,
       referralCode: draft.referralCode || "",
       couponCode: draft.couponCode || "",
-      appliedCoupon: normalizeAppliedCoupon(draft.appliedCoupon),
+      appliedCoupon: normalizeAppliedCoupon(draft.appliedCoupon, draft.couponCode || ""),
       couponError: draft.couponError || "",
       hasCoupon: draft.hasCoupon || "",
       defaultQrImage: draft.defaultQrImage || DEFAULT_QR_IMAGE,
@@ -236,12 +238,6 @@ function RegistrationForm() {
       return;
     }
 
-    if (LOCAL_COUPONS[normalizedCode]) {
-      setAppliedCoupon(LOCAL_COUPONS[normalizedCode]);
-      setCouponCode(normalizedCode);
-      return;
-    }
-
     setIsCouponLoading(true);
 
     try {
@@ -264,8 +260,15 @@ function RegistrationForm() {
       }
 
       setAppliedCoupon(data);
+      setCouponCode(normalizedCode);
     } catch (error) {
       console.error("Coupon validation error:", error);
+      if (LOCAL_COUPONS[normalizedCode]) {
+        setAppliedCoupon(LOCAL_COUPONS[normalizedCode]);
+        setCouponCode(normalizedCode);
+        setCouponError("");
+        return;
+      }
       setCouponError("Unable to validate coupon right now.");
     } finally {
       setIsCouponLoading(false);
