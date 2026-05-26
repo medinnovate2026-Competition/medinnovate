@@ -223,7 +223,7 @@ function RegistrationsPage() {
                       aria-label={`View team ${registration.team_id} details`}
                     >
                       <Eye size={14} />
-                      View Team Details
+                      Details
                     </button>
                   </td>
                   <td className="px-5 py-4">
