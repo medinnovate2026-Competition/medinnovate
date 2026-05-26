@@ -1,3 +1,5 @@
+export const FAQ_STORAGE_KEY = "medinnovate_faq_cms";
+
 export const defaultFaqs = [
   {
     id: 1,

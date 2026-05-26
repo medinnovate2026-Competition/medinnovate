@@ -1,7 +1,35 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from "framer-motion"
 import { API_BASE_URL } from "../config";
-import { defaultFaqs, normalizeFaqList } from "../data/faqs";
+import { FAQ_STORAGE_KEY, defaultFaqs, normalizeFaqList } from "../data/faqs";
+
+function readLocalFaqDraft() {
+  try {
+    return JSON.parse(localStorage.getItem(FAQ_STORAGE_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+async function fetchFaqsFromCms() {
+  const endpoints = ["/api/faq", "/api/admin/faq?limit=100"];
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`);
+      if (!response.ok) continue;
+
+      const data = await response.json();
+      const publishedFaqs = normalizeFaqList(data.items).filter((item) => item.status === "Published");
+      if (publishedFaqs.length) return publishedFaqs;
+    } catch {
+      // Try the next source.
+    }
+  }
+
+  const localFaqs = normalizeFaqList(readLocalFaqDraft()).filter((item) => item.status === "Published");
+  return localFaqs.length ? localFaqs : defaultFaqs;
+}
 
 function FAQ() {
   const [openIndex, setOpenIndex] = useState(0)
@@ -10,15 +38,9 @@ function FAQ() {
   useEffect(() => {
     let active = true
 
-    fetch(`${API_BASE_URL}/api/faq`)
-      .then((response) => response.ok ? response.json() : Promise.reject(new Error("FAQ unavailable")))
-      .then((data) => {
-        const publishedFaqs = normalizeFaqList(data.items).filter((item) => item.status === "Published")
-        if (active) setFaqs(publishedFaqs.length ? publishedFaqs : defaultFaqs)
-      })
-      .catch(() => {
-        if (active) setFaqs(defaultFaqs)
-      })
+    fetchFaqsFromCms().then((items) => {
+      if (active) setFaqs(items)
+    })
 
     return () => {
       active = false

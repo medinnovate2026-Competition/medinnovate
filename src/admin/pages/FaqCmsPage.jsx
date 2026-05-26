@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2 } from "lucide-
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import { cmsFetchJson, isCmsApiUnavailable, readLocalCms, writeLocalCms } from "../utils/cmsApi";
-import { defaultFaqs, normalizeFaqList } from "../../data/faqs";
+import { FAQ_STORAGE_KEY, defaultFaqs, normalizeFaqList } from "../../data/faqs";
 
 const emptyFaq = {
   question: "",
@@ -13,7 +13,7 @@ const emptyFaq = {
   order_index: 0,
 };
 
-const FAQ_KEY = "medinnovate_faq_cms";
+const FAQ_KEY = FAQ_STORAGE_KEY;
 
 function FaqCmsPage() {
   const [faqs, setFaqs] = useState([]);
