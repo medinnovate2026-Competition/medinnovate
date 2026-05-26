@@ -5,6 +5,9 @@ import { API_BASE_URL, resolveAssetUrl } from "../config";
 
 const DRAFT_KEY = "medinnovate_registration_draft";
 const ORIGINAL_PRICE = 15;
+const MIN_TEAM_SIZE = 3;
+const MAX_TEAM_SIZE = 5;
+const REQUIRED_TEAMMATES = MIN_TEAM_SIZE - 1;
 const DEFAULT_QR_IMAGE = "https://i.postimg.cc/sg82803c/1500QR.jpg";
 const LOCAL_COUPONS = {
   MEDIN10: {
@@ -43,6 +46,27 @@ function createMembers() {
   return Array.from({ length: 4 }, () => ({ ...emptyMember }));
 }
 
+function normalizeMemberSlots(members) {
+  if (!Array.isArray(members)) return createMembers();
+  return [...members.slice(0, MAX_TEAM_SIZE - 1), ...createMembers()].slice(0, MAX_TEAM_SIZE - 1);
+}
+
+function memberHasAnyDetails(member) {
+  return Object.values(member || {}).some((value) => String(value || "").trim());
+}
+
+function memberIsComplete(member) {
+  const normalized = { ...emptyMember, ...(member || {}) };
+  return Boolean(
+    normalized.fullName.trim() &&
+    normalized.email.trim() &&
+    normalized.country.trim() &&
+    normalized.college.trim() &&
+    normalized.discipline.trim() &&
+    normalized.year.trim(),
+  );
+}
+
 function loadDraft() {
   try {
     const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}");
@@ -55,7 +79,7 @@ function loadDraft() {
       hasCoupon: draft.hasCoupon || "",
       defaultQrImage: draft.defaultQrImage || DEFAULT_QR_IMAGE,
       leader: { ...emptyLeader, ...(draft.leader || {}) },
-      members: Array.isArray(draft.members) && draft.members.length === 4 ? draft.members : createMembers(),
+      members: normalizeMemberSlots(draft.members),
       utr: draft.utr || "",
       termsAccepted: Boolean(draft.termsAccepted),
     };
@@ -109,7 +133,7 @@ function RegistrationSummary() {
             >
               <CountUpNumber value={3} prefix="$" className="rounded-full bg-fuchsia-50 px-2.5 py-1.5 text-[#EC4899] sm:px-4 sm:py-2" />
               <span className="text-slate-400">x</span>
-              <CountUpNumber value={5} suffix=" members" className="rounded-full bg-violet-50 px-2.5 py-1.5 text-[#7C3AED] sm:px-4 sm:py-2" />
+              <span className="rounded-full bg-violet-50 px-2.5 py-1.5 text-[#7C3AED] sm:px-4 sm:py-2">3-5 members</span>
               <span className="text-slate-400">=</span>
               <CountUpNumber value={15} prefix="USD " className="rounded-full bg-gradient-to-r from-[#7C3AED] to-[#EC4899] px-2.5 py-1.5 text-white sm:px-4 sm:py-2" />
             </motion.div>
@@ -269,7 +293,10 @@ function RegistrationForm() {
   };
 
   const leaderComplete = leader.fullName.trim() && leader.email.trim() && leader.phone.trim() && leader.country.trim() && leader.college.trim() && leader.discipline.trim() && leader.year.trim();
-  const teammatesComplete = members.every((member) => member.fullName.trim() && member.email.trim() && member.country.trim() && member.college.trim() && member.discipline.trim() && member.year.trim());
+  const completeTeammates = members.filter(memberIsComplete);
+  const hasPartialTeammate = members.some((member) => memberHasAnyDetails(member) && !memberIsComplete(member));
+  const totalTeamSize = 1 + completeTeammates.length;
+  const teammatesComplete = completeTeammates.length >= REQUIRED_TEAMMATES && totalTeamSize <= MAX_TEAM_SIZE && !hasPartialTeammate;
   const paymentComplete = utr.trim() && termsAccepted;
 
   const goNext = () => {
@@ -279,7 +306,7 @@ function RegistrationForm() {
       return;
     }
     if (step === 2 && !teammatesComplete) {
-      setSubmitError("Please complete all teammate details.");
+      setSubmitError(`Please complete at least ${REQUIRED_TEAMMATES} teammates. Optional teammate cards can be left fully blank.`);
       return;
     }
     setStep((current) => Math.min(current + 1, steps.length - 1));
@@ -290,6 +317,11 @@ function RegistrationForm() {
 
     if (!paymentComplete) {
       setSubmitError("Please enter transaction ID and accept the terms.");
+      return;
+    }
+
+    if (!teammatesComplete) {
+      setSubmitError(`Teams must have ${MIN_TEAM_SIZE}-${MAX_TEAM_SIZE} members total. Complete optional teammate cards or leave them blank.`);
       return;
     }
 
@@ -304,14 +336,16 @@ function RegistrationForm() {
         year: leader.year.trim(),
         gender: leader.gender.trim(),
       },
-      ...members.map((member) => ({
-        name: member.fullName.trim(),
-        email: member.email.trim(),
-        college: member.college.trim(),
-        country: member.country.trim(),
-        discipline: member.discipline.trim(),
-        year: member.year.trim(),
-      })),
+      ...members
+        .filter(memberHasAnyDetails)
+        .map((member) => ({
+          name: member.fullName.trim(),
+          email: member.email.trim(),
+          college: member.college.trim(),
+          country: member.country.trim(),
+          discipline: member.discipline.trim(),
+          year: member.year.trim(),
+        })),
     ];
 
     const payload = {
@@ -443,21 +477,23 @@ function RegistrationForm() {
                 <div className="flex flex-wrap items-end justify-between gap-4">
                   <div>
                     <h2 className="text-3xl font-black text-[#111827]">Team Members</h2>
-                    <p className="mt-2 text-slate-500">Team size fixed: 5 members total. Leader already counted.</p>
+                    <p className="mt-2 text-slate-500">Teams need {MIN_TEAM_SIZE}-{MAX_TEAM_SIZE} members total. Leader already counted; add at least {REQUIRED_TEAMMATES} teammates.</p>
                   </div>
-                  <div className="rounded-full bg-violet-50 px-4 py-2 text-sm font-black text-[#7C3AED]">{members.filter((member) => member.fullName && member.email).length}/4 teammates</div>
+                  <div className="rounded-full bg-violet-50 px-4 py-2 text-sm font-black text-[#7C3AED]">{totalTeamSize}/{MAX_TEAM_SIZE} members</div>
                 </div>
                 <div className="mt-6 space-y-4">
                   {members.map((member, index) => (
                     <details key={index} open={index === 0} className="rounded-3xl border border-violet-100 bg-[#fbf9ff] p-5">
-                      <summary className="cursor-pointer text-lg font-black text-[#111827]">Member {index + 2}</summary>
+                      <summary className="cursor-pointer text-lg font-black text-[#111827]">
+                        Member {index + 2} {index >= REQUIRED_TEAMMATES ? <span className="text-sm text-slate-400">(optional)</span> : null}
+                      </summary>
                       <div className="mt-5 grid gap-4 md:grid-cols-2">
-                        <TextInput label="Full name" value={member.fullName} onChange={(value) => updateMember(index, "fullName", value)} required />
-                        <TextInput label="Email" type="email" value={member.email} onChange={(value) => updateMember(index, "email", value)} required />
-                        <TextInput label="Country" value={member.country} onChange={(value) => updateMember(index, "country", value)} required />
-                        <TextInput label="College" value={member.college} onChange={(value) => updateMember(index, "college", value)} required />
-                        <TextInput label="Discipline" value={member.discipline} onChange={(value) => updateMember(index, "discipline", value)} required />
-                        <TextInput label="Year" value={member.year} onChange={(value) => updateMember(index, "year", value)} required />
+                        <TextInput label="Full name" value={member.fullName} onChange={(value) => updateMember(index, "fullName", value)} required={index < REQUIRED_TEAMMATES} />
+                        <TextInput label="Email" type="email" value={member.email} onChange={(value) => updateMember(index, "email", value)} required={index < REQUIRED_TEAMMATES} />
+                        <TextInput label="Country" value={member.country} onChange={(value) => updateMember(index, "country", value)} required={index < REQUIRED_TEAMMATES} />
+                        <TextInput label="College" value={member.college} onChange={(value) => updateMember(index, "college", value)} required={index < REQUIRED_TEAMMATES} />
+                        <TextInput label="Discipline" value={member.discipline} onChange={(value) => updateMember(index, "discipline", value)} required={index < REQUIRED_TEAMMATES} />
+                        <TextInput label="Year" value={member.year} onChange={(value) => updateMember(index, "year", value)} required={index < REQUIRED_TEAMMATES} />
                       </div>
                     </details>
                   ))}
@@ -471,7 +507,7 @@ function RegistrationForm() {
                 <div className="mt-6 grid gap-4 lg:grid-cols-2">
                   <ReviewCard title="Referral & coupon" onEdit={() => setStep(0)} lines={[referralCode ? `Referral: ${referralCode}` : "No referral code", appliedCoupon ? `Coupon: ${couponCode}` : "Coupon not applied yet", `Current final amount: $${finalAmount}`]} />
                   <ReviewCard title="Leader info" onEdit={() => setStep(1)} lines={[leader.fullName, leader.email, leader.phone, leader.country, leader.college, leader.discipline, leader.year]} />
-                  <ReviewCard title="All members" onEdit={() => setStep(2)} lines={[leader.fullName, ...members.map((member, index) => `Member ${index + 2}: ${member.fullName || "Incomplete"}`)]} />
+                  <ReviewCard title="All members" onEdit={() => setStep(2)} lines={[leader.fullName, ...members.filter(memberHasAnyDetails).map((member, index) => `Member ${index + 2}: ${member.fullName || "Incomplete"}`), `Team size: ${totalTeamSize}`]} />
                   <ReviewCard title="Team cost" onEdit={() => setStep(0)} lines={[`Original: $${ORIGINAL_PRICE}`, `Discount: $${Number(savedAmount).toFixed(2)}`, `Final: $${finalAmount}`]} />
                 </div>
               </div>

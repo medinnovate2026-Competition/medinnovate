@@ -12,7 +12,7 @@ export const defaultFaqs = [
   {
     id: 2,
     question: "Can I participate solo?",
-    answer: "No. Participation requires a team of exactly 5 undergraduate students.",
+    answer: "No. Participation requires a team of 3 to 5 undergraduate students.",
     category: "Eligibility",
     status: "Published",
     order_index: 2,
@@ -36,7 +36,7 @@ export const defaultFaqs = [
   {
     id: 5,
     question: "Is there any registration fee?",
-    answer: "Yes. The registration fee is $3 per participant or $15 per team of 5 members.",
+    answer: "Yes. The registration fee is $3 per participant, with teams allowed to register 3 to 5 members.",
     category: "Payment",
     status: "Published",
     order_index: 5,

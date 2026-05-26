@@ -231,10 +231,10 @@ CREATE TABLE IF NOT EXISTS faq (
 INSERT INTO faq (question, answer, category, status, display_order, order_index, is_published)
 SELECT * FROM (
   SELECT 'Is Medinnovate an online or offline event?', 'Medinnovate will follow a hybrid format. Phase 1 will be conducted online, and the Grand Finale will be held offline in India with a virtual presentation option for eligible participants who cannot attend in person.', 'Format', 'Published', 1, 1, TRUE
-  UNION ALL SELECT 'Can I participate solo?', 'No. Participation requires a team of exactly 5 undergraduate students.', 'Eligibility', 'Published', 2, 2, TRUE
+  UNION ALL SELECT 'Can I participate solo?', 'No. Participation requires a team of 3 to 5 undergraduate students.', 'Eligibility', 'Published', 2, 2, TRUE
   UNION ALL SELECT 'Who can participate?', 'Undergraduate students from Africa and India can participate.', 'Eligibility', 'Published', 3, 3, TRUE
   UNION ALL SELECT 'Can team members be from different colleges or countries?', 'Yes. Team members can be from different colleges, disciplines, or countries, as long as all members meet the eligibility criteria.', 'Team', 'Published', 4, 4, TRUE
-  UNION ALL SELECT 'Is there any registration fee?', 'Yes. The registration fee is $3 per participant or $15 per team of 5 members.', 'Payment', 'Published', 5, 5, TRUE
+  UNION ALL SELECT 'Is there any registration fee?', 'Yes. The registration fee is $3 per participant, with teams allowed to register 3 to 5 members.', 'Payment', 'Published', 5, 5, TRUE
   UNION ALL SELECT 'Will certificates be provided?', 'Yes. Certificates will be provided based on participation and completion criteria.', 'Benefits', 'Published', 6, 6, TRUE
   UNION ALL SELECT 'What is the selection process?', 'The selection process follows registration, submission, screening, mentorship, and final pitch.', 'Selection', 'Published', 7, 7, TRUE
   UNION ALL SELECT 'What happens if I cannot attend the final round in person?', 'A virtual option will be available for participants who cannot attend the final round in person.', 'Finale', 'Published', 8, 8, TRUE

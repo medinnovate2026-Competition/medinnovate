@@ -133,18 +133,18 @@ function serializeHomepageContent(row = {}) {
   };
   const defaultStats = [
     { value: "20+", label: "Countries" },
-    { value: "5", label: "Members per team" },
+    { value: "3-5", label: "Members per team" },
     { value: "2", label: "Competition phases" },
   ];
   const defaultTimeline = [
-    { title: "Registration", detail: "Sign up and form your team of five undergraduate students." },
+    { title: "Registration", detail: "Sign up and form your team of three to five undergraduate students." },
     { title: "Abstract Submission", detail: "Teams submit a first abstract outlining their healthcare innovation idea." },
     { title: "Review & Selection", detail: "Expert panel reviews abstracts to shortlist the most feasible and impactful ideas." },
     { title: "Mentorship & Guidance", detail: "Selected teams receive expert guidance to refine their solutions and prepare for their pitch." },
     { title: "Grand Finale", detail: "Present your final solution in India. Hybrid format with online participation available." },
   ];
   const defaultWhyParticipate = [
-    { title: "Team of 5 is mandatory", detail: "Every submission must come from a team of exactly five members." },
+    { title: "Team of 3-5 is mandatory", detail: "Every submission must come from a team of at least three and at most five members." },
     { title: "All members should be undergraduate students", detail: "Each participant in the team must be an undergraduate student." },
     { title: "Theme: Public Health", detail: "Ideas should address a meaningful public health challenge." },
     { title: "Original and feasible idea", detail: "The solution must be your own concept and practical enough to be implemented." },
@@ -468,9 +468,9 @@ async function ensureSchema() {
       'International Healthcare Innovation Hackathon',
       'Build practical healthcare solutions with global mentors, clinical insight, and cross-border teams.',
       'Medinnovate is an international healthcare innovation hackathon that brings together students and young professionals from diverse disciplines, medicine, public health, engineering, design, and social sciences, to collaboratively develop feasible, scalable, and impactful solutions to real-world healthcare challenges.',
-      JSON_ARRAY(JSON_OBJECT('value', '20+', 'label', 'Countries'), JSON_OBJECT('value', '5', 'label', 'Members per team'), JSON_OBJECT('value', '2', 'label', 'Competition phases')),
-      JSON_ARRAY(JSON_OBJECT('title', 'Registration', 'detail', 'Sign up and form your team of five undergraduate students.'), JSON_OBJECT('title', 'Abstract Submission', 'detail', 'Teams submit a first abstract outlining their healthcare innovation idea.'), JSON_OBJECT('title', 'Review & Selection', 'detail', 'Expert panel reviews abstracts to shortlist the most feasible and impactful ideas.'), JSON_OBJECT('title', 'Mentorship & Guidance', 'detail', 'Selected teams receive expert guidance to refine their solutions and prepare for their pitch.'), JSON_OBJECT('title', 'Grand Finale', 'detail', 'Present your final solution in India. Hybrid format with online participation available.')),
-      JSON_ARRAY(JSON_OBJECT('title', 'Team of 5 is mandatory', 'detail', 'Every submission must come from a team of exactly five members.'), JSON_OBJECT('title', 'All members should be undergraduate students', 'detail', 'Each participant in the team must be an undergraduate student.'), JSON_OBJECT('title', 'Theme: Public Health', 'detail', 'Ideas should address a meaningful public health challenge.'), JSON_OBJECT('title', 'Original and feasible idea', 'detail', 'The solution must be your own concept and practical enough to be implemented.')),
+      JSON_ARRAY(JSON_OBJECT('value', '20+', 'label', 'Countries'), JSON_OBJECT('value', '3-5', 'label', 'Members per team'), JSON_OBJECT('value', '2', 'label', 'Competition phases')),
+      JSON_ARRAY(JSON_OBJECT('title', 'Registration', 'detail', 'Sign up and form your team of three to five undergraduate students.'), JSON_OBJECT('title', 'Abstract Submission', 'detail', 'Teams submit a first abstract outlining their healthcare innovation idea.'), JSON_OBJECT('title', 'Review & Selection', 'detail', 'Expert panel reviews abstracts to shortlist the most feasible and impactful ideas.'), JSON_OBJECT('title', 'Mentorship & Guidance', 'detail', 'Selected teams receive expert guidance to refine their solutions and prepare for their pitch.'), JSON_OBJECT('title', 'Grand Finale', 'detail', 'Present your final solution in India. Hybrid format with online participation available.')),
+      JSON_ARRAY(JSON_OBJECT('title', 'Team of 3-5 is mandatory', 'detail', 'Every submission must come from a team of at least three and at most five members.'), JSON_OBJECT('title', 'All members should be undergraduate students', 'detail', 'Each participant in the team must be an undergraduate student.'), JSON_OBJECT('title', 'Theme: Public Health', 'detail', 'Ideas should address a meaningful public health challenge.'), JSON_OBJECT('title', 'Original and feasible idea', 'detail', 'The solution must be your own concept and practical enough to be implemented.')),
       'Ready to build for public health?',
       'Register your team, submit your idea, and move through Phase 1 screening.',
       JSON_OBJECT('email', 'medinnovate2026@gmail.com', 'instagram', 'https://www.instagram.com/medinnovate_26?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==', 'whatsapp_label', 'WhatsApp support'),
@@ -633,10 +633,10 @@ async function ensureSchema() {
        VALUES ?`,
       [[
         ["Is Medinnovate an online or offline event?", "Medinnovate will follow a hybrid format. Phase 1 will be conducted online, and the Grand Finale will be held offline in India with a virtual presentation option for eligible participants who cannot attend in person.", "Format", 1, 1, true, "Published"],
-        ["Can I participate solo?", "No. Participation requires a team of exactly 5 undergraduate students.", "Eligibility", 2, 2, true, "Published"],
+        ["Can I participate solo?", "No. Participation requires a team of 3 to 5 undergraduate students.", "Eligibility", 2, 2, true, "Published"],
         ["Who can participate?", "Undergraduate students from Africa and India can participate.", "Eligibility", 3, 3, true, "Published"],
         ["Can team members be from different colleges or countries?", "Yes. Team members can be from different colleges, disciplines, or countries, as long as all members meet the eligibility criteria.", "Team", 4, 4, true, "Published"],
-        ["Is there any registration fee?", "Yes. The registration fee is $3 per participant or $15 per team of 5 members.", "Payment", 5, 5, true, "Published"],
+        ["Is there any registration fee?", "Yes. The registration fee is $3 per participant, with teams allowed to register 3 to 5 members.", "Payment", 5, 5, true, "Published"],
         ["Will certificates be provided?", "Yes. Certificates will be provided based on participation and completion criteria.", "Benefits", 6, 6, true, "Published"],
         ["What is the selection process?", "The selection process follows registration, submission, screening, mentorship, and final pitch.", "Selection", 7, 7, true, "Published"],
         ["What happens if I cannot attend the final round in person?", "A virtual option will be available for participants who cannot attend the final round in person.", "Finale", 8, 8, true, "Published"],
@@ -1070,6 +1070,10 @@ app.post("/api/register-upi", async (req, res) => {
 
   if (!teamName || !utr || members.length === 0 || Number.isNaN(amountPaid)) {
     return res.status(400).json({ error: "Team name, members, UTR, and amount paid are required." });
+  }
+
+  if (members.length < 3 || members.length > 5) {
+    return res.status(400).json({ error: "Teams must include a minimum of 3 and a maximum of 5 members." });
   }
 
   const connection = await db.getConnection();

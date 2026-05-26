@@ -5,18 +5,18 @@ export const defaultHomepageContent = {
   about_text: "Medinnovate is an international healthcare innovation hackathon that brings together students and young professionals from diverse disciplines, medicine, public health, engineering, design, and social sciences, to collaboratively develop feasible, scalable, and impactful solutions to real-world healthcare challenges.",
   stats_json: [
     { value: "20+", label: "Countries" },
-    { value: "5", label: "Members per team" },
+    { value: "3-5", label: "Members per team" },
     { value: "2", label: "Competition phases" },
   ],
   timeline_json: [
-    { title: "Registration", detail: "Sign up and form your team of five undergraduate students." },
+    { title: "Registration", detail: "Sign up and form your team of three to five undergraduate students." },
     { title: "Abstract Submission", detail: "Teams submit a first abstract outlining their healthcare innovation idea." },
     { title: "Review & Selection", detail: "Expert panel reviews abstracts to shortlist the most feasible and impactful ideas." },
     { title: "Mentorship & Guidance", detail: "Selected teams receive expert guidance to refine their solutions and prepare for their pitch." },
     { title: "Grand Finale", detail: "Present your final solution in India. Hybrid format with online participation available." },
   ],
   why_participate_json: [
-    { title: "Team of 5 is mandatory", detail: "Every submission must come from a team of exactly five members." },
+    { title: "Team of 3-5 is mandatory", detail: "Every submission must come from a team of at least three and at most five members." },
     { title: "All members should be undergraduate students", detail: "Each participant in the team must be an undergraduate student." },
     { title: "Theme: Public Health", detail: "Ideas should address a meaningful public health challenge." },
     { title: "Original and feasible idea", detail: "The solution must be your own concept and practical enough to be implemented." },
