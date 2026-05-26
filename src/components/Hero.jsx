@@ -1,6 +1,7 @@
 import { motion } from "framer-motion"
 
 const highlights = ['Global mentors', 'Clinical review', 'Premium pitch stage']
+const currentPhase = 'PHASE 1'
 
 function Hero() {
   return (
@@ -39,6 +40,9 @@ function Hero() {
             <a href={`${import.meta.env.BASE_URL}registration`} className="w-full rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-8 py-4 text-center text-sm font-black uppercase tracking-wide text-white shadow-[0_18px_45px_rgba(168,85,247,0.28)] transition hover:-translate-y-1 sm:w-auto">
               Submit Idea
             </a>
+            <div className="w-full rounded-full border border-violet-100 bg-white/85 px-8 py-4 text-center text-sm font-black uppercase tracking-wide text-[#7C3AED] shadow-sm backdrop-blur sm:w-auto">
+              Current Phase: {currentPhase}
+            </div>
           </div>
 
           <div className="mx-auto mt-8 grid max-w-sm gap-3 text-sm text-slate-600 sm:flex sm:max-w-none sm:flex-wrap sm:justify-center lg:mx-0 lg:justify-start">

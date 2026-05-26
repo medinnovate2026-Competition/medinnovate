@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Home, Menu, Send, X } from 'lucide-react'
+import { Flag, Home, Menu, Send, X } from 'lucide-react'
+
+const CURRENT_PHASE = 'PHASE 1'
 
 const navLinks = [
   { label: 'About', href: '#about' },
@@ -57,12 +59,17 @@ function Navbar() {
             </Link>
           </div>
 
-          <Link
-            to="/registration"
-            className="shrink-0 rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-5 py-2.5 text-sm font-black text-white shadow-[0_12px_34px_rgba(168,85,247,0.28)] transition hover:-translate-y-0.5"
-          >
-            Submit Idea
-          </Link>
+          <div className="flex shrink-0 items-center gap-3">
+            <div className="rounded-full border border-violet-100 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-[#7C3AED] shadow-sm">
+              Current Phase: {CURRENT_PHASE}
+            </div>
+            <Link
+              to="/registration"
+              className="rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-5 py-2.5 text-sm font-black text-white shadow-[0_12px_34px_rgba(168,85,247,0.28)] transition hover:-translate-y-0.5"
+            >
+              Submit Idea
+            </Link>
+          </div>
         </nav>
       </header>
 
@@ -94,11 +101,15 @@ function Navbar() {
           </div>
         )}
 
-        <div className="mx-auto grid max-w-sm grid-cols-3 items-center gap-2 rounded-[28px] border border-white/80 bg-white/92 p-2 shadow-[0_18px_70px_rgba(124,58,237,0.22)] backdrop-blur-2xl">
+        <div className="mx-auto grid max-w-md grid-cols-4 items-center gap-2 rounded-[28px] border border-white/80 bg-white/92 p-2 shadow-[0_18px_70px_rgba(124,58,237,0.22)] backdrop-blur-2xl">
           <Link to="/" onClick={closeMore} className="grid min-h-14 place-items-center rounded-3xl text-[#5d55b9] transition hover:bg-violet-50" aria-label="Home">
             <Home size={23} />
             <span className="mt-1 text-[10px] font-black uppercase tracking-wide">Home</span>
           </Link>
+          <div className="grid min-h-14 place-items-center rounded-3xl border border-violet-100 bg-violet-50/70 text-[#7C3AED]" aria-label={`Current phase ${CURRENT_PHASE}`}>
+            <Flag size={21} />
+            <span className="mt-1 text-[10px] font-black uppercase tracking-wide">Phase 1</span>
+          </div>
           <button type="button" onClick={() => setMoreOpen((current) => !current)} className="grid min-h-14 place-items-center rounded-3xl text-[#5d55b9] transition hover:bg-violet-50" aria-expanded={moreOpen} aria-label="More navigation options">
             <Menu size={24} />
             <span className="mt-1 text-[10px] font-black uppercase tracking-wide">More</span>
