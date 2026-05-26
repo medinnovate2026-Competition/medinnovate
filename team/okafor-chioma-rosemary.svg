@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Okafor Chioma Rosemary">
+  <defs>
+    <linearGradient id="g" x1="24" x2="216" y1="24" y2="216" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0ea5e9"/>
+      <stop offset="0.5" stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#6366f1"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" rx="120" fill="url(#g)"/>
+  <circle cx="184" cy="56" r="38" fill="#ffffff" opacity="0.18"/>
+  <circle cx="58" cy="186" r="46" fill="#ffffff" opacity="0.14"/>
+  <text x="120" y="136" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="68" font-weight="800" fill="#ffffff">OCR</text>
+</svg>

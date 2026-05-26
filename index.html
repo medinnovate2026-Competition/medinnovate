@@ -2,19 +2,21 @@
 <html lang="en">
   <head>
     <script>
-  var redirect = new URLSearchParams(window.location.search).get('redirect');
-  if (redirect) {
-    window.history.replaceState(null, null, redirect);
-  }
-</script>
+      var redirect = new URLSearchParams(window.location.search).get("redirect");
+      if (redirect) {
+        var base = "/medinnovate";
+        var normalized = redirect.startsWith(base) ? redirect : base + redirect;
+        window.history.replaceState(null, null, normalized);
+      }
+    </script>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/medinnovate/assets/favicon-DDnGYVZo.ico" />
+    <link rel="icon" type="image/x-icon" href="/medinnovate/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>medinnovate</title>
-    <script type="module" crossorigin src="/medinnovate/assets/index-DEDE5ULh.js"></script>
-    <link rel="stylesheet" crossorigin href="/medinnovate/assets/index-DobODQHG.css">
+    <script type="module" crossorigin src="/medinnovate/assets/index-7-_jAsTA.js"></script>
+    <link rel="stylesheet" crossorigin href="/medinnovate/assets/index-C8M4yv-M.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"></div>
   </body>
 </html>

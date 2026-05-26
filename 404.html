@@ -1,11 +1,16 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MedInnovate</title>
     <script>
+      var base = "/medinnovate";
       var path = window.location.pathname;
-      window.location.replace(
-        window.location.origin + '/medinnovate/?redirect=' + encodeURIComponent(path)
-      );
+      var redirect = path.startsWith(base) ? path.slice(base.length) : path;
+      var target = base + "/?redirect=" + encodeURIComponent(redirect + window.location.search + window.location.hash);
+      window.location.replace(target);
     </script>
   </head>
+  <body></body>
 </html>
