@@ -166,6 +166,19 @@ function serializeHomepageContent(row = {}) {
   };
 }
 
+function serializeCommunitySection(row = {}) {
+  return {
+    id: row.id || 1,
+    title: row.title || "Get In Contact With Us",
+    description: row.description || "Stay connected with MedInnovate.\nJoin our community for updates, announcements, opportunities and event discussions.",
+    image_url: row.image_url || "",
+    whatsapp_link: row.whatsapp_link || "",
+    scroll_text: row.scroll_text || "↓ Scroll down for registration",
+    visible: row.visible == null ? true : Boolean(row.visible),
+    updated_at: row.updated_at || null,
+  };
+}
+
 async function tableExists(tableName) {
   const [rows] = await db.query(
     `SELECT COUNT(*) AS count
@@ -459,6 +472,41 @@ async function ensureSchema() {
       JSON_OBJECT('email', 'medinnovate2026@gmail.com', 'instagram', 'https://www.instagram.com/medinnovate_26?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==', 'whatsapp_label', 'WhatsApp support'),
       'Submit Idea',
       '/registration'
+    )
+    ON DUPLICATE KEY UPDATE id = id
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS community_section (
+      id INT PRIMARY KEY DEFAULT 1,
+      title VARCHAR(255) NULL,
+      description TEXT NULL,
+      image_url VARCHAR(500) NULL,
+      whatsapp_link VARCHAR(500) NULL,
+      scroll_text VARCHAR(255) NULL,
+      visible BOOLEAN NOT NULL DEFAULT TRUE,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.query(`
+    INSERT INTO community_section (
+      id,
+      title,
+      description,
+      image_url,
+      whatsapp_link,
+      scroll_text,
+      visible
+    )
+    VALUES (
+      1,
+      'Get In Contact With Us',
+      'Stay connected with MedInnovate.\nJoin our community for updates, announcements, opportunities and event discussions.',
+      '',
+      '',
+      '↓ Scroll down for registration',
+      TRUE
     )
     ON DUPLICATE KEY UPDATE id = id
   `);
@@ -1453,6 +1501,34 @@ app.put("/api/admin/homepage-content", async (req, res) => {
   ], req.body);
   const [rows] = await db.query("SELECT * FROM homepage_content WHERE id = 1");
   res.json({ content: serializeHomepageContent(rows[0]) });
+});
+
+app.get("/api/community-section", async (_req, res) => {
+  const [rows] = await db.query("SELECT * FROM community_section WHERE id = 1");
+  res.json({ section: serializeCommunitySection(rows[0]) });
+});
+
+app.get("/api/admin/community-section", async (_req, res) => {
+  const [rows] = await db.query("SELECT * FROM community_section WHERE id = 1");
+  res.json({ section: serializeCommunitySection(rows[0]) });
+});
+
+app.put("/api/admin/community-section", async (req, res) => {
+  await db.query(
+    `UPDATE community_section
+     SET title = ?, description = ?, image_url = ?, whatsapp_link = ?, scroll_text = ?, visible = ?
+     WHERE id = 1`,
+    [
+      String(req.body.title || "").trim(),
+      String(req.body.description || "").trim(),
+      String(req.body.image_url || "").trim(),
+      String(req.body.whatsapp_link || "").trim(),
+      String(req.body.scroll_text || "").trim(),
+      toDbBoolean(req.body.visible),
+    ],
+  );
+  const [rows] = await db.query("SELECT * FROM community_section WHERE id = 1");
+  res.json({ section: serializeCommunitySection(rows[0]) });
 });
 
 function normalizeStatus(status, fallback = "Draft") {

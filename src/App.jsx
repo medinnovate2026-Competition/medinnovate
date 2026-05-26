@@ -6,6 +6,7 @@ import Credibility from './components/Credibility';
 import FAQ from './components/FAQ';
 import Global from './components/Global';
 import Hero from './components/Hero';
+import CommunitySection from './components/CommunitySection';
 import Navbar from './components/Navbar';
 import Participants from './components/Participants';
 import PrizeReveal from './components/PrizeReveal';
@@ -20,6 +21,7 @@ import AdminLogin from './admin/AdminLogin';
 import Dashboard from './admin/Dashboard';
 import CmsPlaceholderPage from './admin/pages/CmsPlaceholderPage';
 import HomepageCmsEditor from './admin/pages/HomepageCmsEditor';
+import CommunitySectionCmsPage from './admin/pages/CommunitySectionCmsPage';
 import SiteSettingsEditor from './admin/pages/SiteSettingsEditor';
 import NavigationCmsPage from './admin/pages/NavigationCmsPage';
 import FaqCmsPage from './admin/pages/FaqCmsPage';
@@ -30,11 +32,14 @@ import OrganisingCommitteeCmsPage from './admin/pages/OrganisingCommitteeCmsPage
 import AnalyticsPage from './admin/pages/AnalyticsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { API_BASE_URL } from './config';
+import { defaultCommunitySection, normalizeCommunitySection } from './data/communitySection';
 import { defaultHomepageContent, normalizeHomepageContent } from './data/homepageContent';
 
 function HomePage() {
   const [homepageContent, setHomepageContent] = useState(defaultHomepageContent);
+  const [communitySection, setCommunitySection] = useState(defaultCommunitySection);
   const [loadingHomepage, setLoadingHomepage] = useState(true);
+  const [loadingCommunity, setLoadingCommunity] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -49,6 +54,26 @@ function HomePage() {
       })
       .finally(() => {
         if (active) setLoadingHomepage(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    fetch(`${API_BASE_URL}/api/community-section`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Community section unavailable")))
+      .then((data) => {
+        if (active) setCommunitySection(normalizeCommunitySection(data.section));
+      })
+      .catch(() => {
+        if (active) setCommunitySection(defaultCommunitySection);
+      })
+      .finally(() => {
+        if (active) setLoadingCommunity(false);
       });
 
     return () => {
@@ -86,6 +111,7 @@ function HomePage() {
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">{content.cta_description}</p>
         </div>
       </section>
+      <CommunitySection section={communitySection} loading={loadingCommunity} />
       <Registration />
       <FAQ />
       <Footer content={content} />
@@ -121,6 +147,7 @@ function App() {
         <Route path="faq" element={<FaqCmsPage />} />
         <Route path="website" element={<CmsPlaceholderPage title="Website CMS" description="Global brand, theme, SEO, footer, announcements, and contact controls." />} />
         <Route path="homepage" element={<HomepageCmsEditor />} />
+        <Route path="community-section" element={<CommunitySectionCmsPage />} />
         <Route path="registrations" element={<RegistrationsPage />} />
         <Route path="coupons" element={<CouponsCmsPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
