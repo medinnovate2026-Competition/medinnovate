@@ -1,51 +1,29 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from "framer-motion"
-
-const faqs = [
-  {
-    question: 'Is Medinnovate an online or offline event?',
-    answer: 'Medinnovate will follow a hybrid format. Phase 1 will be conducted online, and the Grand Finale will be held offline in India with a virtual presentation option for eligible participants who cannot attend in person.',
-  },
-  {
-    question: 'Can I participate solo?',
-    answer: 'No. Participation requires a team of exactly 5 undergraduate students.',
-  },
-  {
-    question: 'Who can participate?',
-    answer: 'Undergraduate students from Africa and India can participate.',
-  },
-  {
-    question: 'Can team members be from different colleges or countries?',
-    answer: 'Yes. Team members can be from different colleges, disciplines, or countries, as long as all members meet the eligibility criteria.',
-  },
-  {
-    question: 'Is there any registration fee?',
-    answer: 'Yes. The registration fee is $3 per participant or $15 per team of 5 members.',
-  },
-  {
-    question: 'Will certificates be provided?',
-    answer: 'Yes. Certificates will be provided based on participation and completion criteria.',
-  },
-  {
-    question: 'What is the selection process?',
-    answer: 'The selection process follows registration, submission, screening, mentorship, and final pitch.',
-  },
-  {
-    question: 'What happens if I cannot attend the final round in person?',
-    answer: 'A virtual option will be available for participants who cannot attend the final round in person.',
-  },
-  {
-    question: 'What kind of ideas can we submit?',
-    answer: 'You can submit healthcare innovation ideas that address meaningful real-world healthcare challenges.',
-  },
-  {
-    question: 'How can I contact the team for support?',
-    answer: 'You can contact the team through email, Instagram, or WhatsApp.',
-  },
-]
+import { API_BASE_URL } from "../config";
+import { defaultFaqs, normalizeFaqList } from "../data/faqs";
 
 function FAQ() {
   const [openIndex, setOpenIndex] = useState(0)
+  const [faqs, setFaqs] = useState(defaultFaqs)
+
+  useEffect(() => {
+    let active = true
+
+    fetch(`${API_BASE_URL}/api/faq`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("FAQ unavailable")))
+      .then((data) => {
+        const publishedFaqs = normalizeFaqList(data.items).filter((item) => item.status === "Published")
+        if (active) setFaqs(publishedFaqs.length ? publishedFaqs : defaultFaqs)
+      })
+      .catch(() => {
+        if (active) setFaqs(defaultFaqs)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   return (
     <motion.section

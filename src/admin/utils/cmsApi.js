@@ -8,13 +8,24 @@ export class CmsApiUnavailableError extends Error {
 }
 
 export async function cmsFetchJson(path, options) {
-  const response = await fetch(`${API_BASE_URL}${path}`, options);
+  let response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, options);
+  } catch {
+    throw new CmsApiUnavailableError(path);
+  }
+
   const text = await response.text();
   let data = {};
 
   try {
     data = text ? JSON.parse(text) : {};
   } catch {
+    throw new CmsApiUnavailableError(path);
+  }
+
+  if (response.status === 404 || response.status === 405) {
     throw new CmsApiUnavailableError(path);
   }
 

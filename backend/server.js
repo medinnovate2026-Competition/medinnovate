@@ -1671,6 +1671,14 @@ app.get("/api/admin/faq", async (req, res) => {
   res.json({ ...data, categories: categories.map((row) => row.category) });
 });
 
+app.get("/api/faq", async (_req, res) => {
+  const [rows] = await db.query(
+    "SELECT * FROM faq WHERE status = 'Published' OR is_published = TRUE ORDER BY order_index ASC, id DESC",
+  );
+
+  res.json({ items: rows.map(serializeFaq), total: rows.length });
+});
+
 app.post("/api/admin/faq", async (req, res) => {
   const question = String(req.body.question || "").trim();
   const answer = String(req.body.answer || "").trim();

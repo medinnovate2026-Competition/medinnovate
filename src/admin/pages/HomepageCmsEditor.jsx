@@ -3,10 +3,11 @@ import { motion } from "framer-motion";
 import { Plus, RefreshCw, Save, Trash2 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import Tabs from "../components/Tabs";
-import { cmsFetchJson } from "../utils/cmsApi";
+import { cmsFetchJson, isCmsApiUnavailable, readLocalCms, writeLocalCms } from "../utils/cmsApi";
 import { defaultHomepageContent, normalizeHomepageContent } from "../../data/homepageContent";
 
 const sectionNames = ["Hero", "About", "Stats", "Timeline", "Why Participate", "CTA", "Contact"];
+const HOMEPAGE_KEY = "medinnovate_homepage_cms";
 
 function Field({ label, value, onChange, tall, placeholder }) {
   return (
@@ -95,6 +96,7 @@ function HomepageCmsEditor() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [usingFallback, setUsingFallback] = useState(false);
 
   const update = (key, value) => setContent((current) => ({ ...current, [key]: value }));
   const updateContact = (key, value) => setContent((current) => ({ ...current, contact_json: { ...current.contact_json, [key]: value } }));
@@ -107,9 +109,16 @@ function HomepageCmsEditor() {
     try {
       const data = await cmsFetchJson("/api/admin/homepage");
       setContent(normalizeHomepageContent(data.content));
+      setUsingFallback(false);
     } catch (loadError) {
-      setContent(defaultHomepageContent);
-      setError(loadError.message || "Unable to load homepage content.");
+      if (isCmsApiUnavailable(loadError)) {
+        setContent(normalizeHomepageContent(readLocalCms(HOMEPAGE_KEY, defaultHomepageContent)));
+        setUsingFallback(true);
+        setMessage("Using local Homepage draft because the production API route is unavailable.");
+      } else {
+        setContent(defaultHomepageContent);
+        setError(loadError.message || "Unable to load homepage content.");
+      }
     } finally {
       setLoading(false);
     }
@@ -120,6 +129,13 @@ function HomepageCmsEditor() {
     setError("");
     setMessage("");
 
+    if (usingFallback) {
+      writeLocalCms(HOMEPAGE_KEY, content);
+      setMessage("Homepage draft saved locally.");
+      setSaving(false);
+      return;
+    }
+
     try {
       const data = await cmsFetchJson("/api/admin/homepage", {
         method: "PUT",
@@ -129,7 +145,13 @@ function HomepageCmsEditor() {
       setContent(normalizeHomepageContent(data.content));
       setMessage("Homepage content saved.");
     } catch (saveError) {
-      setError(saveError.message || "Unable to save homepage content.");
+      if (isCmsApiUnavailable(saveError)) {
+        writeLocalCms(HOMEPAGE_KEY, content);
+        setUsingFallback(true);
+        setMessage("Homepage draft saved locally.");
+      } else {
+        setError(saveError.message || "Unable to save homepage content.");
+      }
     } finally {
       setSaving(false);
     }
@@ -212,6 +234,7 @@ function HomepageCmsEditor() {
 
       {message && <div className="mb-6 rounded-3xl border border-emerald-100 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-700">{message}</div>}
       {error && <div className="mb-6 rounded-3xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-bold text-red-700">{error}</div>}
+      {usingFallback && <div className="mb-6 rounded-3xl border border-amber-100 bg-amber-50 px-5 py-4 text-sm font-bold text-amber-700">Homepage CMS is using a local browser draft because the production CMS API route is unavailable.</div>}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="admin-card rounded-[32px] p-6">

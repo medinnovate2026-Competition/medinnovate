@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, RefreshCw, Save, UploadCloud } from "lucide-react";
 import PageHeader from "../components/PageHeader";
-import { cmsFetchJson } from "../utils/cmsApi";
+import { cmsFetchJson, isCmsApiUnavailable, readLocalCms, writeLocalCms } from "../utils/cmsApi";
 import { resolveAssetUrl } from "../../config";
 import { defaultCommunitySection, normalizeCommunitySection } from "../../data/communitySection";
+
+const COMMUNITY_KEY = "medinnovate_community_section_cms";
 
 function Field({ label, value, onChange, tall, placeholder }) {
   return (
@@ -64,6 +66,7 @@ function CommunitySectionCmsPage() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [usingFallback, setUsingFallback] = useState(false);
 
   const update = (key, value) => setSection((current) => ({ ...current, [key]: value }));
 
@@ -75,9 +78,16 @@ function CommunitySectionCmsPage() {
     try {
       const data = await cmsFetchJson("/api/admin/community-section");
       setSection(normalizeCommunitySection(data.section));
+      setUsingFallback(false);
     } catch (loadError) {
-      setSection(defaultCommunitySection);
-      setError(loadError.message || "Unable to load community section.");
+      if (isCmsApiUnavailable(loadError)) {
+        setSection(normalizeCommunitySection(readLocalCms(COMMUNITY_KEY, defaultCommunitySection)));
+        setUsingFallback(true);
+        setMessage("Using local Community Section draft because the production API route is unavailable.");
+      } else {
+        setSection(defaultCommunitySection);
+        setError(loadError.message || "Unable to load community section.");
+      }
     } finally {
       setLoading(false);
     }
@@ -88,6 +98,13 @@ function CommunitySectionCmsPage() {
     setMessage("");
     setError("");
 
+    if (usingFallback) {
+      writeLocalCms(COMMUNITY_KEY, section);
+      setMessage("Community section draft saved locally.");
+      setSaving(false);
+      return;
+    }
+
     try {
       const data = await cmsFetchJson("/api/admin/community-section", {
         method: "PUT",
@@ -97,7 +114,13 @@ function CommunitySectionCmsPage() {
       setSection(normalizeCommunitySection(data.section));
       setMessage("Community section saved.");
     } catch (saveError) {
-      setError(saveError.message || "Unable to save community section.");
+      if (isCmsApiUnavailable(saveError)) {
+        writeLocalCms(COMMUNITY_KEY, section);
+        setUsingFallback(true);
+        setMessage("Community section draft saved locally.");
+      } else {
+        setError(saveError.message || "Unable to save community section.");
+      }
     } finally {
       setSaving(false);
     }
@@ -159,6 +182,7 @@ function CommunitySectionCmsPage() {
 
       {message && <div className="mb-6 rounded-3xl border border-emerald-100 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-700">{message}</div>}
       {error && <div className="mb-6 rounded-3xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-bold text-red-700">{error}</div>}
+      {usingFallback && <div className="mb-6 rounded-3xl border border-amber-100 bg-amber-50 px-5 py-4 text-sm font-bold text-amber-700">Community Section CMS is using a local browser draft because the production CMS API route is unavailable.</div>}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="admin-card rounded-[32px] p-6">

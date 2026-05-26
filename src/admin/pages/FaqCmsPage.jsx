@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2 } from "lucide-
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import { cmsFetchJson, isCmsApiUnavailable, readLocalCms, writeLocalCms } from "../utils/cmsApi";
+import { defaultFaqs, normalizeFaqList } from "../../data/faqs";
 
 const emptyFaq = {
   question: "",
@@ -13,18 +14,6 @@ const emptyFaq = {
 };
 
 const FAQ_KEY = "medinnovate_faq_cms";
-const seedFaqs = [
-  { id: 1, question: "Is Medinnovate an online or offline event?", answer: "Medinnovate will follow a hybrid format. Phase 1 will be conducted online, and the Grand Finale will be held offline in India with a virtual presentation option for eligible participants who cannot attend in person.", category: "Format", status: "Published", order_index: 1 },
-  { id: 2, question: "Can I participate solo?", answer: "No. Participation requires a team of exactly 5 undergraduate students.", category: "Eligibility", status: "Published", order_index: 2 },
-  { id: 3, question: "Who can participate?", answer: "Undergraduate students from Africa and India can participate.", category: "Eligibility", status: "Published", order_index: 3 },
-  { id: 4, question: "Can team members be from different colleges or countries?", answer: "Yes. Team members can be from different colleges, disciplines, or countries, as long as all members meet the eligibility criteria.", category: "Team", status: "Published", order_index: 4 },
-  { id: 5, question: "Is there any registration fee?", answer: "Yes. The registration fee is $3 per participant or $15 per team of 5 members.", category: "Payment", status: "Published", order_index: 5 },
-  { id: 6, question: "Will certificates be provided?", answer: "Yes. Certificates will be provided based on participation and completion criteria.", category: "Benefits", status: "Published", order_index: 6 },
-  { id: 7, question: "What is the selection process?", answer: "The selection process follows registration, submission, screening, mentorship, and final pitch.", category: "Selection", status: "Published", order_index: 7 },
-  { id: 8, question: "What happens if I cannot attend the final round in person?", answer: "A virtual option will be available for participants who cannot attend the final round in person.", category: "Finale", status: "Published", order_index: 8 },
-  { id: 9, question: "What kind of ideas can we submit?", answer: "You can submit healthcare innovation ideas that address meaningful real-world healthcare challenges.", category: "Ideas", status: "Published", order_index: 9 },
-  { id: 10, question: "How can I contact the team for support?", answer: "You can contact the team through email, Instagram, or WhatsApp.", category: "Support", status: "Published", order_index: 10 },
-];
 
 function FaqCmsPage() {
   const [faqs, setFaqs] = useState([]);
@@ -64,7 +53,7 @@ function FaqCmsPage() {
       if (isCmsApiUnavailable(loadError)) {
         const nextSearch = next.search ?? query;
         const nextCategory = next.category ?? category;
-        const localFaqs = readLocalCms(FAQ_KEY, seedFaqs);
+        const localFaqs = normalizeFaqList(readLocalCms(FAQ_KEY, defaultFaqs));
         const filtered = localFaqs
           .filter((faq) => !nextSearch || `${faq.question} ${faq.answer} ${faq.category}`.toLowerCase().includes(nextSearch.toLowerCase()))
           .filter((faq) => nextCategory === "All" || faq.category === nextCategory)
@@ -101,7 +90,7 @@ function FaqCmsPage() {
     setError("");
 
     if (usingFallback) {
-      const localFaqs = readLocalCms(FAQ_KEY, seedFaqs);
+      const localFaqs = normalizeFaqList(readLocalCms(FAQ_KEY, defaultFaqs));
       const nextItem = { ...selected, id: editingId || Date.now() };
       const nextFaqs = editingId ? localFaqs.map((faq) => faq.id === editingId ? nextItem : faq) : [...localFaqs, nextItem];
       writeLocalCms(FAQ_KEY, nextFaqs);
@@ -134,7 +123,7 @@ function FaqCmsPage() {
     setError("");
 
     if (usingFallback) {
-      const nextFaqs = readLocalCms(FAQ_KEY, seedFaqs).filter((faq) => faq.id !== id);
+      const nextFaqs = normalizeFaqList(readLocalCms(FAQ_KEY, defaultFaqs)).filter((faq) => faq.id !== id);
       writeLocalCms(FAQ_KEY, nextFaqs);
       if (editingId === id) startCreate();
       loadFaqs();
@@ -153,7 +142,7 @@ function FaqCmsPage() {
   const toggleStatus = async (faq) => {
     const next = { ...faq, status: faq.status === "Published" ? "Draft" : "Published" };
     if (usingFallback) {
-      const nextFaqs = readLocalCms(FAQ_KEY, seedFaqs).map((item) => item.id === faq.id ? next : item);
+      const nextFaqs = normalizeFaqList(readLocalCms(FAQ_KEY, defaultFaqs)).map((item) => item.id === faq.id ? next : item);
       writeLocalCms(FAQ_KEY, nextFaqs);
       loadFaqs();
       return;
