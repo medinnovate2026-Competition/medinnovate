@@ -909,6 +909,32 @@ function serializeRegistration(team, members = []) {
   };
 }
 
+async function loadRegistrationMembers(teamIds) {
+  if (teamIds.length === 0) return {};
+
+  const memberTables = [];
+  if (await tableExists("registration_members")) memberTables.push("registration_members");
+  if (await tableExists("participants")) memberTables.push("participants");
+
+  const membersByTeam = {};
+
+  for (const table of memberTables) {
+    if (!(await columnExists(table, "team_id"))) continue;
+
+    const [members] = await db.query(
+      `SELECT * FROM ${table} WHERE team_id IN (${teamIds.map(() => "?").join(", ")}) ORDER BY id ASC`,
+      teamIds,
+    );
+
+    members.forEach((member) => {
+      membersByTeam[member.team_id] = membersByTeam[member.team_id] || [];
+      membersByTeam[member.team_id].push(member);
+    });
+  }
+
+  return membersByTeam;
+}
+
 async function loadRegistrations({ id, search = "", page = 1, limit = 10 } = {}) {
   const params = [];
   const where = [];
@@ -919,26 +945,30 @@ async function loadRegistrations({ id, search = "", page = 1, limit = 10 } = {})
   }
 
   if (search) {
-    where.push(`(
-      t.team_name LIKE ?
-      OR t.coupon_code LIKE ?
-      OR t.referral_code LIKE ?
-      OR t.utr LIKE ?
-      OR EXISTS (
-        SELECT 1 FROM registration_members rm
+    const memberSearchTables = [];
+    if (await tableExists("registration_members")) memberSearchTables.push("registration_members");
+    if (await tableExists("participants")) memberSearchTables.push("participants");
+    const memberSearch = memberSearchTables
+      .map((table) => `EXISTS (
+        SELECT 1 FROM ${table} rm
         WHERE rm.team_id = t.id
           AND (
             rm.name LIKE ?
             OR rm.email LIKE ?
             OR rm.country LIKE ?
             OR rm.college LIKE ?
-            OR rm.phone LIKE ?
-            OR rm.discipline LIKE ?
-            OR rm.study_year LIKE ?
           )
-      )
+      )`)
+      .join(" OR ");
+
+    where.push(`(
+      t.team_name LIKE ?
+      OR t.coupon_code LIKE ?
+      OR t.referral_code LIKE ?
+      OR t.utr LIKE ?
+      ${memberSearch ? `OR ${memberSearch}` : ""}
     )`);
-    params.push(...Array(11).fill(`%${search}%`));
+    params.push(...Array(4 + memberSearchTables.length * 4).fill(`%${search}%`));
   }
 
   const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
@@ -950,19 +980,7 @@ async function loadRegistrations({ id, search = "", page = 1, limit = 10 } = {})
   );
 
   const ids = teams.map((team) => team.id);
-  const membersByTeam = {};
-
-  if (ids.length > 0) {
-    const [members] = await db.query(
-      `SELECT * FROM registration_members WHERE team_id IN (${ids.map(() => "?").join(", ")}) ORDER BY id ASC`,
-      ids,
-    );
-
-    members.forEach((member) => {
-      membersByTeam[member.team_id] = membersByTeam[member.team_id] || [];
-      membersByTeam[member.team_id].push(member);
-    });
-  }
+  const membersByTeam = await loadRegistrationMembers(ids);
 
   return {
     registrations: teams.map((team) => serializeRegistration(team, membersByTeam[team.id] || [])),

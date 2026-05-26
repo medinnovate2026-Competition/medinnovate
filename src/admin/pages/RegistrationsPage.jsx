@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, Eye, Filter, RefreshCw, Search } from "lucide-react";
+import { Download, Eye, Filter, RefreshCw, Search, X } from "lucide-react";
 import PageHeader from "../components/PageHeader";
-import Drawer from "../components/Drawer";
 import { cmsFetchJson, isCmsApiUnavailable } from "../utils/cmsApi";
 
 function formatMoney(value) {
@@ -38,6 +37,9 @@ function DetailRow({ label, value }) {
 function RegistrationsPage() {
   const [registrations, setRegistrations] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -82,15 +84,30 @@ function RegistrationsPage() {
 
   const loadRegistrationDetails = async (id) => {
     setError("");
+    setDetailsError("");
+    setSelected(null);
+    setDetailsOpen(true);
+    setDetailsLoading(true);
 
-    if (usingFallback) return;
+    if (usingFallback) {
+      setDetailsLoading(false);
+      return;
+    }
 
     try {
       const data = await cmsFetchJson(`/api/admin/registrations/${id}`);
       setSelected(data.registration);
     } catch (loadError) {
-      setError(loadError.message || "Unable to load registration details.");
+      setDetailsError(loadError.message || "Unable to load registration details.");
+    } finally {
+      setDetailsLoading(false);
     }
+  };
+
+  const closeDetails = () => {
+    setDetailsOpen(false);
+    setSelected(null);
+    setDetailsError("");
   };
 
   const exportCsv = () => {
@@ -141,7 +158,7 @@ function RegistrationsPage() {
         eyebrow="Registrations"
         title="Registration management"
         description="Review teams, leader details, payment status, coupon usage, stages, and exportable registration records."
-        actions={
+        actions={(
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={exportCsv} className="admin-button admin-button-secondary">
               <Download size={16} />
@@ -152,7 +169,7 @@ function RegistrationsPage() {
               Refresh
             </button>
           </div>
-        }
+        )}
       />
 
       {error && <div className="mb-6 rounded-3xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-bold text-red-700">{error}</div>}
@@ -183,7 +200,7 @@ function RegistrationsPage() {
           <table className="w-full min-w-[1180px] text-left text-sm">
             <thead className="bg-[#f5f2ff] text-xs uppercase tracking-[0.16em] text-[#9b93b4]">
               <tr>
-                {["Team ID", "Leader", "Phone", "College", "Members", "Country", "Referral", "Coupon", "Payment status", "Amount", "Date", "View"].map((head) => (
+                {["Team ID", "Leader", "Phone", "College", "Members", "Country", "Referral", "Coupon", "Payment status", "Amount", "Date", "Team"].map((head) => (
                   <th key={head} className="px-5 py-4">{head}</th>
                 ))}
               </tr>
@@ -215,8 +232,14 @@ function RegistrationsPage() {
                   <td className="px-5 py-4 font-black text-slate-700">{formatMoney(registration.amount)}</td>
                   <td className="px-5 py-4 text-slate-500">{formatDate(registration.date)}</td>
                   <td className="px-5 py-4">
-                    <button type="button" onClick={() => loadRegistrationDetails(registration.id)} className="admin-icon-button h-10 w-10" aria-label="View details">
+                    <button
+                      type="button"
+                      onClick={() => loadRegistrationDetails(registration.id)}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-violet-100 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#5d55b9] shadow-sm transition hover:border-fuchsia-200 hover:text-[#EC4899]"
+                      aria-label={`View team ${registration.team_id}`}
+                    >
                       <Eye size={16} />
+                      View Team Details
                     </button>
                   </td>
                 </tr>
@@ -226,7 +249,7 @@ function RegistrationsPage() {
         </div>
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-slate-400">Page {page} of {totalPages} · {total} records</p>
+          <p className="text-sm font-semibold text-slate-400">Page {page} of {totalPages} - {total} records</p>
           <div className="flex gap-2">
             <button className="admin-button admin-button-secondary" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}>Previous</button>
             <button className="admin-button admin-button-secondary" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page >= totalPages}>Next</button>
@@ -234,43 +257,82 @@ function RegistrationsPage() {
         </div>
       </section>
 
-      <Drawer open={Boolean(selected)} title={selected ? `Team #${selected.team_id}` : "Registration"} onClose={() => setSelected(null)}>
-        {selected && (
-          <>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <DetailRow label="Leader" value={selected.leader} />
-              <DetailRow label="Leader email" value={selected.leader_email} />
-              <DetailRow label="Leader phone" value={selected.leader_phone} />
-              <DetailRow label="Country" value={selected.country} />
-              <DetailRow label="College" value={selected.leader_college} />
-              <DetailRow label="Discipline" value={selected.leader_discipline} />
-              <DetailRow label="Year" value={selected.leader_year} />
-              <DetailRow label="Gender" value={selected.leader_gender} />
-              <DetailRow label="Referral" value={selected.referral_code || "None"} />
-              <DetailRow label="Coupon" value={selected.coupon || "None"} />
-              <DetailRow label="Payment" value={selected.payment_status} />
-              <DetailRow label="Amount" value={formatMoney(selected.amount)} />
-              <DetailRow label="Transaction ID" value={selected.utr} />
-              <DetailRow label="Stage" value={selected.stage} />
-              <DetailRow label="Date" value={formatDate(selected.date)} />
-            </div>
-            <div className="mt-4 rounded-3xl border border-violet-100 bg-white p-4">
-              <h4 className="text-sm font-black uppercase tracking-[0.16em] text-[#514aa3]">Members</h4>
-              <div className="mt-4 grid gap-3">
-                {selected.members.map((member, index) => (
-                  <div key={member.id} className="rounded-2xl bg-violet-50/70 p-4">
-                    <p className="font-black text-slate-800">Member {index + 1}: {member.name}</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-500">{member.email}</p>
-                    {member.phone && <p className="mt-1 text-sm font-semibold text-slate-500">Phone: {member.phone}</p>}
-                    <p className="mt-1 text-sm font-semibold text-slate-500">{member.discipline || "Discipline not set"} · {member.study_year || "Year not set"}</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-500">{member.college || "College not set"} · {member.country || "Country not set"}</p>
-                  </div>
-                ))}
+      {detailsOpen && (
+        <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/35 px-4 py-8 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[32px] border border-violet-100 bg-[#fbfaff] p-6 shadow-2xl">
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-300">Registration team</p>
+                <h3 className="mt-2 text-2xl font-black text-[#514aa3]">{selected ? selected.team_name : "Loading team details"}</h3>
+                {selected && <p className="mt-1 text-sm font-bold text-slate-500">Team ID: {selected.team_id}</p>}
               </div>
+              <button type="button" onClick={closeDetails} className="admin-icon-button" aria-label="Close team details">
+                <X size={18} />
+              </button>
             </div>
-          </>
-        )}
-      </Drawer>
+
+            {detailsLoading && (
+              <div className="rounded-3xl border border-violet-100 bg-white p-8 text-center text-sm font-black text-violet-300">
+                Loading team details...
+              </div>
+            )}
+
+            {detailsError && (
+              <div className="rounded-3xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-bold text-red-700">
+                {detailsError}
+              </div>
+            )}
+
+            {selected && !detailsLoading && (
+              <div className="space-y-5">
+                <section className="rounded-3xl border border-violet-100 bg-violet-50/50 p-4">
+                  <h4 className="text-sm font-black uppercase tracking-[0.16em] text-[#514aa3]">Transaction details</h4>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <DetailRow label="Transaction ID" value={selected.utr} />
+                    <DetailRow label="Payment" value={selected.payment_status} />
+                    <DetailRow label="Amount" value={formatMoney(selected.amount)} />
+                    <DetailRow label="Coupon" value={selected.coupon || "None"} />
+                    <DetailRow label="Referral" value={selected.referral_code || "None"} />
+                    <DetailRow label="Created at" value={formatDate(selected.date)} />
+                  </div>
+                </section>
+
+                <section className="rounded-3xl border border-violet-100 bg-white p-4">
+                  <h4 className="text-sm font-black uppercase tracking-[0.16em] text-[#514aa3]">Leader details</h4>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <DetailRow label="Name" value={selected.leader} />
+                    <DetailRow label="Email" value={selected.leader_email} />
+                    <DetailRow label="Phone" value={selected.leader_phone} />
+                    <DetailRow label="College" value={selected.leader_college} />
+                    <DetailRow label="Country" value={selected.country} />
+                    <DetailRow label="Discipline" value={selected.leader_discipline} />
+                  </div>
+                </section>
+
+                <section className="rounded-3xl border border-violet-100 bg-white p-4">
+                  <h4 className="text-sm font-black uppercase tracking-[0.16em] text-[#514aa3]">Participant details</h4>
+                  <div className="mt-4 grid gap-3">
+                    {selected.members.length === 0 ? (
+                      <div className="rounded-2xl bg-violet-50/70 p-4 text-sm font-bold text-slate-400">No participant details found</div>
+                    ) : selected.members.map((member, index) => (
+                      <div key={member.id || `${member.email}-${index}`} className="rounded-2xl bg-violet-50/70 p-4">
+                        <p className="font-black text-slate-800">Member {index + 1}</p>
+                        <p className="mt-2 text-sm font-semibold text-slate-600">Name: {member.name || "Not available"}</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-600">Email: {member.email || "Not available"}</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-600">College: {member.college || "Not available"}</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-600">Country: {member.country || "Not available"}</p>
+                        {(member.role || member.is_leader) && (
+                          <p className="mt-1 text-sm font-semibold text-slate-600">Role: {member.role || "Leader"}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
