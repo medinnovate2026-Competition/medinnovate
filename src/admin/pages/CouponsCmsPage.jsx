@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BadgePercent, ImageUp, RefreshCw } from "lucide-react";
+import { BadgePercent, ImageUp, RefreshCw, Trash2 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import { resolveAssetUrl } from "../../config";
 import { cmsFetchJson, isCmsApiUnavailable, readLocalCms, writeLocalCms } from "../utils/cmsApi";
@@ -44,6 +44,7 @@ function CouponsCmsPage() {
   const [saving, setSaving] = useState(false);
   const [paymentSettings, setPaymentSettings] = useState({ default_qr_image: "https://i.postimg.cc/sg82803c/1500QR.jpg" });
   const [savingSettings, setSavingSettings] = useState(false);
+  const [deletingCouponId, setDeletingCouponId] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [usingFallback, setUsingFallback] = useState(false);
@@ -193,6 +194,37 @@ function CouponsCmsPage() {
       setMessage(`${coupon.code} ${coupon.active ? "deactivated" : "activated"}.`);
     } catch (toggleError) {
       setError(toggleError.message || "Unable to update coupon.");
+    }
+  };
+
+  const deleteCoupon = async (coupon) => {
+    const confirmed = window.confirm(`Remove coupon ${coupon.code}? This cannot be undone.`);
+    if (!confirmed) return;
+
+    setDeletingCouponId(coupon.id);
+    setMessage("");
+    setError("");
+
+    if (usingFallback) {
+      const nextCoupons = coupons.filter((item) => item.id !== coupon.id);
+      setCoupons(nextCoupons);
+      writeLocalCms(COUPONS_KEY, nextCoupons);
+      setMessage(`${coupon.code} removed locally.`);
+      setDeletingCouponId(null);
+      return;
+    }
+
+    try {
+      const data = await cmsFetchJson(`/api/admin/coupons/${coupon.id}`, {
+        method: "DELETE",
+      });
+
+      setCoupons(data.coupons || []);
+      setMessage(`${coupon.code} removed.`);
+    } catch (deleteError) {
+      setError(deleteError.message || "Unable to remove coupon.");
+    } finally {
+      setDeletingCouponId(null);
     }
   };
 
@@ -356,15 +388,26 @@ function CouponsCmsPage() {
                     </div>
                     <p className="mt-2 truncate text-xs font-semibold text-slate-400">{coupon.qrImage}</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => toggleCoupon(coupon)}
-                    className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-wide ${
-                      coupon.active ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    {coupon.active ? "Active" : "Inactive"}
-                  </button>
+                  <div className="flex flex-wrap gap-2 sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => toggleCoupon(coupon)}
+                      className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-wide ${
+                        coupon.active ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {coupon.active ? "Active" : "Inactive"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteCoupon(coupon)}
+                      disabled={deletingCouponId === coupon.id}
+                      className="inline-flex items-center gap-2 rounded-full bg-red-50 px-4 py-2 text-xs font-black uppercase tracking-wide text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Trash2 size={14} />
+                      {deletingCouponId === coupon.id ? "Removing..." : "Remove"}
+                    </button>
+                  </div>
                 </div>
               ))
             )}

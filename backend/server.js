@@ -1077,6 +1077,21 @@ app.patch("/api/admin/coupons/:id", async (req, res) => {
   });
 });
 
+app.delete("/api/admin/coupons/:id", async (req, res) => {
+  const [result] = await db.query("DELETE FROM coupons WHERE id = ?", [req.params.id]);
+
+  if (result.affectedRows === 0) {
+    return res.status(404).json({ message: "Coupon not found." });
+  }
+
+  const [coupons] = await db.query("SELECT * FROM coupons ORDER BY code ASC");
+
+  return res.json({
+    message: "Coupon removed successfully.",
+    coupons: coupons.map(serializeCoupon),
+  });
+});
+
 app.post("/api/register-upi", async (req, res) => {
   const teamName = String(req.body.team_name || "").trim();
   const utr = String(req.body.utr || "").trim();
