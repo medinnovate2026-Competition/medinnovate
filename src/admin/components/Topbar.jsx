@@ -13,7 +13,6 @@ const searchableSections = [
   { title: "FAQ", description: "Questions, answers, categories, publish state", path: "/admin/faq", tags: "help questions support" },
   { title: "Registrations", description: "Teams, leaders, payments, CSV export", path: "/admin/registrations", tags: "applicants teams users export" },
   { title: "Coupons", description: "Discount codes, QR settings, payment coupons", path: "/admin/coupons", tags: "discount qr medin10 payments" },
-  { title: "Users", description: "Admin profiles, roles, permissions", path: "/admin/users", tags: "roles permissions admins" },
   { title: "Analytics", description: "Traffic, conversion, campaigns, content performance", path: "/admin/analytics", tags: "reports metrics traffic" },
   { title: "Settings", description: "System preferences and integrations", path: "/admin/settings", tags: "system preferences maintenance" },
 ];

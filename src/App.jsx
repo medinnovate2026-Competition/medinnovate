@@ -122,7 +122,6 @@ function App() {
         <Route path="homepage" element={<HomepageCmsEditor />} />
         <Route path="registrations" element={<RegistrationsPage />} />
         <Route path="coupons" element={<CouponsCmsPage />} />
-        <Route path="users" element={<CmsPlaceholderPage title="Users" description="Admin profiles, roles, permissions, volunteers, and content ownership." variant="table" />} />
         <Route path="analytics" element={<CmsPlaceholderPage title="Analytics" description="Traffic, conversion, campaign, registration, and content performance views." variant="table" />} />
         <Route path="settings" element={<CmsPlaceholderPage title="Settings" description="System preferences, access controls, integrations, maintenance mode, and admin defaults." />} />
       </Route>

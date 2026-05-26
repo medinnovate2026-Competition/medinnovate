@@ -26,7 +26,6 @@ const links = [
   { label: "Registrations", to: "/admin/registrations", icon: Activity },
   { label: "Coupons", to: "/admin/coupons", icon: BadgePercent },
   { label: "Organising Committee", to: "/admin/organising-committee", icon: Users },
-  { label: "Users", to: "/admin/users", icon: Users },
   { label: "Analytics", to: "/admin/analytics", icon: BarChart3 },
   { label: "Settings", to: "/admin/settings", icon: Settings },
 ];
