@@ -143,11 +143,16 @@ async function ensureSchema() {
       team_name VARCHAR(255) NOT NULL,
       utr VARCHAR(255) NOT NULL,
       coupon_code VARCHAR(64) NULL,
+      referral_code VARCHAR(100) NULL,
       total_paid DECIMAL(10, 2) NOT NULL,
       team_size INT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  if (!(await columnExists("teams", "referral_code"))) {
+    await db.query("ALTER TABLE teams ADD COLUMN referral_code VARCHAR(100) NULL AFTER coupon_code");
+  }
 
   if ((await tableExists("team_members")) && (await columnExists("team_members", "team_id")) && !(await tableExists("registration_members"))) {
     await db.query("RENAME TABLE team_members TO registration_members");
@@ -161,9 +166,43 @@ async function ensureSchema() {
       email VARCHAR(255) NOT NULL,
       college VARCHAR(255) NULL,
       country VARCHAR(255) NULL,
+      phone VARCHAR(100) NULL,
+      discipline VARCHAR(255) NULL,
+      study_year VARCHAR(100) NULL,
+      gender VARCHAR(100) NULL,
+      is_leader BOOLEAN NOT NULL DEFAULT FALSE,
       FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
     )
   `);
+
+  if (!(await columnExists("registration_members", "phone"))) {
+    await db.query("ALTER TABLE registration_members ADD COLUMN phone VARCHAR(100) NULL AFTER country");
+  }
+
+  if (!(await columnExists("registration_members", "discipline"))) {
+    await db.query("ALTER TABLE registration_members ADD COLUMN discipline VARCHAR(255) NULL AFTER phone");
+  }
+
+  if (!(await columnExists("registration_members", "study_year"))) {
+    await db.query("ALTER TABLE registration_members ADD COLUMN study_year VARCHAR(100) NULL AFTER discipline");
+  }
+
+  if (!(await columnExists("registration_members", "gender"))) {
+    await db.query("ALTER TABLE registration_members ADD COLUMN gender VARCHAR(100) NULL AFTER study_year");
+  }
+
+  if (!(await columnExists("registration_members", "is_leader"))) {
+    await db.query("ALTER TABLE registration_members ADD COLUMN is_leader BOOLEAN NOT NULL DEFAULT FALSE AFTER gender");
+    await db.query(`
+      UPDATE registration_members rm
+      JOIN (
+        SELECT team_id, MIN(id) AS leader_member_id
+        FROM registration_members
+        GROUP BY team_id
+      ) leaders ON leaders.leader_member_id = rm.id
+      SET rm.is_leader = TRUE
+    `);
+  }
 
   await db.query(`
     CREATE TABLE IF NOT EXISTS site_settings (
@@ -729,6 +768,7 @@ app.post("/api/register-upi", async (req, res) => {
   const utr = String(req.body.utr || "").trim();
   const members = Array.isArray(req.body.members) ? req.body.members : [];
   const couponCode = normalizeCode(req.body.coupon_code);
+  const referralCode = normalizeCode(req.body.referral_code);
   const amountPaid = Number(req.body.amount_paid);
 
   if (!teamName || !utr || members.length === 0 || Number.isNaN(amountPaid)) {
@@ -741,18 +781,23 @@ app.post("/api/register-upi", async (req, res) => {
     await connection.beginTransaction();
 
     const [teamResult] = await connection.query(
-      `INSERT INTO teams (team_name, utr, coupon_code, total_paid, team_size)
-       VALUES (?, ?, ?, ?, ?)`,
-      [teamName, utr, couponCode || null, amountPaid, members.length],
+      `INSERT INTO teams (team_name, utr, coupon_code, referral_code, total_paid, team_size)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [teamName, utr, couponCode || null, referralCode || null, amountPaid, members.length],
     );
 
     const teamId = teamResult.insertId;
-    const memberRows = members.map((member) => [
+    const memberRows = members.map((member, index) => [
       teamId,
       String(member.name || "").trim(),
       String(member.email || "").trim(),
       String(member.college || "").trim() || null,
       String(member.country || "").trim() || null,
+      String(member.phone || "").trim() || null,
+      String(member.discipline || "").trim() || null,
+      String(member.year || member.study_year || "").trim() || null,
+      String(member.gender || "").trim() || null,
+      index === 0,
     ]);
 
     if (memberRows.some((member) => !member[1] || !member[2])) {
@@ -760,7 +805,7 @@ app.post("/api/register-upi", async (req, res) => {
     }
 
     await connection.query(
-      "INSERT INTO registration_members (team_id, name, email, college, country) VALUES ?",
+      "INSERT INTO registration_members (team_id, name, email, college, country, phone, discipline, study_year, gender, is_leader) VALUES ?",
       [memberRows],
     );
 
@@ -796,7 +841,7 @@ app.get("/api/admin/teams", async (_req, res) => {
 });
 
 function serializeRegistration(team, members = []) {
-  const leader = members[0] || {};
+  const leader = members.find((member) => Boolean(member.is_leader)) || members[0] || {};
 
   return {
     id: team.id,
@@ -804,10 +849,16 @@ function serializeRegistration(team, members = []) {
     team_name: team.team_name,
     leader: leader.name || team.team_name,
     leader_email: leader.email || "",
+    leader_phone: leader.phone || "",
+    leader_college: leader.college || "",
+    leader_discipline: leader.discipline || "",
+    leader_year: leader.study_year || "",
+    leader_gender: leader.gender || "",
     members,
     member_count: members.length || Number(team.team_size || 0),
     country: leader.country || "",
     coupon: team.coupon_code || "",
+    referral_code: team.referral_code || "",
     payment_status: team.utr ? "Paid" : "Pending",
     amount: Number(team.total_paid || 0),
     utr: team.utr || "",
@@ -829,14 +880,23 @@ async function loadRegistrations({ id, search = "", page = 1, limit = 10 } = {})
     where.push(`(
       t.team_name LIKE ?
       OR t.coupon_code LIKE ?
+      OR t.referral_code LIKE ?
       OR t.utr LIKE ?
       OR EXISTS (
         SELECT 1 FROM registration_members rm
         WHERE rm.team_id = t.id
-          AND (rm.name LIKE ? OR rm.email LIKE ? OR rm.country LIKE ? OR rm.college LIKE ?)
+          AND (
+            rm.name LIKE ?
+            OR rm.email LIKE ?
+            OR rm.country LIKE ?
+            OR rm.college LIKE ?
+            OR rm.phone LIKE ?
+            OR rm.discipline LIKE ?
+            OR rm.study_year LIKE ?
+          )
       )
     )`);
-    params.push(...Array(7).fill(`%${search}%`));
+    params.push(...Array(11).fill(`%${search}%`));
   }
 
   const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";

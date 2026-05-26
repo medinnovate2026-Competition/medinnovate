@@ -299,12 +299,18 @@ function RegistrationForm() {
         email: leader.email.trim(),
         college: leader.college.trim(),
         country: leader.country.trim(),
+        phone: leader.phone.trim(),
+        discipline: leader.discipline.trim(),
+        year: leader.year.trim(),
+        gender: leader.gender.trim(),
       },
       ...members.map((member) => ({
         name: member.fullName.trim(),
         email: member.email.trim(),
         college: member.college.trim(),
         country: member.country.trim(),
+        discipline: member.discipline.trim(),
+        year: member.year.trim(),
       })),
     ];
 
@@ -313,6 +319,7 @@ function RegistrationForm() {
       members: payloadMembers,
       utr: utr.trim(),
       coupon_code: appliedCoupon ? couponCode.trim() : "",
+      referral_code: referralCode.trim(),
       amount_paid: finalAmount,
     };
 

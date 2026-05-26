@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS teams (
   team_name VARCHAR(255) NOT NULL,
   utr VARCHAR(255) NOT NULL,
   coupon_code VARCHAR(64) NULL,
+  referral_code VARCHAR(100) NULL,
   total_paid DECIMAL(10, 2) NOT NULL,
   team_size INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -47,6 +48,11 @@ CREATE TABLE IF NOT EXISTS registration_members (
   email VARCHAR(255) NOT NULL,
   college VARCHAR(255) NULL,
   country VARCHAR(255) NULL,
+  phone VARCHAR(100) NULL,
+  discipline VARCHAR(255) NULL,
+  study_year VARCHAR(100) NULL,
+  gender VARCHAR(100) NULL,
+  is_leader BOOLEAN NOT NULL DEFAULT FALSE,
   FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
 );
 

@@ -94,15 +94,23 @@ function RegistrationsPage() {
   };
 
   const exportCsv = () => {
-    const headers = ["Team ID", "Leader", "Members", "Country", "Coupon", "Payment Status", "Amount", "Date", "Stage"];
+    const headers = ["Team ID", "Team Name", "Leader", "Leader Email", "Leader Phone", "College", "Discipline", "Year", "Members", "Country", "Referral", "Coupon", "Payment Status", "Amount", "UTR", "Date", "Stage"];
     const rows = filteredRegistrations.map((registration) => [
       registration.team_id,
+      registration.team_name,
       registration.leader,
+      registration.leader_email,
+      registration.leader_phone,
+      registration.leader_college,
+      registration.leader_discipline,
+      registration.leader_year,
       registration.member_count,
       registration.country,
+      registration.referral_code || "None",
       registration.coupon || "None",
       registration.payment_status,
       registration.amount,
+      registration.utr,
       registration.date,
       registration.stage,
     ]);
@@ -158,7 +166,7 @@ function RegistrationsPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               className="admin-field w-full pl-11"
-              placeholder="Search leader, team, country, coupon, UTR"
+              placeholder="Search leader, team, country, referral, coupon, UTR"
             />
           </form>
           <label className="flex items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-black text-slate-600">
@@ -172,10 +180,10 @@ function RegistrationsPage() {
         </div>
 
         <div className="overflow-hidden rounded-[26px] border border-violet-100/80 bg-white/70">
-          <table className="w-full min-w-[980px] text-left text-sm">
+          <table className="w-full min-w-[1180px] text-left text-sm">
             <thead className="bg-[#f5f2ff] text-xs uppercase tracking-[0.16em] text-[#9b93b4]">
               <tr>
-                {["Team ID", "Leader", "Members", "Country", "Coupon", "Payment status", "Amount", "Date", "Stage", "View"].map((head) => (
+                {["Team ID", "Leader", "Phone", "College", "Members", "Country", "Referral", "Coupon", "Payment status", "Amount", "Date", "View"].map((head) => (
                   <th key={head} className="px-5 py-4">{head}</th>
                 ))}
               </tr>
@@ -183,7 +191,7 @@ function RegistrationsPage() {
             <tbody>
               {filteredRegistrations.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-5 py-10 text-center font-bold text-slate-400">
+                  <td colSpan={12} className="px-5 py-10 text-center font-bold text-slate-400">
                     {loading ? "Loading registrations..." : "No registrations found."}
                   </td>
                 </tr>
@@ -194,13 +202,18 @@ function RegistrationsPage() {
                     <p className="font-black text-slate-700">{registration.leader}</p>
                     <p className="text-xs font-semibold text-slate-400">{registration.leader_email}</p>
                   </td>
+                  <td className="px-5 py-4 text-slate-600">{registration.leader_phone || "Not set"}</td>
+                  <td className="px-5 py-4">
+                    <p className="font-bold text-slate-600">{registration.leader_college || "Not set"}</p>
+                    <p className="text-xs font-semibold text-slate-400">{registration.leader_discipline || "Discipline not set"}</p>
+                  </td>
                   <td className="px-5 py-4 text-slate-600">{registration.member_count}</td>
                   <td className="px-5 py-4 text-slate-600">{registration.country || "Not set"}</td>
+                  <td className="px-5 py-4 text-slate-600">{registration.referral_code || "None"}</td>
                   <td className="px-5 py-4 text-slate-600">{registration.coupon || "None"}</td>
                   <td className="px-5 py-4"><StatusPill status={registration.payment_status} /></td>
                   <td className="px-5 py-4 font-black text-slate-700">{formatMoney(registration.amount)}</td>
                   <td className="px-5 py-4 text-slate-500">{formatDate(registration.date)}</td>
-                  <td className="px-5 py-4 text-slate-600">{registration.stage}</td>
                   <td className="px-5 py-4">
                     <button type="button" onClick={() => loadRegistrationDetails(registration.id)} className="admin-icon-button h-10 w-10" aria-label="View details">
                       <Eye size={16} />
@@ -226,7 +239,14 @@ function RegistrationsPage() {
           <>
             <div className="grid gap-3 sm:grid-cols-2">
               <DetailRow label="Leader" value={selected.leader} />
+              <DetailRow label="Leader email" value={selected.leader_email} />
+              <DetailRow label="Leader phone" value={selected.leader_phone} />
               <DetailRow label="Country" value={selected.country} />
+              <DetailRow label="College" value={selected.leader_college} />
+              <DetailRow label="Discipline" value={selected.leader_discipline} />
+              <DetailRow label="Year" value={selected.leader_year} />
+              <DetailRow label="Gender" value={selected.leader_gender} />
+              <DetailRow label="Referral" value={selected.referral_code || "None"} />
               <DetailRow label="Coupon" value={selected.coupon || "None"} />
               <DetailRow label="Payment" value={selected.payment_status} />
               <DetailRow label="Amount" value={formatMoney(selected.amount)} />
@@ -241,6 +261,8 @@ function RegistrationsPage() {
                   <div key={member.id} className="rounded-2xl bg-violet-50/70 p-4">
                     <p className="font-black text-slate-800">Member {index + 1}: {member.name}</p>
                     <p className="mt-1 text-sm font-semibold text-slate-500">{member.email}</p>
+                    {member.phone && <p className="mt-1 text-sm font-semibold text-slate-500">Phone: {member.phone}</p>}
+                    <p className="mt-1 text-sm font-semibold text-slate-500">{member.discipline || "Discipline not set"} · {member.study_year || "Year not set"}</p>
                     <p className="mt-1 text-sm font-semibold text-slate-500">{member.college || "College not set"} · {member.country || "Country not set"}</p>
                   </div>
                 ))}
