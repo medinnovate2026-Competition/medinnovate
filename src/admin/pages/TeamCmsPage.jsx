@@ -3,6 +3,7 @@ import { AtSign, ImagePlus, Link, Mail, Pencil, Plus, Search, Trash2, X } from "
 import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import { cmsFetchJson, isCmsApiUnavailable, readLocalCms, writeLocalCms } from "../utils/cmsApi";
+import { resolveAssetUrl } from "../../config";
 
 const emptyMember = {
   name: "",
@@ -33,7 +34,7 @@ function TeamCard({ member, selected, onSelect }) {
   return (
     <button onClick={() => onSelect(member)} className={`rounded-[30px] border p-5 text-center shadow-sm transition hover:-translate-y-1 ${selected ? "border-violet-300 bg-white" : "border-white/80 bg-white/70"}`}>
       <div className="mx-auto grid h-24 w-24 place-items-center overflow-hidden rounded-[28px] bg-gradient-to-br from-violet-100 to-fuchsia-100 text-2xl font-black text-[#5d55b9]">
-        {member.photo_url ? <img src={member.photo_url} alt="" className="h-full w-full object-cover" /> : initials}
+        {member.photo_url ? <img src={resolveAssetUrl(member.photo_url)} alt="" className="h-full w-full object-cover" /> : initials}
       </div>
       <h3 className="mt-4 text-lg font-black text-[#514aa3]">{member.name}</h3>
       <p className="mt-1 text-sm font-bold text-slate-500">{member.role || "Role not set"}</p>
@@ -52,6 +53,7 @@ function TeamCmsPage() {
   const [roleFilter, setRoleFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [usingFallback, setUsingFallback] = useState(false);
 
@@ -105,6 +107,44 @@ function TeamCmsPage() {
   };
 
   const update = (key, value) => setSelected((current) => ({ ...current, [key]: value }));
+
+  const handlePhotoUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      setUploading(true);
+      setError("");
+
+      if (usingFallback) {
+        setUploading(false);
+        setError("Production media upload API is unavailable. Paste a Cloudinary URL instead.");
+        event.target.value = "";
+        return;
+      }
+
+      try {
+        const data = await cmsFetchJson("/api/admin/media/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileDataUrl: reader.result,
+            originalName: file.name,
+            folder: "team",
+            alt_text: selected?.name ? `${selected.name} photo` : "Team member photo",
+          }),
+        });
+        update("photo_url", data.url || data.item?.url || "");
+      } catch (uploadError) {
+        setError(uploadError.message || "Unable to upload photo.");
+      } finally {
+        setUploading(false);
+        event.target.value = "";
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const saveMember = async (event) => {
     event.preventDefault();
@@ -242,7 +282,7 @@ function TeamCmsPage() {
             {previewMembers.map((member) => (
               <div key={member.id} className="flex items-center gap-3 rounded-[24px] bg-white/70 p-3">
                 <div className="grid h-12 w-12 place-items-center overflow-hidden rounded-2xl bg-violet-100 text-sm font-black text-violet-700">
-                  {member.photo_url ? <img src={member.photo_url} alt="" className="h-full w-full object-cover" /> : member.name[0]}
+                  {member.photo_url ? <img src={resolveAssetUrl(member.photo_url)} alt="" className="h-full w-full object-cover" /> : member.name[0]}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-black text-[#454083]">{member.name}</p>
@@ -272,6 +312,11 @@ function TeamCmsPage() {
                   </div>
                 </div>
                 <input value={selected.photo_url} onChange={(event) => update("photo_url", event.target.value)} className="admin-field" placeholder="Photo URL" />
+                <label className="mt-3 flex cursor-pointer items-center justify-center gap-3 rounded-[22px] bg-violet-50 px-4 py-3 text-sm font-black text-[#5d55b9]">
+                  <ImagePlus size={17} />
+                  {uploading ? "Uploading..." : "Upload photo"}
+                  <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
+                </label>
               </div>
               <label className="grid gap-2 text-sm font-black text-slate-600">Name<input required value={selected.name} onChange={(event) => update("name", event.target.value)} className="admin-field" /></label>
               <label className="grid gap-2 text-sm font-black text-slate-600">Role<input value={selected.role} onChange={(event) => update("role", event.target.value)} className="admin-field" /></label>

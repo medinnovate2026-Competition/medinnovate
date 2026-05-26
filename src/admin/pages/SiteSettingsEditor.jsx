@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ImagePlus, RefreshCw, Save } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import Tabs from "../components/Tabs";
-import { API_BASE_URL } from "../../config";
+import { API_BASE_URL, resolveAssetUrl } from "../../config";
 import { cmsFetchJson, readLocalCms, writeLocalCms } from "../utils/cmsApi";
 
 const settingTabs = ["Brand", "SEO", "Footer", "Contact", "Socials", "Theme", "Announcement"];
@@ -78,6 +78,40 @@ function Field({ label, value, onChange, tall, type = "text" }) {
 }
 
 function UploadUrlField({ label, value, onChange }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  const uploadFile = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      setUploading(true);
+      setError("");
+
+      try {
+        const data = await cmsFetchJson("/api/admin/media/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileDataUrl: reader.result,
+            originalName: file.name,
+            folder: "site-settings",
+            alt_text: label,
+          }),
+        });
+        onChange(data.url || data.item?.url || "");
+      } catch (uploadError) {
+        setError(uploadError.message || `Unable to upload ${label.toLowerCase()}.`);
+      } finally {
+        setUploading(false);
+        event.target.value = "";
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="rounded-[28px] border border-dashed border-violet-200 bg-violet-50/70 p-5">
       <div className="mb-4 flex items-center gap-3">
@@ -90,6 +124,12 @@ function UploadUrlField({ label, value, onChange }) {
         </div>
       </div>
       <Field label={`${label} URL`} value={value} onChange={onChange} />
+      <label className="mt-4 flex cursor-pointer items-center justify-center gap-3 rounded-[22px] bg-white px-4 py-3 text-sm font-black text-[#5d55b9] shadow-sm">
+        <ImagePlus size={17} />
+        {uploading ? "Uploading..." : `Upload ${label}`}
+        <input type="file" accept="image/*" className="hidden" onChange={uploadFile} disabled={uploading} />
+      </label>
+      {error && <p className="mt-3 text-sm font-bold text-rose-600">{error}</p>}
     </div>
   );
 }
@@ -115,7 +155,7 @@ function SiteSettingsPreview({ settings }) {
             <p className="truncate text-xs font-semibold text-slate-400">{settings.tagline}</p>
           </div>
           <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-violet-50">
-            {settings.logo_url ? <img src={settings.logo_url} alt="" className="h-full w-full object-cover" /> : <span style={{ color: colors.primary }} className="font-black">M</span>}
+            {settings.logo_url ? <img src={resolveAssetUrl(settings.logo_url)} alt="" className="h-full w-full object-cover" /> : <span style={{ color: colors.primary }} className="font-black">M</span>}
           </div>
         </div>
         <div className="p-5" style={{ background: `linear-gradient(135deg, ${colors.background}, #ffffff)` }}>

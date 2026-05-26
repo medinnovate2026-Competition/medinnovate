@@ -1,7 +1,7 @@
 const cors = require("cors");
 const crypto = require("crypto");
 const express = require("express");
-const fs = require("fs");
+const multer = require("multer");
 const path = require("path");
 
 require("dotenv").config();
@@ -51,9 +51,12 @@ if (missingDbEnv.length > 0) {
 }
 
 const db = require("./config/database");
+const cloudinary = require("./config/cloudinary");
 
-fs.mkdirSync(PAYMENTS_DIR, { recursive: true });
-fs.mkdirSync(MEDIA_DIR, { recursive: true });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
 
 const corsOptions = {
   origin: [
@@ -68,7 +71,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
-app.use(express.json({ limit: "8mb" }));
+app.use(express.json({ limit: "20mb" }));
 app.use("/payments", express.static(PAYMENTS_DIR));
 app.use("/media", express.static(MEDIA_DIR));
 
@@ -702,47 +705,119 @@ async function ensureSchema() {
   }
 }
 
-function saveQrUpload({ code, qrImageDataUrl, qrImageName }) {
-  if (!qrImageDataUrl) return "";
-
-  const match = String(qrImageDataUrl).match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
-  if (!match) {
-    throw new Error("QR image upload must be an image file.");
+function assertCloudinaryConfigured() {
+  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    throw new Error("Cloudinary is not configured. Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.");
   }
-
-  const extension = path.extname(qrImageName || "").replace(".", "") || match[1].replace("jpeg", "jpg");
-  const safeExtension = extension.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-  const fileName = `${normalizeCode(code).toLowerCase()}-${Date.now()}.${safeExtension}`;
-  const filePath = path.join(PAYMENTS_DIR, fileName);
-
-  fs.writeFileSync(filePath, Buffer.from(match[2], "base64"));
-  return fileName;
 }
 
-function saveMediaUpload({ fileDataUrl, originalName }) {
+function sanitizeCloudinarySegment(value, fallback = "asset") {
+  const cleaned = String(value || fallback)
+    .trim()
+    .replace(path.extname(String(value || "")), "")
+    .replace(/[^a-zA-Z0-9-_]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
+  return cleaned || fallback;
+}
+
+function cloudinaryFolder(folder) {
+  const segment = sanitizeCloudinarySegment(folder, "media");
+  return `medinnovate/${segment}`;
+}
+
+function parseDataUrl(fileDataUrl, label = "Media upload") {
   if (!fileDataUrl) return null;
 
   const match = String(fileDataUrl).match(/^data:([^;]+);base64,(.+)$/);
   if (!match) {
-    throw new Error("Media upload must be a valid base64 data URL.");
+    throw new Error(`${label} must be a valid base64 data URL.`);
   }
 
-  const mimeType = match[1];
-  const extension = path.extname(originalName || "").replace(".", "") || mimeType.split("/")[1] || "bin";
-  const safeExtension = extension.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-  const baseName = path.basename(originalName || "media", path.extname(originalName || "")).replace(/[^a-zA-Z0-9-]/g, "-").toLowerCase();
-  const fileName = `${baseName || "media"}-${Date.now()}.${safeExtension}`;
-  const filePath = path.join(MEDIA_DIR, fileName);
-  const buffer = Buffer.from(match[2], "base64");
+  return {
+    mimeType: match[1],
+    buffer: Buffer.from(match[2], "base64"),
+  };
+}
 
-  fs.writeFileSync(filePath, buffer);
+function uploadBufferToCloudinary(buffer, options) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    });
+    stream.end(buffer);
+  });
+}
+
+async function uploadToCloudinary({ fileDataUrl, fileBuffer, mimeType, originalName, folder = "media", publicId, label = "Media upload" }) {
+  assertCloudinaryConfigured();
+
+  let uploadBuffer = fileBuffer;
+  let uploadMimeType = mimeType;
+
+  if (!uploadBuffer) {
+    const parsed = parseDataUrl(fileDataUrl, label);
+    if (!parsed) return null;
+    uploadBuffer = parsed.buffer;
+    uploadMimeType = parsed.mimeType;
+  }
+
+  const baseName = sanitizeCloudinarySegment(originalName || publicId || "media", "media");
+  const result = await uploadBufferToCloudinary(uploadBuffer, {
+    folder: cloudinaryFolder(folder),
+    public_id: publicId ? sanitizeCloudinarySegment(publicId, baseName) : `${baseName}-${Date.now()}`,
+    resource_type: "auto",
+    overwrite: false,
+  });
 
   return {
-    fileName,
-    url: `/media/${fileName}`,
-    mimeType,
-    sizeBytes: buffer.length,
+    success: true,
+    fileName: result.original_filename || path.basename(originalName || result.public_id),
+    url: result.secure_url,
+    secure_url: result.secure_url,
+    public_id: result.public_id,
+    mimeType: uploadMimeType || result.resource_type || "",
+    sizeBytes: Number(result.bytes || uploadBuffer.length || 0),
   };
+}
+
+async function saveQrUpload({ code, qrImageDataUrl, qrImageName }) {
+  if (!qrImageDataUrl) return "";
+
+  if (!String(qrImageDataUrl).startsWith("data:image/")) {
+    throw new Error("QR image upload must be an image file.");
+  }
+
+  const uploadResult = await uploadToCloudinary({
+    fileDataUrl: qrImageDataUrl,
+    originalName: qrImageName || `${normalizeCode(code).toLowerCase()}-qr.png`,
+    folder: "payments",
+    publicId: `${normalizeCode(code).toLowerCase()}-${Date.now()}`,
+    label: "QR image upload",
+  });
+
+  return uploadResult?.secure_url || "";
+}
+
+async function saveMediaUpload({ fileDataUrl, fileBuffer, mimeType, originalName, folder }) {
+  return uploadToCloudinary({
+    fileDataUrl,
+    fileBuffer,
+    mimeType,
+    originalName,
+    folder: folder || "media",
+    label: "Media upload",
+  });
+}
+
+function mergeMetadata(metadata, uploadResult) {
+  const parsed = parseJsonValue(metadata, {});
+  return JSON.stringify({
+    ...(parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {}),
+    cloudinary_public_id: uploadResult.public_id,
+  });
 }
 
 function pickFields(body, fields) {
@@ -923,7 +998,7 @@ app.post("/api/admin/coupons", async (req, res) => {
       return res.status(400).json({ message: "Code, discount %, and final price are required." });
     }
 
-    const uploadedQrImage = saveQrUpload({
+    const uploadedQrImage = await saveQrUpload({
       code,
       qrImageDataUrl: req.body.qrImageDataUrl,
       qrImageName: req.body.qrImageName,
@@ -1941,14 +2016,17 @@ app.delete("/api/admin/academic-partners/:id", async (req, res) => {
   return res.json({ success: true });
 });
 
-app.post("/api/admin/media/upload", async (req, res) => {
+app.post("/api/admin/media/upload", upload.single("file"), async (req, res) => {
   try {
-    const upload = saveMediaUpload({
+    const uploadResult = await saveMediaUpload({
       fileDataUrl: req.body.fileDataUrl,
-      originalName: req.body.originalName,
+      fileBuffer: req.file?.buffer,
+      mimeType: req.file?.mimetype,
+      originalName: req.body.originalName || req.file?.originalname,
+      folder: req.body.folder,
     });
 
-    if (!upload) {
+    if (!uploadResult) {
       return res.status(400).json({ message: "Upload a media file." });
     }
 
@@ -1956,19 +2034,24 @@ app.post("/api/admin/media/upload", async (req, res) => {
       `INSERT INTO media (file_name, original_name, url, mime_type, folder, alt_text, size_bytes, metadata)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        upload.fileName,
-        req.body.originalName || upload.fileName,
-        upload.url,
-        upload.mimeType,
+        uploadResult.fileName,
+        req.body.originalName || req.file?.originalname || uploadResult.fileName,
+        uploadResult.secure_url,
+        uploadResult.mimeType,
         req.body.folder || null,
         req.body.alt_text || null,
-        upload.sizeBytes,
-        req.body.metadata || null,
+        uploadResult.sizeBytes,
+        mergeMetadata(req.body.metadata, uploadResult),
       ],
     );
     const [rows] = await db.query("SELECT * FROM media WHERE id = ?", [result.insertId]);
 
-    return res.status(201).json({ item: rows[0] });
+    return res.status(201).json({
+      success: true,
+      url: uploadResult.secure_url,
+      public_id: uploadResult.public_id,
+      item: rows[0],
+    });
   } catch (error) {
     return res.status(400).json({ message: error.message || "Unable to upload media." });
   }

@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { ImagePlus, Mail, Phone, Plus, Search, X } from "lucide-react";
 import { motion } from "framer-motion";
 import PageHeader from "../components/PageHeader";
+import { cmsFetchJson } from "../utils/cmsApi";
+import { resolveAssetUrl } from "../../config";
 import { committeeSections } from "../../pages/OrganisingCommittee";
 
 const STORAGE_KEY = "medinnovate_organising_committee_cms";
@@ -48,6 +50,8 @@ function OrganisingCommitteeCmsPage() {
   const [sectionFilter, setSectionFilter] = useState("All");
   const [editorOpen, setEditorOpen] = useState(false);
   const [draft, setDraft] = useState(emptyMember);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
 
   const sections = useMemo(() => ["All", ...new Set(members.map((member) => member.section).filter(Boolean))], [members]);
   const filteredMembers = useMemo(() => {
@@ -68,7 +72,29 @@ function OrganisingCommitteeCmsPage() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () => updateDraft("photo", reader.result);
+    reader.onload = async () => {
+      setUploading(true);
+      setError("");
+
+      try {
+        const data = await cmsFetchJson("/api/admin/media/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileDataUrl: reader.result,
+            originalName: file.name,
+            folder: "organising-committee",
+            alt_text: draft.name ? `${draft.name} photo` : "Organising committee photo",
+          }),
+        });
+        updateDraft("photo", data.url || data.item?.url || "");
+      } catch (uploadError) {
+        setError(uploadError.message || "Unable to upload photo.");
+      } finally {
+        setUploading(false);
+        event.target.value = "";
+      }
+    };
     reader.readAsDataURL(file);
   };
 
@@ -106,6 +132,7 @@ function OrganisingCommitteeCmsPage() {
       />
 
       <section className="rounded-[32px] bg-white/78 p-6 shadow-[0_22px_80px_rgba(91,76,143,0.09)] backdrop-blur">
+        {error && <div className="mb-5 rounded-[24px] border border-rose-100 bg-rose-50 px-6 py-4 text-sm font-bold text-rose-600">{error}</div>}
         <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -132,7 +159,7 @@ function OrganisingCommitteeCmsPage() {
             >
               <div className="flex items-start gap-4">
                 <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-violet-100 to-fuchsia-100 text-lg font-black text-[#7C3AED]">
-                  {member.photo ? <img src={member.photo} alt="" className="h-full w-full object-cover" /> : getInitials(member.name)}
+                  {member.photo ? <img src={resolveAssetUrl(member.photo)} alt="" className="h-full w-full object-cover" /> : getInitials(member.name)}
                 </div>
                 <div className="min-w-0">
                   <h3 className="truncate text-lg font-black text-[#514aa3]">{member.name}</h3>
@@ -177,8 +204,8 @@ function OrganisingCommitteeCmsPage() {
               <label className="admin-label">Photo URL<input className="admin-field mt-2" value={draft.photo} onChange={(event) => updateDraft("photo", event.target.value)} /></label>
               <label className="flex cursor-pointer items-center justify-center gap-3 rounded-[24px] border border-dashed border-violet-200 bg-violet-50/60 p-5 text-sm font-black text-[#5d55b9]">
                 <ImagePlus size={18} />
-                Upload photo
-                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                {uploading ? "Uploading..." : "Upload photo"}
+                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
               </label>
             </div>
 

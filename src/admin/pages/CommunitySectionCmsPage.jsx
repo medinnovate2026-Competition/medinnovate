@@ -123,7 +123,7 @@ function CommunitySectionCmsPage() {
           alt_text: "MedInnovate WhatsApp community preview",
         }),
       });
-      update("image_url", data.item.url);
+      update("image_url", data.url || data.item?.url || "");
       setMessage("Image uploaded. Save the section to publish it.");
     } catch (uploadError) {
       setError(uploadError.message || "Unable to upload image.");

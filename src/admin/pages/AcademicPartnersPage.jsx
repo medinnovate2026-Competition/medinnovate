@@ -130,9 +130,9 @@ function AcademicPartnersPage() {
             alt_text: selected.name ? `${selected.name} logo` : "Academic partner logo",
           }),
         });
-        updateSelected("logo_url", data.item?.url || fileDataUrl);
-      } catch {
-        updateSelected("logo_url", fileDataUrl);
+        updateSelected("logo_url", data.url || data.item?.url || "");
+      } catch (uploadError) {
+        setError(uploadError.message || "Unable to upload logo.");
       }
     };
     reader.readAsDataURL(file);
