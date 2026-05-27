@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -21,19 +21,29 @@ import sushmitMorey from "../OC/sushmit.jpg";
 import toluwaseOgundipe from "../OC/Toluwase O. Ogundipe.jpeg";
 import wahidaAli from "../OC/Wahida Ali.jpeg";
 import Footer from "../components/Footer";
+import { API_BASE_URL, resolveAssetUrl } from "../config";
+
+export const committeeSectionMeta = {
+  President: "Strategic leadership guiding Medinnovate's vision, partnerships, and execution.",
+  "Organising Secretary": "The secretariat coordinating cross-organization planning and operational readiness.",
+  "IT Cell": "Technology support for the digital systems, registration flow, and event operations.",
+  "Organising Committee": "Core team members supporting coordination, communication, outreach, and delivery.",
+};
+
+export const committeeSectionOptions = Object.keys(committeeSectionMeta);
 
 export const committeeSections = [
   {
-    title: "Presidents",
-    description: "Strategic leadership guiding Medinnovate's vision, partnerships, and execution.",
+    title: "President",
+    description: committeeSectionMeta.President,
     members: [
       { name: "Abhishek Kashyap", role: "GAIMS President", email: "president@gaims.org", photo: abhishekKashyap },
       { name: "Oluwasola Victor", role: "CEO of BlueOzone", email: "blueozonehealth@gmail.com", photo: oluwasolaVictor },
     ],
   },
   {
-    title: "Secretaries",
-    description: "The secretariat coordinating cross-organization planning and operational readiness.",
+    title: "Organising Secretary",
+    description: committeeSectionMeta["Organising Secretary"],
     members: [
       { name: "Girik Subudhi", role: "Organising Secretary GAIMS", phone: "+918169011833", email: "giriksubudhi@gmail.com", photo: girikSubudhi },
       { name: "Sofiyullah Salaudeen", role: "Organising Secretary NiMSA", phone: "+2347038939481", email: "sofiyullahopeyemi@gmail.com", photo: sofiyullahSalaudeen },
@@ -43,7 +53,7 @@ export const committeeSections = [
   },
   {
     title: "IT Cell",
-    description: "Technology support for the digital systems, registration flow, and event operations.",
+    description: committeeSectionMeta["IT Cell"],
     members: [
       { name: "Sushmit Morey", role: "IT Cell Lead", phone: "+917262842562", email: "itd@gaims.org", photo: sushmitMorey },
       { name: "Laksh", role: "IT Cell Member", phone: "+917988025670", email: "Laksh0360@gmail.com", photo: laksh },
@@ -52,7 +62,7 @@ export const committeeSections = [
   },
   {
     title: "Organising Committee",
-    description: "Core team members supporting coordination, communication, outreach, and delivery.",
+    description: committeeSectionMeta["Organising Committee"],
     members: [
       { name: "Collins-Ikpe Kennedy", role: "Organising Committee Member", phone: "+2349054268369", email: "kennedycollinsikpe@gmail.com", photo: collinsIkpeKennedy },
       { name: "Wahida Ali", role: "Organising Committee Member", phone: "+255718961697", email: "wahaly04@gmail.com", photo: wahidaAli },
@@ -67,6 +77,36 @@ export const committeeSections = [
   },
 ];
 
+export function committeeMemberId(sectionTitle, member) {
+  return `${sectionTitle}-${member.name}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+export function flattenCommitteeSections(sections = committeeSections) {
+  return sections.flatMap((section, sectionIndex) =>
+    section.members.map((member, memberIndex) => ({
+      ...member,
+      id: member.id || committeeMemberId(section.title, member),
+      section: member.section || section.title,
+      order: member.order ?? sectionIndex * 100 + memberIndex,
+    })),
+  );
+}
+
+export function groupCommitteeMembers(members) {
+  const titles = [
+    ...committeeSectionOptions,
+    ...members.map((member) => member.section).filter((section) => section && !committeeSectionOptions.includes(section)),
+  ];
+
+  return [...new Set(titles)].map((title) => ({
+    title,
+    description: committeeSectionMeta[title] || "The Medinnovate team members supporting this section.",
+    members: members
+      .filter((member) => member.section === title)
+      .sort((first, second) => Number(first.display_order ?? first.order ?? 0) - Number(second.display_order ?? second.order ?? 0)),
+  }));
+}
+
 function getInitials(name) {
   return name
     .split(" ")
@@ -79,12 +119,13 @@ function getInitials(name) {
 
 function Avatar({ member }) {
   const [hasImageError, setHasImageError] = useState(false);
-  const shouldShowImage = member.photo && !hasImageError;
+  const photoUrl = member.photo_url || member.photo;
+  const shouldShowImage = photoUrl && !hasImageError;
 
   if (shouldShowImage) {
     return (
       <img
-        src={member.photo}
+        src={resolveAssetUrl(photoUrl)}
         alt={member.name}
         loading="lazy"
         onError={() => setHasImageError(true)}
@@ -275,6 +316,26 @@ function LightNavbar() {
 }
 
 function OrganisingCommittee() {
+  const [sections, setSections] = useState(() => groupCommitteeMembers(flattenCommitteeSections()));
+
+  useEffect(() => {
+    let active = true;
+
+    fetch(`${API_BASE_URL}/api/organising-committee`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Committee unavailable")))
+      .then((data) => {
+        const items = data.items || [];
+        if (active) setSections(groupCommitteeMembers(items.length ? items : flattenCommitteeSections()));
+      })
+      .catch(() => {
+        if (active) setSections(groupCommitteeMembers(flattenCommitteeSections()));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const gridStyle = {
     backgroundImage: "linear-gradient(rgba(124,58,237,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.05) 1px, transparent 1px)",
     backgroundSize: "60px 60px",
@@ -315,7 +376,7 @@ function OrganisingCommittee() {
             </motion.div>
           </motion.section>
 
-          {committeeSections.map((section) => (
+          {sections.map((section) => (
             <CommitteeSection key={section.title} section={section} />
           ))}
         </main>

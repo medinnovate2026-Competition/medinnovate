@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS speakers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    designation VARCHAR(255),
+    institution VARCHAR(255),
+    bio TEXT,
+    photo_url TEXT,
+    session_title VARCHAR(255),
+    session_description TEXT,
+    session_day VARCHAR(50),
+    session_time VARCHAR(50),
+    venue VARCHAR(255),
+    linkedin_url TEXT,
+    instagram_url TEXT,
+    website_url TEXT,
+    featured BOOLEAN DEFAULT FALSE,
+    priority INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

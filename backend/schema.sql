@@ -30,6 +30,191 @@ INSERT INTO payment_settings (id, default_qr_image)
 VALUES (1, 'https://i.postimg.cc/sg82803c/1500QR.jpg')
 ON DUPLICATE KEY UPDATE id = id;
 
+CREATE TABLE IF NOT EXISTS organising_committee (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  section VARCHAR(100) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  role VARCHAR(255),
+  phone VARCHAR(50),
+  email VARCHAR(255),
+  photo_url TEXT,
+  display_order INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO organising_committee (section, name, role, phone, email, photo_url, display_order)
+SELECT * FROM (
+  SELECT 'President', 'Abhishek Kashyap', 'GAIMS President', '', 'president@gaims.org', '', 1
+  UNION ALL SELECT 'President', 'Oluwasola Victor', 'CEO of BlueOzone', '', 'blueozonehealth@gmail.com', '', 2
+  UNION ALL SELECT 'Organising Secretary', 'Girik Subudhi', 'Organising Secretary GAIMS', '+918169011833', 'giriksubudhi@gmail.com', '', 1
+  UNION ALL SELECT 'Organising Secretary', 'Sofiyullah Salaudeen', 'Organising Secretary NiMSA', '+2347038939481', 'sofiyullahopeyemi@gmail.com', '', 2
+  UNION ALL SELECT 'Organising Secretary', 'Elton M Mahulu', 'Organising Secretary FAMSA', '+255628049726', 'mahuluelton007@gmail.com', '', 3
+  UNION ALL SELECT 'Organising Secretary', 'Ogunka Favour', 'Organising Secretary BlueOzone Health', '+2348052747225', 'ogunkafavour@gmail.com', '', 4
+  UNION ALL SELECT 'IT Cell', 'Sushmit Morey', 'IT Cell Lead', '+917262842562', 'itd@gaims.org', '', 1
+  UNION ALL SELECT 'IT Cell', 'Laksh', 'IT Cell Member', '+917988025670', 'Laksh0360@gmail.com', '', 2
+  UNION ALL SELECT 'IT Cell', 'Hardik Murari', 'IT Cell Member', '+918057596073', 'hardik.murari.md@gmail.com', '', 3
+  UNION ALL SELECT 'Organising Committee', 'Collins-Ikpe Kennedy', 'Organising Committee Member', '+2349054268369', 'kennedycollinsikpe@gmail.com', '', 1
+  UNION ALL SELECT 'Organising Committee', 'Wahida Ali', 'Organising Committee Member', '+255718961697', 'wahaly04@gmail.com', '', 2
+  UNION ALL SELECT 'Organising Committee', 'Awogbemi Damilola', 'Organising Committee Member', '+2348148799692', 'damiloawo@gmail.com', '', 3
+  UNION ALL SELECT 'Organising Committee', 'Okafor Chioma Rosemary', 'Organising Committee Member', '+2349022354168', 'bscrvo@gmail.com', '', 4
+  UNION ALL SELECT 'Organising Committee', 'Toluwase O. Ogundipe', 'Organising Committee Member', '+2348068674210', 'itstoluwase@gmail.com', '', 5
+  UNION ALL SELECT 'Organising Committee', 'Blessed Olaomo', 'Organising Committee Member', '+2348169123249', 'blessedolaomo@gmail.com', '', 6
+  UNION ALL SELECT 'Organising Committee', 'Amrit Pundir', 'Organising Committee Member', '+918630458367', 'amritpun1317@gmail.com', '', 7
+  UNION ALL SELECT 'Organising Committee', 'Manasvi Mukherjee', 'Organising Committee Member', '+917041689200', 'manasvimukherjee02@gmail.com', '', 8
+  UNION ALL SELECT 'Organising Committee', 'Hadi Shaikh', 'Organising Committee Member', '+919870033700', 'hadishaikh2310@gmail.com', '', 9
+) AS seed
+WHERE NOT EXISTS (SELECT 1 FROM organising_committee);
+
+CREATE TABLE IF NOT EXISTS speakers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  designation VARCHAR(255),
+  institution VARCHAR(255),
+  bio TEXT,
+  photo_url TEXT,
+  session_title VARCHAR(255),
+  session_description TEXT,
+  session_day VARCHAR(50),
+  session_time VARCHAR(50),
+  venue VARCHAR(255),
+  linkedin_url TEXT,
+  instagram_url TEXT,
+  website_url TEXT,
+  featured BOOLEAN DEFAULT FALSE,
+  priority INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS judges (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  designation VARCHAR(255),
+  institution VARCHAR(255),
+  speciality VARCHAR(255),
+  bio TEXT,
+  expertise TEXT,
+  photo_url TEXT,
+  linkedin_url TEXT,
+  website_url TEXT,
+  judge_type ENUM('faculty', 'industry', 'research', 'sponsor', 'external') DEFAULT 'faculty',
+  featured BOOLEAN DEFAULT FALSE,
+  priority INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS competition_tracks (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(255),
+  short_description TEXT,
+  full_description LONGTEXT,
+  category ENUM('research', 'poster', 'innovation', 'case', 'oral', 'other') DEFAULT 'research',
+  eligibility TEXT,
+  rules LONGTEXT,
+  judging_criteria LONGTEXT,
+  prizes TEXT,
+  submission_deadline DATETIME,
+  max_participants INT,
+  registration_fee DECIMAL(10,2),
+  display_order INT DEFAULT 0,
+  featured BOOLEAN DEFAULT FALSE,
+  active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sponsors (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  tier ENUM('title', 'platinum', 'gold', 'silver', 'bronze', 'community', 'exhibitor', 'support') DEFAULT 'support',
+  description TEXT,
+  logo_url TEXT,
+  website_url TEXT,
+  instagram_url TEXT,
+  linkedin_url TEXT,
+  booth_number VARCHAR(100),
+  session_enabled BOOLEAN DEFAULT FALSE,
+  session_title VARCHAR(255),
+  session_description TEXT,
+  display_order INT DEFAULT 0,
+  featured BOOLEAN DEFAULT FALSE,
+  active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS website_sections (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  section_key VARCHAR(100) UNIQUE NOT NULL,
+  section_name VARCHAR(255),
+  title VARCHAR(255),
+  subtitle TEXT,
+  visible BOOLEAN DEFAULT TRUE,
+  display_order INT DEFAULT 0,
+  background_type ENUM('default', 'light', 'dark', 'gradient', 'transparent') DEFAULT 'default',
+  animation VARCHAR(100),
+  custom_css_class VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO website_sections (section_key, section_name, title, subtitle, visible, display_order, background_type, animation, custom_css_class)
+SELECT * FROM (
+  SELECT 'hero', 'Hero', 'Medinnovate', 'International Healthcare Innovation Hackathon', TRUE, 1, 'default', 'fade', ''
+  UNION ALL SELECT 'about', 'About', 'About MedInnovate', 'A global healthcare innovation platform for student teams.', TRUE, 2, 'light', 'slide-up', ''
+  UNION ALL SELECT 'stats', 'Stats', 'Global participation', 'Event highlights and participation metrics.', TRUE, 3, 'default', 'fade', ''
+  UNION ALL SELECT 'competition', 'Competition', 'Competition Tracks', 'Research, posters, innovation pitches, and case presentations.', TRUE, 4, 'light', 'slide-up', ''
+  UNION ALL SELECT 'speakers', 'Speakers', 'Speakers', 'Meet keynote speakers and session leaders.', TRUE, 5, 'default', 'fade', ''
+  UNION ALL SELECT 'judges', 'Judges', 'Judges', 'Reviewers, evaluators, and panel members.', TRUE, 6, 'light', 'fade', ''
+  UNION ALL SELECT 'sponsors', 'Sponsors', 'Sponsors', 'Partners and supporting organisations.', FALSE, 7, 'default', 'fade', ''
+  UNION ALL SELECT 'committee', 'Committee', 'Organising Committee', 'Meet the people coordinating MedInnovate.', TRUE, 8, 'light', 'slide-up', ''
+  UNION ALL SELECT 'schedule', 'Schedule', 'Schedule', 'Event timeline and important milestones.', FALSE, 9, 'default', 'fade', ''
+  UNION ALL SELECT 'faq', 'FAQ', 'Frequently Asked Questions', 'Answers to common participant questions.', TRUE, 10, 'light', 'fade', ''
+  UNION ALL SELECT 'community', 'Community', 'Join the Community', 'Connect with MedInnovate for updates and announcements.', TRUE, 11, 'default', 'slide-up', ''
+  UNION ALL SELECT 'footer', 'Footer', 'Footer', '', TRUE, 12, 'default', 'none', ''
+  UNION ALL SELECT 'gallery', 'Gallery', 'Gallery', 'Event photos and media highlights.', FALSE, 13, 'default', 'fade', ''
+) AS seed
+WHERE NOT EXISTS (SELECT 1 FROM website_sections);
+
+CREATE TABLE IF NOT EXISTS master_cms (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  setting_key VARCHAR(255) UNIQUE NOT NULL,
+  setting_value LONGTEXT,
+  setting_type VARCHAR(100),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO master_cms (setting_key, setting_value, setting_type)
+SELECT * FROM (
+  SELECT 'homepage_sections', '[]', 'json'
+  UNION ALL SELECT 'site_theme', '{"mode":"default","primary_color":"#7C3AED","accent_color":"#EC4899","button_style":"rounded","animation_intensity":"normal"}', 'json'
+  UNION ALL SELECT 'maintenance_mode', 'false', 'boolean'
+  UNION ALL SELECT 'maintenance_message', 'MedInnovate is currently under maintenance. Please check back soon.', 'text'
+  UNION ALL SELECT 'announcement_enabled', 'false', 'boolean'
+  UNION ALL SELECT 'announcement_text', 'Registrations Open', 'text'
+  UNION ALL SELECT 'countdown_enabled', 'false', 'boolean'
+  UNION ALL SELECT 'countdown_date', '', 'text'
+  UNION ALL SELECT 'registration_banner_enabled', 'false', 'boolean'
+  UNION ALL SELECT 'registration_banner_text', 'Early Bird Open', 'text'
+  UNION ALL SELECT 'popup_enabled', 'false', 'boolean'
+  UNION ALL SELECT 'popup_title', 'Registrations Open', 'text'
+  UNION ALL SELECT 'popup_content', 'Register your team and start building for public health.', 'text'
+  UNION ALL SELECT 'schedule_enabled', 'false', 'boolean'
+  UNION ALL SELECT 'gallery_enabled', 'false', 'boolean'
+  UNION ALL SELECT 'sponsors_enabled', 'false', 'boolean'
+  UNION ALL SELECT 'judges_enabled', 'true', 'boolean'
+  UNION ALL SELECT 'speakers_enabled', 'true', 'boolean'
+  UNION ALL SELECT 'competition_enabled', 'true', 'boolean'
+  UNION ALL SELECT 'committee_enabled', 'true', 'boolean'
+  UNION ALL SELECT 'faq_enabled', 'true', 'boolean'
+  UNION ALL SELECT 'community_enabled', 'true', 'boolean'
+) AS seed
+WHERE NOT EXISTS (SELECT 1 FROM master_cms);
+
 CREATE TABLE IF NOT EXISTS teams (
   id INT AUTO_INCREMENT PRIMARY KEY,
   team_name VARCHAR(255) NOT NULL,

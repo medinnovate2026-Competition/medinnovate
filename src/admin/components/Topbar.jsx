@@ -4,17 +4,24 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
 const searchableSections = [
+  { title: "MASTER CMS", description: "Central website controls, feature flags, announcements, countdowns, popups, maintenance, and theme", path: "/admin/master-cms", tags: "master cms website builder feature flags maintenance announcement popup countdown theme homepage modules" },
   { title: "Dashboard", description: "Stats, registrations, payments, recent activity", path: "/admin/dashboard", tags: "overview command center analytics" },
+  { title: "Website", description: "Global website controls now live in MASTER CMS", path: "/admin/master-cms", tags: "website global master cms" },
   { title: "Site Settings", description: "Brand, SEO, footer, socials, announcement", path: "/admin/site-settings", tags: "website settings theme contact logo favicon" },
   { title: "Navigation", description: "Navbar, footer links, visibility, ordering", path: "/admin/navigation", tags: "menu links footer navbar" },
+  { title: "Website Builder", description: "Homepage section visibility, ordering, titles, backgrounds, and animations", path: "/admin/website-builder", tags: "website builder homepage sections visibility order background animation" },
   { title: "Partner Sections", description: "Academic, research, innovation, title, and knowledge partners", path: "/admin/academic-partners", tags: "partners institutions academic research innovation title knowledge logos" },
-  { title: "Organising Committee", description: "Committee members, roles, contacts, photos", path: "/admin/organising-committee", tags: "committee people members organisers organizing" },
+  { title: "Sponsors", description: "Sponsor tiers, logos, booths, links, featured sponsors, and sessions", path: "/admin/sponsors", tags: "sponsors partners exhibitors support logo tier booth session" },
+  { title: "Judges", description: "Judges, reviewers, evaluators, expertise, and panel members", path: "/admin/judges", tags: "judges reviewers evaluators panel faculty industry research sponsor external expertise" },
+  { title: "Speakers", description: "Speaker profiles, featured status, sessions, and social links", path: "/admin/speakers", tags: "speakers judges keynote sessions experts panel" },
+  { title: "Competition", description: "Tracks, categories, rules, eligibility, deadlines, and prizes", path: "/admin/competition", tags: "competition tracks research poster innovation case oral prizes rules eligibility deadlines" },
+  { title: "Team", description: "Committee sections, members, roles, contacts, photos", path: "/admin/team", tags: "team committee people members organisers organizing sections" },
   { title: "Homepage", description: "Hero, highlights, stats, timeline, FAQ", path: "/admin/homepage", tags: "home landing content editor" },
   { title: "FAQ", description: "Questions, answers, categories, publish state", path: "/admin/faq", tags: "help questions support" },
   { title: "Registrations", description: "Teams, leaders, payments, CSV export", path: "/admin/registrations", tags: "applicants teams users export" },
   { title: "Coupons", description: "Discount codes, QR settings, payment coupons", path: "/admin/coupons", tags: "discount qr medin10 payments" },
   { title: "Analytics", description: "Finance, revenue, coupon usage, verified payments", path: "/admin/analytics", tags: "reports metrics money revenue coupons finance" },
-  { title: "Settings", description: "System preferences and integrations", path: "/admin/settings", tags: "system preferences maintenance" },
+  { title: "Settings", description: "System preferences now live in MASTER CMS", path: "/admin/master-cms", tags: "system preferences maintenance master cms" },
 ];
 
 function Topbar() {

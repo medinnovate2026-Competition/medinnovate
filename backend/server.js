@@ -52,6 +52,20 @@ if (missingDbEnv.length > 0) {
 
 const db = require("./config/database");
 const cloudinary = require("./config/cloudinary");
+const organisingCommitteeRoutes = require("./routes/admin/organisingCommittee");
+const organisingCommitteeController = require("./controllers/organisingCommitteeController");
+const speakerRoutes = require("./routes/admin/speakers");
+const speakerController = require("./controllers/speakerController");
+const judgeRoutes = require("./routes/admin/judges");
+const judgeController = require("./controllers/judgeController");
+const competitionRoutes = require("./routes/admin/competition");
+const competitionController = require("./controllers/competitionController");
+const sponsorRoutes = require("./routes/admin/sponsors");
+const sponsorController = require("./controllers/sponsorController");
+const websiteBuilderRoutes = require("./routes/admin/websiteBuilder");
+const websiteBuilderController = require("./controllers/websiteBuilderController");
+const masterCmsRoutes = require("./routes/admin/masterCms");
+const masterCmsController = require("./controllers/masterCmsController");
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -86,6 +100,22 @@ app.get("/", (_req, res) => {
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
+
+app.get("/api/organising-committee", organisingCommitteeController.listMembers);
+app.use("/api/admin/organising-committee", organisingCommitteeRoutes);
+app.use("/api/admin/team", organisingCommitteeRoutes);
+app.get("/api/speakers", speakerController.listSpeakers);
+app.use("/api/admin/speakers", speakerRoutes);
+app.get("/api/judges", judgeController.listJudges);
+app.use("/api/admin/judges", judgeRoutes);
+app.get("/api/competition", competitionController.listPublicTracks);
+app.use("/api/admin/competition", competitionRoutes);
+app.get("/api/sponsors", sponsorController.listPublicSponsors);
+app.use("/api/admin/sponsors", sponsorRoutes);
+app.get("/api/website-sections", websiteBuilderController.listPublicSections);
+app.use("/api/admin/website-builder", websiteBuilderRoutes);
+app.get("/api/master-config", masterCmsController.getPublicConfig);
+app.use("/api/admin/master-cms", masterCmsRoutes);
 
 function normalizeCode(code) {
   return String(code || "").trim().toUpperCase();
@@ -659,6 +689,226 @@ async function ensureSchema() {
         ["What happens if I cannot attend the final round in person?", "A virtual option will be available for participants who cannot attend the final round in person.", "Finale", 8, 8, true, "Published"],
         ["What kind of ideas can we submit?", "You can submit healthcare innovation ideas that address meaningful real-world healthcare challenges.", "Ideas", 9, 9, true, "Published"],
         ["How can I contact the team for support?", "You can contact the team through email, Instagram, or WhatsApp.", "Support", 10, 10, true, "Published"],
+      ]],
+    );
+  }
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS organising_committee (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      section VARCHAR(100) NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      role VARCHAR(255),
+      phone VARCHAR(50),
+      email VARCHAR(255),
+      photo_url TEXT,
+      display_order INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  const [[committeeCount]] = await db.query("SELECT COUNT(*) AS count FROM organising_committee");
+  if (Number(committeeCount.count) === 0) {
+    await db.query(
+      `INSERT INTO organising_committee (section, name, role, phone, email, photo_url, display_order)
+       VALUES ?`,
+      [[
+        ["President", "Abhishek Kashyap", "GAIMS President", "", "president@gaims.org", "", 1],
+        ["President", "Oluwasola Victor", "CEO of BlueOzone", "", "blueozonehealth@gmail.com", "", 2],
+        ["Organising Secretary", "Girik Subudhi", "Organising Secretary GAIMS", "+918169011833", "giriksubudhi@gmail.com", "", 1],
+        ["Organising Secretary", "Sofiyullah Salaudeen", "Organising Secretary NiMSA", "+2347038939481", "sofiyullahopeyemi@gmail.com", "", 2],
+        ["Organising Secretary", "Elton M Mahulu", "Organising Secretary FAMSA", "+255628049726", "mahuluelton007@gmail.com", "", 3],
+        ["Organising Secretary", "Ogunka Favour", "Organising Secretary BlueOzone Health", "+2348052747225", "ogunkafavour@gmail.com", "", 4],
+        ["IT Cell", "Sushmit Morey", "IT Cell Lead", "+917262842562", "itd@gaims.org", "", 1],
+        ["IT Cell", "Laksh", "IT Cell Member", "+917988025670", "Laksh0360@gmail.com", "", 2],
+        ["IT Cell", "Hardik Murari", "IT Cell Member", "+918057596073", "hardik.murari.md@gmail.com", "", 3],
+        ["Organising Committee", "Collins-Ikpe Kennedy", "Organising Committee Member", "+2349054268369", "kennedycollinsikpe@gmail.com", "", 1],
+        ["Organising Committee", "Wahida Ali", "Organising Committee Member", "+255718961697", "wahaly04@gmail.com", "", 2],
+        ["Organising Committee", "Awogbemi Damilola", "Organising Committee Member", "+2348148799692", "damiloawo@gmail.com", "", 3],
+        ["Organising Committee", "Okafor Chioma Rosemary", "Organising Committee Member", "+2349022354168", "bscrvo@gmail.com", "", 4],
+        ["Organising Committee", "Toluwase O. Ogundipe", "Organising Committee Member", "+2348068674210", "itstoluwase@gmail.com", "", 5],
+        ["Organising Committee", "Blessed Olaomo", "Organising Committee Member", "+2348169123249", "blessedolaomo@gmail.com", "", 6],
+        ["Organising Committee", "Amrit Pundir", "Organising Committee Member", "+918630458367", "amritpun1317@gmail.com", "", 7],
+        ["Organising Committee", "Manasvi Mukherjee", "Organising Committee Member", "+917041689200", "manasvimukherjee02@gmail.com", "", 8],
+        ["Organising Committee", "Hadi Shaikh", "Organising Committee Member", "+919870033700", "hadishaikh2310@gmail.com", "", 9],
+      ]],
+    );
+  }
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS speakers (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      designation VARCHAR(255),
+      institution VARCHAR(255),
+      bio TEXT,
+      photo_url TEXT,
+      session_title VARCHAR(255),
+      session_description TEXT,
+      session_day VARCHAR(50),
+      session_time VARCHAR(50),
+      venue VARCHAR(255),
+      linkedin_url TEXT,
+      instagram_url TEXT,
+      website_url TEXT,
+      featured BOOLEAN DEFAULT FALSE,
+      priority INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS judges (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      designation VARCHAR(255),
+      institution VARCHAR(255),
+      speciality VARCHAR(255),
+      bio TEXT,
+      expertise TEXT,
+      photo_url TEXT,
+      linkedin_url TEXT,
+      website_url TEXT,
+      judge_type ENUM('faculty', 'industry', 'research', 'sponsor', 'external') DEFAULT 'faculty',
+      featured BOOLEAN DEFAULT FALSE,
+      priority INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS competition_tracks (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      slug VARCHAR(255),
+      short_description TEXT,
+      full_description LONGTEXT,
+      category ENUM('research', 'poster', 'innovation', 'case', 'oral', 'other') DEFAULT 'research',
+      eligibility TEXT,
+      rules LONGTEXT,
+      judging_criteria LONGTEXT,
+      prizes TEXT,
+      submission_deadline DATETIME,
+      max_participants INT,
+      registration_fee DECIMAL(10,2),
+      display_order INT DEFAULT 0,
+      featured BOOLEAN DEFAULT FALSE,
+      active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS sponsors (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      tier ENUM('title', 'platinum', 'gold', 'silver', 'bronze', 'community', 'exhibitor', 'support') DEFAULT 'support',
+      description TEXT,
+      logo_url TEXT,
+      website_url TEXT,
+      instagram_url TEXT,
+      linkedin_url TEXT,
+      booth_number VARCHAR(100),
+      session_enabled BOOLEAN DEFAULT FALSE,
+      session_title VARCHAR(255),
+      session_description TEXT,
+      display_order INT DEFAULT 0,
+      featured BOOLEAN DEFAULT FALSE,
+      active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS website_sections (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      section_key VARCHAR(100) UNIQUE NOT NULL,
+      section_name VARCHAR(255),
+      title VARCHAR(255),
+      subtitle TEXT,
+      visible BOOLEAN DEFAULT TRUE,
+      display_order INT DEFAULT 0,
+      background_type ENUM('default', 'light', 'dark', 'gradient', 'transparent') DEFAULT 'default',
+      animation VARCHAR(100),
+      custom_css_class VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  const [[websiteSectionCount]] = await db.query("SELECT COUNT(*) AS count FROM website_sections");
+  if (Number(websiteSectionCount.count) === 0) {
+    await db.query(
+      `INSERT INTO website_sections (section_key, section_name, title, subtitle, visible, display_order, background_type, animation, custom_css_class)
+       VALUES ?`,
+      [[
+        ["hero", "Hero", "Medinnovate", "International Healthcare Innovation Hackathon", true, 1, "default", "fade", ""],
+        ["about", "About", "About MedInnovate", "A global healthcare innovation platform for student teams.", true, 2, "light", "slide-up", ""],
+        ["stats", "Stats", "Global participation", "Event highlights and participation metrics.", true, 3, "default", "fade", ""],
+        ["competition", "Competition", "Competition Tracks", "Research, posters, innovation pitches, and case presentations.", true, 4, "light", "slide-up", ""],
+        ["speakers", "Speakers", "Speakers", "Meet keynote speakers and session leaders.", true, 5, "default", "fade", ""],
+        ["judges", "Judges", "Judges", "Reviewers, evaluators, and panel members.", true, 6, "light", "fade", ""],
+        ["sponsors", "Sponsors", "Sponsors", "Partners and supporting organisations.", false, 7, "default", "fade", ""],
+        ["committee", "Committee", "Organising Committee", "Meet the people coordinating MedInnovate.", true, 8, "light", "slide-up", ""],
+        ["schedule", "Schedule", "Schedule", "Event timeline and important milestones.", false, 9, "default", "fade", ""],
+        ["faq", "FAQ", "Frequently Asked Questions", "Answers to common participant questions.", true, 10, "light", "fade", ""],
+        ["community", "Community", "Join the Community", "Connect with MedInnovate for updates and announcements.", true, 11, "default", "slide-up", ""],
+        ["footer", "Footer", "Footer", "", true, 12, "default", "none", ""],
+        ["gallery", "Gallery", "Gallery", "Event photos and media highlights.", false, 13, "default", "fade", ""],
+      ]],
+    );
+  }
+
+  await db.query(
+    `INSERT INTO website_sections (section_key, section_name, title, subtitle, visible, display_order, background_type, animation, custom_css_class)
+     VALUES ('gallery', 'Gallery', 'Gallery', 'Event photos and media highlights.', FALSE, 13, 'default', 'fade', '')
+     ON DUPLICATE KEY UPDATE section_key = section_key`,
+  );
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS master_cms (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      setting_key VARCHAR(255) UNIQUE NOT NULL,
+      setting_value LONGTEXT,
+      setting_type VARCHAR(100),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  const [[masterCmsCount]] = await db.query("SELECT COUNT(*) AS count FROM master_cms");
+  if (Number(masterCmsCount.count) === 0) {
+    await db.query(
+      `INSERT INTO master_cms (setting_key, setting_value, setting_type)
+       VALUES ?`,
+      [[
+        ["homepage_sections", "[]", "json"],
+        ["site_theme", JSON.stringify({ mode: "default", primary_color: "#7C3AED", accent_color: "#EC4899", button_style: "rounded", animation_intensity: "normal" }), "json"],
+        ["maintenance_mode", "false", "boolean"],
+        ["maintenance_message", "MedInnovate is currently under maintenance. Please check back soon.", "text"],
+        ["announcement_enabled", "false", "boolean"],
+        ["announcement_text", "Registrations Open", "text"],
+        ["countdown_enabled", "false", "boolean"],
+        ["countdown_date", "", "text"],
+        ["registration_banner_enabled", "false", "boolean"],
+        ["registration_banner_text", "Early Bird Open", "text"],
+        ["popup_enabled", "false", "boolean"],
+        ["popup_title", "Registrations Open", "text"],
+        ["popup_content", "Register your team and start building for public health.", "text"],
+        ["schedule_enabled", "false", "boolean"],
+        ["gallery_enabled", "false", "boolean"],
+        ["sponsors_enabled", "false", "boolean"],
+        ["judges_enabled", "true", "boolean"],
+        ["speakers_enabled", "true", "boolean"],
+        ["competition_enabled", "true", "boolean"],
+        ["committee_enabled", "true", "boolean"],
+        ["faq_enabled", "true", "boolean"],
+        ["community_enabled", "true", "boolean"],
       ]],
     );
   }
@@ -1763,109 +2013,6 @@ app.put("/api/admin/faq/:id", async (req, res) => {
 app.delete("/api/admin/faq/:id", async (req, res) => {
   const [result] = await db.query("DELETE FROM faq WHERE id = ?", [req.params.id]);
   if (result.affectedRows === 0) return res.status(404).json({ message: "FAQ not found." });
-  return res.json({ success: true });
-});
-
-function serializeTeamMember(row) {
-  return {
-    id: row.id,
-    name: row.name,
-    role: row.role || "",
-    organization: row.organization || row.group_name || "",
-    photo_url: row.photo_url || row.image_url || "",
-    email: row.email || "",
-    instagram: row.instagram || "",
-    linkedin: row.linkedin || "",
-    display_order: Number(row.display_order || 0),
-    status: row.status || (row.is_published ? "Published" : "Draft"),
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-  };
-}
-
-app.get("/api/admin/team", async (req, res) => {
-  const search = String(req.query.search || "").trim();
-  const role = String(req.query.role || "").trim();
-  const where = [];
-  const params = [];
-
-  if (search) {
-    where.push("(name LIKE ? OR role LIKE ? OR organization LIKE ? OR email LIKE ?)");
-    params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
-  }
-
-  if (role && role !== "All") {
-    where.push("role = ?");
-    params.push(role);
-  }
-
-  const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
-  const [rows] = await db.query(`SELECT * FROM team_members ${whereClause} ORDER BY display_order ASC, id DESC`, params);
-  const [roles] = await db.query("SELECT DISTINCT role FROM team_members WHERE role IS NOT NULL AND role <> '' ORDER BY role ASC");
-
-  res.json({ items: rows.map(serializeTeamMember), roles: roles.map((row) => row.role) });
-});
-
-app.post("/api/admin/team", async (req, res) => {
-  const name = String(req.body.name || "").trim();
-  const status = normalizeStatus(req.body.status, "Draft");
-
-  if (!name) return res.status(400).json({ message: "Name is required." });
-
-  const [result] = await db.query(
-    `INSERT INTO team_members (name, role, organization, group_name, photo_url, image_url, email, instagram, linkedin, display_order, status, is_published)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      name,
-      String(req.body.role || "").trim(),
-      String(req.body.organization || "").trim(),
-      String(req.body.organization || "").trim(),
-      String(req.body.photo_url || "").trim(),
-      String(req.body.photo_url || "").trim(),
-      String(req.body.email || "").trim(),
-      String(req.body.instagram || "").trim(),
-      String(req.body.linkedin || "").trim(),
-      Number(req.body.display_order || 0),
-      status,
-      status === "Published",
-    ],
-  );
-  const [rows] = await db.query("SELECT * FROM team_members WHERE id = ?", [result.insertId]);
-
-  res.status(201).json({ item: serializeTeamMember(rows[0]) });
-});
-
-app.put("/api/admin/team/:id", async (req, res) => {
-  const status = normalizeStatus(req.body.status, "Draft");
-  const [result] = await db.query(
-    `UPDATE team_members
-     SET name = ?, role = ?, organization = ?, group_name = ?, photo_url = ?, image_url = ?, email = ?, instagram = ?, linkedin = ?, display_order = ?, status = ?, is_published = ?
-     WHERE id = ?`,
-    [
-      String(req.body.name || "").trim(),
-      String(req.body.role || "").trim(),
-      String(req.body.organization || "").trim(),
-      String(req.body.organization || "").trim(),
-      String(req.body.photo_url || "").trim(),
-      String(req.body.photo_url || "").trim(),
-      String(req.body.email || "").trim(),
-      String(req.body.instagram || "").trim(),
-      String(req.body.linkedin || "").trim(),
-      Number(req.body.display_order || 0),
-      status,
-      status === "Published",
-      req.params.id,
-    ],
-  );
-
-  if (result.affectedRows === 0) return res.status(404).json({ message: "Team member not found." });
-  const [rows] = await db.query("SELECT * FROM team_members WHERE id = ?", [req.params.id]);
-  return res.json({ item: serializeTeamMember(rows[0]) });
-});
-
-app.delete("/api/admin/team/:id", async (req, res) => {
-  const [result] = await db.query("DELETE FROM team_members WHERE id = ?", [req.params.id]);
-  if (result.affectedRows === 0) return res.status(404).json({ message: "Team member not found." });
   return res.json({ success: true });
 });
 

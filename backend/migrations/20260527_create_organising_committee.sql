@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS organising_committee (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    section VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    role VARCHAR(255),
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    photo_url TEXT,
+    display_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
