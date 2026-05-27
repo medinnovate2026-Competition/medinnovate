@@ -140,6 +140,19 @@ function serializeCoupon(coupon) {
   };
 }
 
+function serializePaymentSettings(row = {}) {
+  return {
+    default_qr_image: row.default_qr_image || "",
+    defaultQrImage: toPublicQrPath(row.default_qr_image),
+    upi_enabled: row.upi_enabled == null ? true : Boolean(row.upi_enabled),
+    paystack_enabled: Boolean(row.paystack_enabled),
+    paystack_qr_url: row.paystack_qr_url || "",
+    paystackQrUrl: toPublicQrPath(row.paystack_qr_url),
+    paystack_payment_link: row.paystack_payment_link || "",
+    paystack_instructions: row.paystack_instructions || "",
+  };
+}
+
 function parseJsonValue(value, fallback) {
   if (value == null || value === "") return fallback;
   if (typeof value === "object") return value;
@@ -264,9 +277,28 @@ async function ensureSchema() {
     CREATE TABLE IF NOT EXISTS payment_settings (
       id INT PRIMARY KEY DEFAULT 1,
       default_qr_image VARCHAR(500) NOT NULL,
+      upi_enabled BOOLEAN DEFAULT TRUE,
+      paystack_enabled BOOLEAN DEFAULT FALSE,
+      paystack_qr_url TEXT,
+      paystack_payment_link TEXT,
+      paystack_instructions TEXT,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `);
+
+  const paymentSettingsColumns = [
+    ["upi_enabled", "BOOLEAN DEFAULT TRUE"],
+    ["paystack_enabled", "BOOLEAN DEFAULT FALSE"],
+    ["paystack_qr_url", "TEXT"],
+    ["paystack_payment_link", "TEXT"],
+    ["paystack_instructions", "TEXT"],
+  ];
+
+  for (const [column, definition] of paymentSettingsColumns) {
+    if (!(await columnExists("payment_settings", column))) {
+      await db.query(`ALTER TABLE payment_settings ADD COLUMN ${column} ${definition}`);
+    }
+  }
 
   await db.query(`
     INSERT INTO payment_settings (id, default_qr_image)
@@ -282,6 +314,8 @@ async function ensureSchema() {
       coupon_code VARCHAR(64) NULL,
       referral_code VARCHAR(100) NULL,
       total_paid DECIMAL(10, 2) NOT NULL,
+      discount_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
+      final_amount DECIMAL(10, 2) NULL,
       team_size INT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
@@ -303,6 +337,15 @@ async function ensureSchema() {
     await db.query("ALTER TABLE teams ADD COLUMN payment_verified BOOLEAN NOT NULL DEFAULT FALSE AFTER total_paid");
   }
 
+  if (!(await columnExists("teams", "discount_amount"))) {
+    await db.query("ALTER TABLE teams ADD COLUMN discount_amount DECIMAL(10, 2) NOT NULL DEFAULT 0 AFTER total_paid");
+  }
+
+  if (!(await columnExists("teams", "final_amount"))) {
+    await db.query("ALTER TABLE teams ADD COLUMN final_amount DECIMAL(10, 2) NULL AFTER discount_amount");
+    await db.query("UPDATE teams SET final_amount = total_paid WHERE final_amount IS NULL");
+  }
+
   if (!(await columnExists("teams", "verified_amount"))) {
     await db.query("ALTER TABLE teams ADD COLUMN verified_amount DECIMAL(10, 2) NULL AFTER payment_verified");
   }
@@ -313,6 +356,10 @@ async function ensureSchema() {
 
   if (!(await columnExists("teams", "payment_qr_type"))) {
     await db.query("ALTER TABLE teams ADD COLUMN payment_qr_type VARCHAR(50) NULL AFTER verified_at");
+  }
+
+  if (!(await columnExists("teams", "payment_method"))) {
+    await db.query("ALTER TABLE teams ADD COLUMN payment_method ENUM('upi', 'paystack') DEFAULT 'upi' AFTER payment_qr_type");
   }
 
   if ((await columnExists("teams", "transaction_ref"))) {
@@ -1229,28 +1276,44 @@ app.post("/api/coupons/validate", async (req, res) => {
 
 app.get("/api/payment-settings", async (_req, res) => {
   const [rows] = await db.query("SELECT * FROM payment_settings WHERE id = 1");
-  res.json({ defaultQrImage: toPublicQrPath(rows[0]?.default_qr_image) });
+  res.json(serializePaymentSettings(rows[0]));
 });
 
 app.get("/api/admin/payment-settings", async (_req, res) => {
   const [rows] = await db.query("SELECT * FROM payment_settings WHERE id = 1");
-  res.json({ settings: rows[0] });
+  res.json({ settings: serializePaymentSettings(rows[0]) });
 });
 
 app.put("/api/admin/payment-settings", async (req, res) => {
-  const defaultQrImage = String(req.body.defaultQrImage || "").trim();
+  const defaultQrImage = String(req.body.defaultQrImage ?? req.body.default_qr_image ?? "").trim();
+  const upiEnabled = req.body.upi_enabled === undefined ? true : Boolean(req.body.upi_enabled);
+  const paystackEnabled = Boolean(req.body.paystack_enabled);
+  const paystackQrUrl = String(req.body.paystack_qr_url || "").trim();
+  const paystackPaymentLink = String(req.body.paystack_payment_link || "").trim();
+  const paystackInstructions = String(req.body.paystack_instructions || "").trim();
 
   if (!defaultQrImage) {
     return res.status(400).json({ message: "Default QR image URL is required." });
   }
 
+  if (!upiEnabled && !paystackEnabled) {
+    return res.status(400).json({ message: "At least one payment method must be enabled." });
+  }
+
   await db.query(
-    "UPDATE payment_settings SET default_qr_image = ? WHERE id = 1",
-    [defaultQrImage],
+    `UPDATE payment_settings
+     SET default_qr_image = ?,
+         upi_enabled = ?,
+         paystack_enabled = ?,
+         paystack_qr_url = ?,
+         paystack_payment_link = ?,
+         paystack_instructions = ?
+     WHERE id = 1`,
+    [defaultQrImage, upiEnabled, paystackEnabled, paystackQrUrl, paystackPaymentLink, paystackInstructions],
   );
 
   const [rows] = await db.query("SELECT * FROM payment_settings WHERE id = 1");
-  res.json({ settings: rows[0] });
+  res.json({ settings: serializePaymentSettings(rows[0]) });
 });
 
 app.get("/api/admin/coupons", async (_req, res) => {
@@ -1349,13 +1412,60 @@ app.post("/api/register-upi", async (req, res) => {
   const couponCode = normalizeCode(req.body.coupon_code);
   const referralCode = normalizeCode(req.body.referral_code);
   const amountPaid = Number(req.body.amount_paid);
+  const discountAmount = Math.max(0, Number(req.body.discount_amount || 0));
+  const finalAmount = req.body.final_amount === undefined || req.body.final_amount === null || req.body.final_amount === ""
+    ? amountPaid
+    : Number(req.body.final_amount);
+  const paymentMethod = String(req.body.payment_method || "upi").trim().toLowerCase();
 
   if (!teamName || !utr || members.length === 0 || Number.isNaN(amountPaid)) {
     return res.status(400).json({ error: "Team name, members, UTR, and amount paid are required." });
   }
 
+  if (Number.isNaN(finalAmount) || finalAmount < 0) {
+    return res.status(400).json({ error: "Final amount must be zero or higher." });
+  }
+
+  if (Number.isNaN(discountAmount) || discountAmount < 0) {
+    return res.status(400).json({ error: "Discount amount must be zero or higher." });
+  }
+
+  if (!["upi", "paystack"].includes(paymentMethod)) {
+    return res.status(400).json({ error: "Choose a valid payment method." });
+  }
+
+  const [paymentSettingsRows] = await db.query("SELECT * FROM payment_settings WHERE id = 1");
+  const paymentSettings = serializePaymentSettings(paymentSettingsRows[0]);
+  if (paymentMethod === "upi" && !paymentSettings.upi_enabled) {
+    return res.status(400).json({ error: "UPI payments are currently disabled." });
+  }
+  if (paymentMethod === "paystack" && !paymentSettings.paystack_enabled) {
+    return res.status(400).json({ error: "Paystack payments are currently disabled." });
+  }
+
   if (members.length < 3 || members.length > 5) {
     return res.status(400).json({ error: "Teams must include a minimum of 3 and a maximum of 5 members." });
+  }
+
+  if (couponCode) {
+    const [coupons] = await db.query(
+      "SELECT code, saved_amount, final_price FROM coupons WHERE code = ? AND active = TRUE LIMIT 1",
+      [couponCode],
+    );
+
+    if (!coupons[0]) {
+      return res.status(400).json({ error: "Invalid or expired coupon." });
+    }
+
+    const expectedFinal = Number(coupons[0].final_price || 0);
+    if (Math.abs(finalAmount - expectedFinal) > 0.01) {
+      return res.status(400).json({ error: "Coupon amount changed. Please apply the coupon again before submitting." });
+    }
+
+    const expectedDiscount = Number(coupons[0].saved_amount || 0);
+    if (Math.abs(discountAmount - expectedDiscount) > 0.01) {
+      return res.status(400).json({ error: "Coupon discount changed. Please apply the coupon again before submitting." });
+    }
   }
 
   const connection = await db.getConnection();
@@ -1364,9 +1474,9 @@ app.post("/api/register-upi", async (req, res) => {
     await connection.beginTransaction();
 
     const [teamResult] = await connection.query(
-      `INSERT INTO teams (team_name, utr, coupon_code, referral_code, total_paid, team_size)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [teamName, utr, couponCode || null, referralCode || null, amountPaid, members.length],
+      `INSERT INTO teams (team_name, utr, coupon_code, referral_code, total_paid, discount_amount, final_amount, payment_method, team_size)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [teamName, utr, couponCode || null, referralCode || null, finalAmount, discountAmount, finalAmount, paymentMethod, members.length],
     );
 
     const teamId = teamResult.insertId;
@@ -1426,6 +1536,10 @@ app.get("/api/admin/teams", async (_req, res) => {
 function serializeRegistration(team, members = []) {
   const leader = members.find((member) => Boolean(member.is_leader)) || members[0] || {};
   const paymentVerified = Boolean(team.payment_verified);
+  const finalAmount = team.final_amount === null || team.final_amount === undefined
+    ? Number(team.total_paid || 0)
+    : Number(team.final_amount || 0);
+  const discountAmount = Number(team.discount_amount || 0);
 
   return {
     id: team.id,
@@ -1445,11 +1559,14 @@ function serializeRegistration(team, members = []) {
     referral_code: team.referral_code || "",
     payment_status: paymentVerified ? "Verified" : "Not verified",
     payment_verified: paymentVerified,
-    amount: Number(team.total_paid || 0),
-    expected_amount: Number(team.total_paid || 0),
+    amount: finalAmount,
+    expected_amount: finalAmount,
+    discount_amount: discountAmount,
+    final_amount: finalAmount,
     verified_amount: team.verified_amount === null || team.verified_amount === undefined ? null : Number(team.verified_amount),
     verified_at: team.verified_at,
     payment_qr_type: team.payment_qr_type || (team.coupon_code ? "Coupon QR" : "Main QR"),
+    payment_method: team.payment_method || "upi",
     utr: team.utr || "",
     date: team.created_at,
     stage: "Registered",
@@ -1457,25 +1574,29 @@ function serializeRegistration(team, members = []) {
 }
 
 async function resolveVerifiedPayment(team) {
+  const methodLabel = team.payment_method === "paystack" ? "Paystack" : "UPI";
+  const submittedAmount = team.final_amount === null || team.final_amount === undefined
+    ? Number(team.total_paid || ORIGINAL_PRICE)
+    : Number(team.final_amount || 0);
   if (team.coupon_code) {
     const [coupons] = await db.query("SELECT final_price FROM coupons WHERE code = ? LIMIT 1", [team.coupon_code]);
 
     if (coupons[0]) {
       return {
-        amount: Number(coupons[0].final_price || 0),
-        qrType: "Coupon QR",
+        amount: submittedAmount || Number(coupons[0].final_price || 0),
+        qrType: `${methodLabel} Coupon QR`,
       };
     }
 
     return {
-      amount: Number(team.total_paid || ORIGINAL_PRICE),
-      qrType: "Coupon QR",
+      amount: submittedAmount,
+      qrType: `${methodLabel} Coupon QR`,
     };
   }
 
   return {
-    amount: Number(team.total_paid || ORIGINAL_PRICE),
-    qrType: "Main QR",
+    amount: submittedAmount,
+    qrType: methodLabel,
   };
 }
 
@@ -1536,9 +1657,10 @@ async function loadRegistrations({ id, search = "", page = 1, limit = 10 } = {})
       OR t.coupon_code LIKE ?
       OR t.referral_code LIKE ?
       OR t.utr LIKE ?
+      OR t.payment_method LIKE ?
       ${memberSearch ? `OR ${memberSearch}` : ""}
     )`);
-    params.push(...Array(4 + memberSearchTables.length * 4).fill(`%${search}%`));
+    params.push(...Array(5 + memberSearchTables.length * 4).fill(`%${search}%`));
   }
 
   const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";

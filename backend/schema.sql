@@ -23,6 +23,11 @@ ON DUPLICATE KEY UPDATE
 CREATE TABLE IF NOT EXISTS payment_settings (
   id INT PRIMARY KEY DEFAULT 1,
   default_qr_image VARCHAR(500) NOT NULL,
+  upi_enabled BOOLEAN DEFAULT TRUE,
+  paystack_enabled BOOLEAN DEFAULT FALSE,
+  paystack_qr_url TEXT,
+  paystack_payment_link TEXT,
+  paystack_instructions TEXT,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
@@ -222,10 +227,13 @@ CREATE TABLE IF NOT EXISTS teams (
   coupon_code VARCHAR(64) NULL,
   referral_code VARCHAR(100) NULL,
   total_paid DECIMAL(10, 2) NOT NULL,
+  discount_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
+  final_amount DECIMAL(10, 2) NULL,
   payment_verified BOOLEAN NOT NULL DEFAULT FALSE,
   verified_amount DECIMAL(10, 2) NULL,
   verified_at TIMESTAMP NULL,
   payment_qr_type VARCHAR(50) NULL,
+  payment_method ENUM('upi', 'paystack') DEFAULT 'upi',
   team_size INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

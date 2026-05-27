@@ -25,6 +25,15 @@ function StatusPill({ status }) {
   );
 }
 
+function PaymentMethodBadge({ method }) {
+  const paystack = String(method || "upi").toLowerCase() === "paystack";
+  return (
+    <span className={`rounded-full px-3 py-1 text-xs font-black ${paystack ? "bg-emerald-100 text-emerald-700" : "bg-violet-100 text-violet-700"}`}>
+      {paystack ? "PAYSTACK" : "UPI"}
+    </span>
+  );
+}
+
 function DetailRow({ label, value }) {
   return (
     <div className="rounded-2xl border border-violet-100 bg-white px-4 py-3">
@@ -139,7 +148,7 @@ function RegistrationsPage() {
   };
 
   const exportCsv = () => {
-    const headers = ["Team ID", "Team Name", "Leader", "Leader Email", "Leader Phone", "College", "Discipline", "Year", "Members", "Country", "Referral", "Coupon", "Payment Status", "Amount", "UTR", "Date", "Stage"];
+    const headers = ["Team ID", "Team Name", "Leader", "Leader Email", "Leader Phone", "College", "Discipline", "Year", "Members", "Country", "Referral", "Coupon", "Payment Method", "Discount", "Paid", "Payment Status", "UTR", "Date", "Stage"];
     const rows = filteredRegistrations.map((registration) => [
       registration.team_id,
       registration.team_name,
@@ -153,8 +162,10 @@ function RegistrationsPage() {
       registration.country,
       registration.referral_code || "None",
       registration.coupon || "None",
+      registration.payment_method || "upi",
+      registration.discount_amount || 0,
+      registration.verified_amount ?? registration.final_amount ?? registration.amount,
       registration.payment_status,
-      registration.verified_amount ?? registration.amount,
       registration.utr,
       registration.date,
       registration.stage,
@@ -211,7 +222,7 @@ function RegistrationsPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               className="admin-field w-full pl-11"
-              placeholder="Search leader, team, country, referral, coupon, UTR"
+              placeholder="Search leader, team, country, referral, coupon, method, UTR"
             />
           </form>
           <label className="flex items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-black text-slate-600">
@@ -225,10 +236,10 @@ function RegistrationsPage() {
         </div>
 
         <div className="overflow-x-auto rounded-[26px] border border-violet-100/80 bg-white/70">
-          <table className="w-full min-w-[1080px] text-left text-sm">
+          <table className="w-full min-w-[1240px] text-left text-sm">
             <thead className="bg-[#f5f2ff] text-xs uppercase tracking-[0.16em] text-[#9b93b4]">
               <tr>
-                {["Team ID", "Leader", "Phone", "College", "Members", "Country", "Referral", "Coupon", "Payment status", "Amount", "Date"].map((head) => (
+                {["Team ID", "Leader", "Phone", "College", "Members", "Country", "Referral", "Coupon", "Method", "Discount", "Paid", "Payment status", "Date"].map((head) => (
                   <th key={head} className="px-5 py-4">{head}</th>
                 ))}
               </tr>
@@ -236,7 +247,7 @@ function RegistrationsPage() {
             <tbody>
               {filteredRegistrations.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-5 py-10 text-center font-bold text-slate-400">
+                  <td colSpan={13} className="px-5 py-10 text-center font-bold text-slate-400">
                     {loading ? "Loading registrations..." : "No registrations found."}
                   </td>
                 </tr>
@@ -267,8 +278,10 @@ function RegistrationsPage() {
                   <td className="px-5 py-4 text-slate-600">{registration.country || "Not set"}</td>
                   <td className="px-5 py-4 text-slate-600">{registration.referral_code || "None"}</td>
                   <td className="px-5 py-4 text-slate-600">{registration.coupon || "None"}</td>
+                  <td className="px-5 py-4"><PaymentMethodBadge method={registration.payment_method} /></td>
+                  <td className="px-5 py-4 font-black text-emerald-700">{formatMoney(registration.discount_amount)}</td>
+                  <td className="px-5 py-4 font-black text-slate-700">{formatMoney(registration.verified_amount ?? registration.final_amount ?? registration.amount)}</td>
                   <td className="px-5 py-4"><StatusPill status={registration.payment_status} /></td>
-                  <td className="px-5 py-4 font-black text-slate-700">{formatMoney(registration.verified_amount ?? registration.amount)}</td>
                   <td className="px-5 py-4 text-slate-500">{formatDate(registration.date)}</td>
                 </tr>
               ))}
@@ -327,9 +340,14 @@ function RegistrationsPage() {
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <DetailRow label="Transaction ID" value={selected.utr} />
                     <DetailRow label="Payment status" value={selected.payment_status} />
+                    <div className="rounded-2xl border border-violet-100 bg-white px-4 py-3">
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Payment method</p>
+                      <div className="mt-2"><PaymentMethodBadge method={selected.payment_method} /></div>
+                    </div>
                     <DetailRow label="QR used" value={selected.payment_qr_type} />
-                    <DetailRow label="Amount" value={formatMoney(selected.verified_amount ?? selected.expected_amount ?? selected.amount)} />
                     <DetailRow label="Coupon" value={selected.coupon || "None"} />
+                    <DetailRow label="Discount" value={formatMoney(selected.discount_amount)} />
+                    <DetailRow label="Paid" value={formatMoney(selected.verified_amount ?? selected.final_amount ?? selected.expected_amount ?? selected.amount)} />
                     <DetailRow label="Referral" value={selected.referral_code || "None"} />
                     <DetailRow label="Created at" value={formatDate(selected.date)} />
                   </div>

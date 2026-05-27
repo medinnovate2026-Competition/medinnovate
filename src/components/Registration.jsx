@@ -21,6 +21,17 @@ const LOCAL_COUPONS = {
   },
 };
 
+const defaultPaymentSettings = {
+  defaultQrImage: DEFAULT_QR_IMAGE,
+  default_qr_image: DEFAULT_QR_IMAGE,
+  upi_enabled: true,
+  paystack_enabled: false,
+  paystack_qr_url: "",
+  paystackQrUrl: "",
+  paystack_payment_link: "",
+  paystack_instructions: "For African delegates please use Paystack.",
+};
+
 const steps = ["Referral", "Leader", "Team", "Review", "Payment"];
 
 const emptyLeader = {
@@ -74,6 +85,10 @@ function normalizeAppliedCoupon(coupon, couponCode = "") {
   return coupon;
 }
 
+function formatCurrency(value) {
+  return `$${Number(value || 0).toFixed(2)}`;
+}
+
 function loadDraft() {
   try {
     const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}");
@@ -85,6 +100,8 @@ function loadDraft() {
       couponError: draft.couponError || "",
       hasCoupon: draft.hasCoupon || "",
       defaultQrImage: draft.defaultQrImage || DEFAULT_QR_IMAGE,
+      paymentMethod: draft.paymentMethod || "upi",
+      paymentSettings: { ...defaultPaymentSettings, ...(draft.paymentSettings || {}) },
       leader: { ...emptyLeader, ...(draft.leader || {}) },
       members: normalizeMemberSlots(draft.members),
       utr: draft.utr || "",
@@ -190,7 +207,9 @@ function RegistrationForm() {
   const [couponError, setCouponError] = useState(draft?.couponError || "");
   const [appliedCoupon, setAppliedCoupon] = useState(draft?.appliedCoupon || null);
   const [hasCoupon, setHasCoupon] = useState(draft?.hasCoupon || "");
-  const [defaultQrImage] = useState(draft?.defaultQrImage || DEFAULT_QR_IMAGE);
+  const [defaultQrImage, setDefaultQrImage] = useState(draft?.defaultQrImage || DEFAULT_QR_IMAGE);
+  const [paymentSettings, setPaymentSettings] = useState(draft?.paymentSettings || defaultPaymentSettings);
+  const [paymentMethod, setPaymentMethod] = useState(draft?.paymentMethod || "upi");
   const [leader, setLeader] = useState(draft?.leader || emptyLeader);
   const [members, setMembers] = useState(draft?.members || createMembers());
   const [utr, setUtr] = useState(draft?.utr || "");
@@ -201,7 +220,45 @@ function RegistrationForm() {
 
   const finalAmount = appliedCoupon?.finalAmount || ORIGINAL_PRICE;
   const savedAmount = appliedCoupon?.savedAmount || 0;
-  const qrImage = appliedCoupon?.qrImage || defaultQrImage;
+  const upiEnabled = paymentSettings.upi_enabled !== false;
+  const paystackEnabled = Boolean(paymentSettings.paystack_enabled);
+  const hasPaymentMethod = (paymentMethod === "upi" && upiEnabled) || (paymentMethod === "paystack" && paystackEnabled);
+  const upiQrImage = appliedCoupon?.qrImage || paymentSettings.defaultQrImage || paymentSettings.default_qr_image || defaultQrImage;
+  const paystackQrImage = paymentSettings.paystackQrUrl || paymentSettings.paystack_qr_url || "";
+  const qrImage = paymentMethod === "paystack" ? paystackQrImage : upiQrImage;
+  const couponNeedsValidation = hasCoupon === "yes" && couponCode.trim() && !appliedCoupon;
+  const paystackPaymentLink = paymentSettings.paystack_payment_link || "";
+  const payNowDisabled = paymentMethod === "paystack" && (
+    !paystackPaymentLink ||
+    isCouponLoading ||
+    Boolean(couponNeedsValidation)
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    fetch(`${API_BASE_URL}/api/payment-settings`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Payment settings unavailable")))
+      .then((data) => {
+        if (!active) return;
+        const nextSettings = { ...defaultPaymentSettings, ...data };
+        setPaymentSettings(nextSettings);
+        setDefaultQrImage(nextSettings.defaultQrImage || nextSettings.default_qr_image || DEFAULT_QR_IMAGE);
+
+        if (!nextSettings.upi_enabled && nextSettings.paystack_enabled) {
+          setPaymentMethod("paystack");
+        } else if (nextSettings.upi_enabled && !nextSettings.paystack_enabled) {
+          setPaymentMethod("upi");
+        }
+      })
+      .catch(() => {
+        if (active) setPaymentSettings(defaultPaymentSettings);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(
@@ -214,13 +271,15 @@ function RegistrationForm() {
         couponError,
         hasCoupon,
         defaultQrImage,
+        paymentSettings,
+        paymentMethod,
         leader,
         members,
         utr,
         termsAccepted,
       }),
     );
-  }, [step, referralCode, couponCode, appliedCoupon, couponError, hasCoupon, defaultQrImage, leader, members, utr, termsAccepted]);
+  }, [step, referralCode, couponCode, appliedCoupon, couponError, hasCoupon, defaultQrImage, paymentSettings, paymentMethod, leader, members, utr, termsAccepted]);
 
   const updateLeader = (field, value) => setLeader((current) => ({ ...current, [field]: value }));
   const updateMember = (index, field, value) => {
@@ -280,7 +339,12 @@ function RegistrationForm() {
   const hasPartialTeammate = members.some((member) => memberHasAnyDetails(member) && !memberIsComplete(member));
   const totalTeamSize = 1 + completeTeammates.length;
   const teammatesComplete = completeTeammates.length >= REQUIRED_TEAMMATES && totalTeamSize <= MAX_TEAM_SIZE && !hasPartialTeammate;
-  const paymentComplete = utr.trim() && termsAccepted;
+  const paymentComplete = utr.trim() && termsAccepted && hasPaymentMethod;
+
+  const openPaystackPayment = () => {
+    if (payNowDisabled) return;
+    window.open(paystackPaymentLink, "_blank", "noopener,noreferrer");
+  };
 
   const goNext = () => {
     setSubmitError("");
@@ -299,7 +363,7 @@ function RegistrationForm() {
     setSubmitError("");
 
     if (!paymentComplete) {
-      setSubmitError("Please enter transaction ID and accept the terms.");
+      setSubmitError("Please choose an enabled payment method, enter transaction ID, and accept the terms.");
       return;
     }
 
@@ -338,6 +402,9 @@ function RegistrationForm() {
       coupon_code: appliedCoupon ? couponCode.trim() : "",
       referral_code: referralCode.trim(),
       amount_paid: finalAmount,
+      discount_amount: savedAmount,
+      final_amount: finalAmount,
+      payment_method: paymentMethod,
     };
 
     setIsSubmitting(true);
@@ -432,9 +499,9 @@ function RegistrationForm() {
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <PriceRow label="Original price" value={`$${ORIGINAL_PRICE}`} />
-                  <PriceRow label="Discount amount" value="$0.00" />
-                  <PriceRow label="Final amount before coupon" value={`$${ORIGINAL_PRICE}`} accent />
+                  <PriceRow label="Original price" value={formatCurrency(ORIGINAL_PRICE)} />
+                  <PriceRow label="Discount amount" value={formatCurrency(0)} />
+                  <PriceRow label="Final amount before coupon" value={formatCurrency(ORIGINAL_PRICE)} accent />
                 </div>
               </div>
             )}
@@ -488,10 +555,10 @@ function RegistrationForm() {
               <div>
                 <h2 className="text-3xl font-black text-[#111827]">Review</h2>
                 <div className="mt-6 grid gap-4 lg:grid-cols-2">
-                  <ReviewCard title="Referral & coupon" onEdit={() => setStep(0)} lines={[referralCode ? `Referral: ${referralCode}` : "No referral code", appliedCoupon ? `Coupon: ${couponCode}` : "Coupon not applied yet", `Current final amount: $${finalAmount}`]} />
+                  <ReviewCard title="Referral & coupon" onEdit={() => setStep(0)} lines={[referralCode ? `Referral: ${referralCode}` : "No referral code", appliedCoupon ? `Coupon: ${couponCode}` : "Coupon not applied yet", `Current final amount: ${formatCurrency(finalAmount)}`]} />
                   <ReviewCard title="Leader info" onEdit={() => setStep(1)} lines={[leader.fullName, leader.email, leader.phone, leader.country, leader.college, leader.discipline, leader.year]} />
                   <ReviewCard title="All members" onEdit={() => setStep(2)} lines={[leader.fullName, ...members.filter(memberHasAnyDetails).map((member, index) => `Member ${index + 2}: ${member.fullName || "Incomplete"}`), `Team size: ${totalTeamSize}`]} />
-                  <ReviewCard title="Team cost" onEdit={() => setStep(0)} lines={[`Original: $${ORIGINAL_PRICE}`, `Discount: $${Number(savedAmount).toFixed(2)}`, `Final: $${finalAmount}`]} />
+                  <ReviewCard title="Team cost" onEdit={() => setStep(0)} lines={[`Payment method: ${paymentMethod === "paystack" ? "Paystack" : "UPI"}`, `Original: ${formatCurrency(ORIGINAL_PRICE)}`, `Discount: ${formatCurrency(savedAmount)}`, `Final: ${formatCurrency(finalAmount)}`]} />
                 </div>
               </div>
             )}
@@ -500,6 +567,37 @@ function RegistrationForm() {
               <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
                 <div>
                   <h2 className="text-3xl font-black text-[#111827]">Complete Registration</h2>
+                  <div className="mt-6 rounded-3xl border border-violet-100 bg-[#fbf9ff] p-5">
+                    <h3 className="text-lg font-black text-[#111827]">Choose payment method</h3>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      {upiEnabled && (
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMethod("upi")}
+                          className={`rounded-2xl border px-4 py-3 text-left text-sm font-black transition ${paymentMethod === "upi" ? "border-transparent bg-gradient-to-r from-[#7C3AED] to-[#EC4899] text-white" : "border-violet-100 bg-white text-slate-600"}`}
+                        >
+                          Pay using UPI
+                        </button>
+                      )}
+                      {paystackEnabled && (
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMethod("paystack")}
+                          className={`rounded-2xl border px-4 py-3 text-left text-sm font-black transition ${paymentMethod === "paystack" ? "border-transparent bg-gradient-to-r from-[#7C3AED] to-[#EC4899] text-white" : "border-violet-100 bg-white text-slate-600"}`}
+                        >
+                          Pay using Paystack
+                        </button>
+                      )}
+                    </div>
+                    {!upiEnabled && !paystackEnabled && (
+                      <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
+                        Payments are temporarily unavailable.
+                      </div>
+                    )}
+                    {paystackEnabled && (
+                      <p className="mt-4 text-sm font-semibold text-slate-500">International delegates may use Paystack.</p>
+                    )}
+                  </div>
                   <div className="mt-6 rounded-3xl border border-violet-100 bg-[#fbf9ff] p-5">
                     <h3 className="text-lg font-black text-[#111827]">Apply Coupon</h3>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -566,15 +664,59 @@ function RegistrationForm() {
                     )}
                   </div>
                   <div className="mt-6 rounded-3xl border border-violet-100 bg-[#fbf9ff] p-6 text-center">
-                    <img src={resolveAssetUrl(qrImage)} alt="Payment QR Code" className="mx-auto h-56 w-56 rounded-2xl border border-violet-100 bg-white object-contain p-3" />
-                    <p className="mt-4 text-4xl font-black text-[#EC4899]">${finalAmount}</p>
-                    <p className="mt-2 text-sm font-semibold text-slate-500">Scan and pay the final amount, then enter the transaction ID.</p>
+                    {qrImage ? (
+                      <img src={resolveAssetUrl(qrImage)} alt="Payment QR Code" className="mx-auto h-56 w-56 rounded-2xl border border-violet-100 bg-white object-contain p-3" />
+                    ) : (
+                      <div className="mx-auto grid h-56 w-56 place-items-center rounded-2xl border border-violet-100 bg-white p-3 text-sm font-bold text-slate-400">
+                        QR will appear here
+                      </div>
+                    )}
+                    <div className="mt-5 space-y-3 rounded-2xl border border-violet-100 bg-white p-4 text-left text-sm font-bold text-slate-600">
+                      <div className="flex items-center justify-between gap-4">
+                        <span>Original Amount</span>
+                        <span className="text-[#111827]">{formatCurrency(ORIGINAL_PRICE)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span>Coupon Code</span>
+                        <span className="text-[#111827]">{appliedCoupon ? couponCode : "None"}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span>Discount</span>
+                        <span className="text-emerald-700">{formatCurrency(savedAmount)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 border-t border-violet-100 pt-3 text-base">
+                        <span>Final Amount</span>
+                        <span className="text-[#EC4899]">{formatCurrency(finalAmount)}</span>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-sm font-semibold text-slate-500">
+                      {paymentMethod === "paystack" ? "Use Paystack, then enter your transaction ID." : "Scan and pay the final amount, then enter the transaction ID."}
+                    </p>
+                    {paymentMethod === "paystack" && (
+                      <button
+                        type="button"
+                        onClick={openPaystackPayment}
+                        disabled={payNowDisabled}
+                        className="mt-5 inline-flex rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-7 py-3 text-sm font-black uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        PAY NOW
+                      </button>
+                    )}
+                    {paymentMethod === "paystack" && payNowDisabled && (
+                      <p className="mt-3 text-xs font-bold text-slate-500">
+                        {couponNeedsValidation ? "Apply the coupon or choose no coupon before paying." : "Paystack link is not configured yet."}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="rounded-3xl border border-violet-100 bg-[#fbf9ff] p-5">
                     <h3 className="text-lg font-black text-[#111827]">Payment instructions</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">Pay exactly ${finalAmount}. Use the coupon-specific QR shown here if a coupon was applied.</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      {paymentMethod === "paystack"
+                        ? paymentSettings.paystack_instructions || "For African delegates please use Paystack."
+                        : `Pay exactly ${formatCurrency(finalAmount)}. Use the coupon-specific QR shown here if a coupon was applied.`}
+                    </p>
                   </div>
                   <TextInput label="Transaction ID" value={utr} onChange={setUtr} required />
                   <label className="flex items-start gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-slate-600">
