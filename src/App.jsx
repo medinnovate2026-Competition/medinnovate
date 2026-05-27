@@ -82,6 +82,19 @@ const defaultMasterSettings = {
   community_enabled: true,
 };
 
+const sectionsWithOwnIntro = new Set([
+  "hero",
+  "about",
+  "speakers",
+  "judges",
+  "sponsors",
+  "committee",
+  "schedule",
+  "faq",
+  "community",
+  "footer",
+]);
+
 function sectionFeatureEnabled(section, settings) {
   if (section.section_key === "hero" || section.section_key === "footer") return true;
   const flagKey = `${section.section_key}_enabled`;
@@ -229,13 +242,41 @@ function MaintenanceScreen({ message }) {
 
 function CommitteeHomeSection({ section }) {
   return (
-    <section id="committee" className="bg-white px-4 pb-20 sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-5 rounded-[28px] border border-violet-100 bg-white p-6 shadow-[0_18px_60px_rgba(124,58,237,0.08)] sm:p-8">
-        <div>
-          <h3 className="text-2xl font-black text-[#514aa3]">{section.title || "Organising Committee"}</h3>
-          <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-500">{section.subtitle || "Meet the people coordinating MedInnovate."}</p>
+    <section id="committee" className="bg-[#fbf9ff] px-4 py-24 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-sm font-black uppercase tracking-[0.24em] text-[#A855F7]">People Behind MedInnovate</p>
+          <h2 className="mt-5 text-4xl font-black tracking-tight text-[#111827] sm:text-6xl">{section.title || "Organising Committee"}</h2>
+          <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
+            {section.subtitle || "Meet the people coordinating MedInnovate across operations, outreach, technology, and programme delivery."}
+          </p>
         </div>
-        <a href={`${import.meta.env.BASE_URL}organising-committee`} className="admin-primary-button">View Committee</a>
+
+        <div className="mt-14 grid gap-5 lg:grid-cols-[1fr_0.72fr]">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {["Core coordination", "Scientific guidance", "IT & media", "Operations"].map((item) => (
+              <div key={item} className="rounded-[28px] border border-violet-100 bg-white p-6 shadow-[0_18px_55px_rgba(124,58,237,0.08)]">
+                <p className="text-sm font-black text-[#514aa3]">{item}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-500">Coordinated through the MedInnovate committee team.</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col justify-between rounded-[28px] bg-gradient-to-br from-[#5b4bdb] via-[#7C3AED] to-[#EC4899] p-7 text-white shadow-[0_24px_70px_rgba(124,58,237,0.18)] sm:p-8">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-white/70">Directory</p>
+              <h3 className="mt-4 text-3xl font-black leading-tight">View members, roles, and contacts</h3>
+              <p className="mt-4 text-sm font-semibold leading-7 text-white/78">
+                Browse the complete organising committee and section-wise responsibilities.
+              </p>
+            </div>
+            <a
+              href={`${import.meta.env.BASE_URL}organising-committee`}
+              className="mt-8 inline-flex w-fit items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-black text-[#5d55b9] shadow-[0_18px_45px_rgba(17,24,39,0.18)] transition hover:-translate-y-0.5"
+            >
+              View Committee
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -369,7 +410,7 @@ function HomePage() {
         </div>
       )}
       {visibleSections.map((section) => (
-        <BuilderSectionWrapper key={section.section_key} section={section} intro={!["hero", "footer", "community", "about", "committee"].includes(section.section_key)}>
+        <BuilderSectionWrapper key={section.section_key} section={section} intro={!sectionsWithOwnIntro.has(section.section_key)}>
           {renderSection(section)}
         </BuilderSectionWrapper>
       ))}
