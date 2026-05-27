@@ -58,8 +58,6 @@ const speakerRoutes = require("./routes/admin/speakers");
 const speakerController = require("./controllers/speakerController");
 const judgeRoutes = require("./routes/admin/judges");
 const judgeController = require("./controllers/judgeController");
-const competitionRoutes = require("./routes/admin/competition");
-const competitionController = require("./controllers/competitionController");
 const sponsorRoutes = require("./routes/admin/sponsors");
 const sponsorController = require("./controllers/sponsorController");
 const websiteBuilderRoutes = require("./routes/admin/websiteBuilder");
@@ -108,8 +106,6 @@ app.get("/api/speakers", speakerController.listSpeakers);
 app.use("/api/admin/speakers", speakerRoutes);
 app.get("/api/judges", judgeController.listJudges);
 app.use("/api/admin/judges", judgeRoutes);
-app.get("/api/competition", competitionController.listPublicTracks);
-app.use("/api/admin/competition", competitionRoutes);
 app.get("/api/sponsors", sponsorController.listPublicSponsors);
 app.use("/api/admin/sponsors", sponsorRoutes);
 app.get("/api/website-sections", websiteBuilderController.listPublicSections);
@@ -177,7 +173,7 @@ function serializeHomepageContent(row = {}) {
   const defaultStats = [
     { value: "20+", label: "Countries" },
     { value: "3 to 5", label: "Members per team" },
-    { value: "2", label: "Competition phases" },
+    { value: "24/7", label: "Mentor support" },
   ];
   const defaultTimeline = [
     { title: "Registration", detail: "Sign up and form your team of three to five undergraduate students." },
@@ -545,7 +541,7 @@ async function ensureSchema() {
       'International Healthcare Innovation Hackathon',
       'Build practical healthcare solutions with global mentors, clinical insight, and cross-border teams.',
       'Medinnovate is an international healthcare innovation hackathon that brings together students and young professionals from diverse disciplines, medicine, public health, engineering, design, and social sciences, to collaboratively develop feasible, scalable, and impactful solutions to real-world healthcare challenges.',
-      JSON_ARRAY(JSON_OBJECT('value', '20+', 'label', 'Countries'), JSON_OBJECT('value', '3 to 5', 'label', 'Members per team'), JSON_OBJECT('value', '2', 'label', 'Competition phases')),
+      JSON_ARRAY(JSON_OBJECT('value', '20+', 'label', 'Countries'), JSON_OBJECT('value', '3 to 5', 'label', 'Members per team'), JSON_OBJECT('value', '24/7', 'label', 'Mentor support')),
       JSON_ARRAY(JSON_OBJECT('title', 'Registration', 'detail', 'Sign up and form your team of three to five undergraduate students.'), JSON_OBJECT('title', 'Abstract Submission', 'detail', 'Teams submit a first abstract outlining their healthcare innovation idea.'), JSON_OBJECT('title', 'Review & Selection', 'detail', 'Expert panel reviews abstracts to shortlist the most feasible and impactful ideas.'), JSON_OBJECT('title', 'Mentorship & Guidance', 'detail', 'Selected teams receive expert guidance to refine their solutions and prepare for their pitch.'), JSON_OBJECT('title', 'Grand Finale', 'detail', 'Present your final solution in India. Hybrid format with online participation available.')),
       JSON_ARRAY(JSON_OBJECT('title', 'Team of 3 to 5 is mandatory', 'detail', 'Every submission must come from a team of at least three and at most five members.'), JSON_OBJECT('title', 'All members should be undergraduate students', 'detail', 'Each participant in the team must be an undergraduate student.'), JSON_OBJECT('title', 'Theme: Public Health', 'detail', 'Ideas should address a meaningful public health challenge.'), JSON_OBJECT('title', 'Original and feasible idea', 'detail', 'The solution must be your own concept and practical enough to be implemented.')),
       'Ready to build for public health?',
@@ -827,29 +823,6 @@ async function ensureSchema() {
   `);
 
   await db.query(`
-    CREATE TABLE IF NOT EXISTS competition_tracks (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      title VARCHAR(255) NOT NULL,
-      slug VARCHAR(255),
-      short_description TEXT,
-      full_description LONGTEXT,
-      category ENUM('research', 'poster', 'innovation', 'case', 'oral', 'other') DEFAULT 'research',
-      eligibility TEXT,
-      rules LONGTEXT,
-      judging_criteria LONGTEXT,
-      prizes TEXT,
-      submission_deadline DATETIME,
-      max_participants INT,
-      registration_fee DECIMAL(10,2),
-      display_order INT DEFAULT 0,
-      featured BOOLEAN DEFAULT FALSE,
-      active BOOLEAN DEFAULT TRUE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    )
-  `);
-
-  await db.query(`
     CREATE TABLE IF NOT EXISTS sponsors (
       id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
@@ -897,7 +870,6 @@ async function ensureSchema() {
         ["hero", "Hero", "Medinnovate", "International Healthcare Innovation Hackathon", true, 1, "default", "fade", ""],
         ["about", "About", "About MedInnovate", "A global healthcare innovation platform for student teams.", true, 2, "light", "slide-up", ""],
         ["stats", "Stats", "Global participation", "Event highlights and participation metrics.", true, 3, "default", "fade", ""],
-        ["competition", "Competition", "Competition Tracks", "Research, posters, innovation pitches, and case presentations.", true, 4, "light", "slide-up", ""],
         ["speakers", "Speakers", "Speakers", "Meet keynote speakers and session leaders.", true, 5, "default", "fade", ""],
         ["judges", "Judges", "Judges", "Reviewers, evaluators, and panel members.", true, 6, "light", "fade", ""],
         ["sponsors", "Sponsors", "Sponsors", "Partners and supporting organisations.", false, 7, "default", "fade", ""],
@@ -910,6 +882,9 @@ async function ensureSchema() {
       ]],
     );
   }
+
+  await db.query("DELETE FROM website_sections WHERE section_key = 'competition'");
+  await db.query("DROP TABLE IF EXISTS competition_tracks");
 
   await db.query(
     `INSERT INTO website_sections (section_key, section_name, title, subtitle, visible, display_order, background_type, animation, custom_css_class)
@@ -952,13 +927,14 @@ async function ensureSchema() {
         ["sponsors_enabled", "false", "boolean"],
         ["judges_enabled", "true", "boolean"],
         ["speakers_enabled", "true", "boolean"],
-        ["competition_enabled", "true", "boolean"],
         ["committee_enabled", "true", "boolean"],
         ["faq_enabled", "true", "boolean"],
         ["community_enabled", "true", "boolean"],
       ]],
     );
   }
+
+  await db.query("DELETE FROM master_cms WHERE setting_key = 'competition_enabled'");
 
   await db.query(`
     CREATE TABLE IF NOT EXISTS team_members (

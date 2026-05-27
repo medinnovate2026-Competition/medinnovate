@@ -32,7 +32,6 @@ const defaultSettings = {
   sponsors_enabled: { type: "boolean", value: false },
   judges_enabled: { type: "boolean", value: true },
   speakers_enabled: { type: "boolean", value: true },
-  competition_enabled: { type: "boolean", value: true },
   committee_enabled: { type: "boolean", value: true },
   faq_enabled: { type: "boolean", value: true },
   community_enabled: { type: "boolean", value: true },
@@ -88,6 +87,7 @@ async function listSettings() {
   const settings = getDefaultSettings();
 
   rows.forEach((row) => {
+    if (row.setting_key === "competition_enabled") return;
     settings[row.setting_key] = parseSettingValue(row.setting_value, row.setting_type || inferType(row.setting_key, row.setting_value));
   });
 
@@ -99,6 +99,7 @@ async function upsertSettings(settings = {}) {
   for (const [settingKey, value] of entries) {
     const normalizedKey = String(settingKey || "").trim();
     if (!normalizedKey) continue;
+    if (normalizedKey === "competition_enabled") continue;
     const type = inferType(normalizedKey, value);
     await db.query(
       `INSERT INTO master_cms (setting_key, setting_value, setting_type)

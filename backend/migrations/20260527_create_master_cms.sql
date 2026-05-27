@@ -28,7 +28,6 @@ SELECT * FROM (
     UNION ALL SELECT 'sponsors_enabled', 'false', 'boolean'
     UNION ALL SELECT 'judges_enabled', 'true', 'boolean'
     UNION ALL SELECT 'speakers_enabled', 'true', 'boolean'
-    UNION ALL SELECT 'competition_enabled', 'true', 'boolean'
     UNION ALL SELECT 'committee_enabled', 'true', 'boolean'
     UNION ALL SELECT 'faq_enabled', 'true', 'boolean'
     UNION ALL SELECT 'community_enabled', 'true', 'boolean'

@@ -7,11 +7,7 @@ import FAQ from './components/FAQ';
 import Global from './components/Global';
 import Hero from './components/Hero';
 import CommunitySection from './components/CommunitySection';
-import CompetitionTracks from './components/CompetitionTracks';
 import Navbar from './components/Navbar';
-import Participants from './components/Participants';
-import PrizeReveal from './components/PrizeReveal';
-import Prizes from './components/Prizes';
 import Registration from './components/Registration';
 import Speakers from './components/Speakers';
 import Judges from './components/Judges';
@@ -33,7 +29,6 @@ import AcademicPartnersPage from './admin/pages/AcademicPartnersPage';
 import TeamCmsPage from './admin/pages/TeamCmsPage';
 import SpeakersCmsPage from './admin/pages/SpeakersCmsPage';
 import JudgesCmsPage from './admin/pages/JudgesCmsPage';
-import CompetitionCmsPage from './admin/pages/CompetitionCmsPage';
 import SponsorsCmsPage from './admin/pages/SponsorsCmsPage';
 import WebsiteBuilderPage from './admin/pages/WebsiteBuilderPage';
 import MasterCmsPage from './admin/pages/MasterCmsPage';
@@ -47,7 +42,6 @@ const defaultWebsiteSections = [
   { section_key: "hero", section_name: "Hero", title: "Medinnovate", subtitle: "International Healthcare Innovation Hackathon", visible: true, display_order: 1, background_type: "default", animation: "fade", custom_css_class: "" },
   { section_key: "about", section_name: "About", title: "About MedInnovate", subtitle: "A global healthcare innovation platform for student teams.", visible: true, display_order: 2, background_type: "light", animation: "slide-up", custom_css_class: "" },
   { section_key: "stats", section_name: "Stats", title: "Global participation", subtitle: "Event highlights and participation metrics.", visible: true, display_order: 3, background_type: "default", animation: "fade", custom_css_class: "" },
-  { section_key: "competition", section_name: "Competition", title: "Competition Tracks", subtitle: "Research, posters, innovation pitches, and case presentations.", visible: true, display_order: 4, background_type: "light", animation: "slide-up", custom_css_class: "" },
   { section_key: "speakers", section_name: "Speakers", title: "Speakers", subtitle: "Meet keynote speakers and session leaders.", visible: true, display_order: 5, background_type: "default", animation: "fade", custom_css_class: "" },
   { section_key: "judges", section_name: "Judges", title: "Judges", subtitle: "Reviewers, evaluators, and panel members.", visible: true, display_order: 6, background_type: "light", animation: "fade", custom_css_class: "" },
   { section_key: "sponsors", section_name: "Sponsors", title: "Sponsors", subtitle: "Partners and supporting organisations.", visible: false, display_order: 7, background_type: "default", animation: "fade", custom_css_class: "" },
@@ -83,7 +77,6 @@ const defaultMasterSettings = {
   sponsors_enabled: false,
   judges_enabled: true,
   speakers_enabled: true,
-  competition_enabled: true,
   committee_enabled: true,
   faq_enabled: true,
   community_enabled: true,
@@ -98,6 +91,7 @@ function sectionFeatureEnabled(section, settings) {
 function normalizeWebsiteSections(items, settings = defaultMasterSettings) {
   const source = Array.isArray(items) && items.length > 0 ? items : defaultWebsiteSections;
   return source
+    .filter((section) => section.section_key !== "competition")
     .map((section) => ({
       ...section,
       visible: section.section_key === "hero" || section.section_key === "footer" ? true : Boolean(section.visible),
@@ -233,29 +227,6 @@ function MaintenanceScreen({ message }) {
   );
 }
 
-function CompetitionBundle({ content }) {
-  return (
-    <>
-      <Prizes />
-      <CompetitionTracks />
-      <Participants content={content} />
-      <section id="rewards" className="relative overflow-hidden bg-white px-4 py-24 sm:px-6 lg:px-8">
-        <div className="absolute left-10 top-10 h-56 w-56 rounded-full bg-[#EC4899]/10 blur-3xl" />
-        <div className="absolute bottom-10 right-10 h-64 w-64 rounded-full bg-[#7C3AED]/10 blur-3xl" />
-        <PrizeReveal />
-      </section>
-      <section className="relative overflow-hidden bg-[#fbf9ff] px-4 py-20 sm:px-6 lg:px-8">
-        <div className="relative mx-auto max-w-5xl rounded-[32px] border border-violet-100 bg-white/86 p-8 text-center shadow-[0_24px_80px_rgba(124,58,237,0.10)] sm:p-12">
-          <p className="text-sm font-black uppercase tracking-[0.24em] text-[#7C3AED]">Next Step</p>
-          <h2 className="mt-4 text-3xl font-black tracking-tight text-[#111827] sm:text-5xl">{content.cta_title}</h2>
-          <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">{content.cta_description}</p>
-        </div>
-      </section>
-      <Registration />
-    </>
-  );
-}
-
 function CommitteeHomeSection({ section }) {
   return (
     <section id="committee" className="bg-white px-4 pb-20 sm:px-6 lg:px-8">
@@ -350,8 +321,6 @@ function HomePage() {
         return <Global />;
       case "about":
         return <><AcademicPartners /><About content={content} /></>;
-      case "competition":
-        return <CompetitionBundle content={content} />;
       case "speakers":
         return <Speakers />;
       case "judges":
@@ -400,7 +369,7 @@ function HomePage() {
         </div>
       )}
       {visibleSections.map((section) => (
-        <BuilderSectionWrapper key={section.section_key} section={section} intro={!["hero", "footer", "community", "about", "competition", "committee"].includes(section.section_key)}>
+        <BuilderSectionWrapper key={section.section_key} section={section} intro={!["hero", "footer", "community", "about", "committee"].includes(section.section_key)}>
           {renderSection(section)}
         </BuilderSectionWrapper>
       ))}
@@ -435,7 +404,6 @@ function App() {
         <Route path="website-builder" element={<WebsiteBuilderPage />} />
         <Route path="academic-partners" element={<AcademicPartnersPage />} />
         <Route path="sponsors" element={<SponsorsCmsPage />} />
-        <Route path="competition" element={<CompetitionCmsPage />} />
         <Route path="judges" element={<JudgesCmsPage />} />
         <Route path="speakers" element={<SpeakersCmsPage />} />
         <Route path="team" element={<TeamCmsPage />} />

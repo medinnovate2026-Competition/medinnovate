@@ -11,7 +11,7 @@ const defaultColumns = [
 const defaultRows = [
   { id: 1, title: "Homepage hero", status: "Published", section: "Website", updated: "Today" },
   { id: 2, title: "Workshop spotlight", status: "Draft", section: "Workshops", updated: "Yesterday" },
-  { id: 3, title: "Competition FAQ", status: "Review", section: "Competitions", updated: "2 days ago" },
+  { id: 3, title: "Community FAQ", status: "Review", section: "FAQ", updated: "2 days ago" },
 ];
 
 function DataTable({ columns = defaultColumns, rows = defaultRows, title = "CMS records" }) {

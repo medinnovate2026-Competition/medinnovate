@@ -14,7 +14,6 @@ const searchableSections = [
   { title: "Sponsors", description: "Sponsor tiers, logos, booths, links, featured sponsors, and sessions", path: "/admin/sponsors", tags: "sponsors partners exhibitors support logo tier booth session" },
   { title: "Judges", description: "Judges, reviewers, evaluators, expertise, and panel members", path: "/admin/judges", tags: "judges reviewers evaluators panel faculty industry research sponsor external expertise" },
   { title: "Speakers", description: "Speaker profiles, featured status, sessions, and social links", path: "/admin/speakers", tags: "speakers judges keynote sessions experts panel" },
-  { title: "Competition", description: "Tracks, categories, rules, eligibility, deadlines, and prizes", path: "/admin/competition", tags: "competition tracks research poster innovation case oral prizes rules eligibility deadlines" },
   { title: "Team", description: "Committee sections, members, roles, contacts, photos", path: "/admin/team", tags: "team committee people members organisers organizing sections" },
   { title: "Homepage", description: "Hero, highlights, stats, timeline, FAQ", path: "/admin/homepage", tags: "home landing content editor" },
   { title: "FAQ", description: "Questions, answers, categories, publish state", path: "/admin/faq", tags: "help questions support" },

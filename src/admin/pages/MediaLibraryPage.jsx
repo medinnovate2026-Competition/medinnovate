@@ -15,7 +15,7 @@ const initialMedia = [
   { id: 1, name: "hero-healthcare-innovation.png", type: "banner", date: "Today", status: "Published" },
   { id: 2, name: "speaker-panel.jpg", type: "image", date: "Yesterday", status: "Review" },
   { id: 3, name: "sponsor-logo.svg", type: "logo", date: "Jan 18", status: "Published" },
-  { id: 4, name: "competition-brochure.pdf", type: "pdf", date: "Jan 16", status: "Draft" },
+  { id: 4, name: "event-brochure.pdf", type: "pdf", date: "Jan 16", status: "Draft" },
   { id: 5, name: "opening-session.mp4", type: "video", date: "Jan 12", status: "Published" },
   { id: 6, name: "workshop-banner.png", type: "banner", date: "Jan 9", status: "Draft" },
 ];

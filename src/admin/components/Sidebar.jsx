@@ -30,7 +30,6 @@ const links = [
   { label: "Sponsors", to: "/admin/sponsors", icon: BadgePercent },
   { label: "Judges", to: "/admin/judges", icon: Gavel },
   { label: "Speakers", to: "/admin/speakers", icon: Mic2 },
-  { label: "Competition", to: "/admin/competition", icon: Activity },
   { label: "Homepage", to: "/admin/homepage", icon: Home },
   { label: "Community CTA", to: "/admin/community-section", icon: MessageCircle },
   { label: "Team", to: "/admin/team", icon: Users },

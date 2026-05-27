@@ -6,7 +6,7 @@ export const defaultHomepageContent = {
   stats_json: [
     { value: "20+", label: "Countries" },
     { value: "3 to 5", label: "Members per team" },
-    { value: "2", label: "Competition phases" },
+    { value: "24/7", label: "Mentor support" },
   ],
   timeline_json: [
     { title: "Registration", detail: "Sign up and form your team of three to five undergraduate students." },

@@ -48,7 +48,6 @@ const defaultSettings = {
   sponsors_enabled: false,
   judges_enabled: true,
   speakers_enabled: true,
-  competition_enabled: true,
   committee_enabled: true,
   faq_enabled: true,
   community_enabled: true,
@@ -60,7 +59,6 @@ const featureFlags = [
   ["sponsors_enabled", "Enable sponsors"],
   ["judges_enabled", "Enable judges"],
   ["speakers_enabled", "Enable speakers"],
-  ["competition_enabled", "Enable competition"],
   ["community_enabled", "Enable community"],
   ["faq_enabled", "Enable FAQ"],
 ];
@@ -113,7 +111,7 @@ function MasterCmsPage() {
     try {
       const data = await cmsFetchJson("/api/admin/master-cms");
       setSettings({ ...defaultSettings, ...(data.settings || {}) });
-      setSections((data.sections || []).map(normalizeSection));
+      setSections((data.sections || []).filter((section) => section.section_key !== "competition").map(normalizeSection));
     } catch (loadError) {
       const message = loadError.message || "Unable to load MASTER CMS.";
       setError(message);

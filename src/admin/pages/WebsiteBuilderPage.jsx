@@ -44,6 +44,10 @@ function normalizeSection(section) {
   };
 }
 
+function isSupportedSection(section) {
+  return section.section_key !== "competition";
+}
+
 function WebsiteBuilderPage() {
   const [sections, setSections] = useState([]);
   const [query, setQuery] = useState("");
@@ -75,7 +79,7 @@ function WebsiteBuilderPage() {
 
     try {
       const data = await cmsFetchJson("/api/admin/website-builder");
-      setSections((data.items || []).map(normalizeSection));
+      setSections((data.items || []).map(normalizeSection).filter(isSupportedSection));
     } catch (loadError) {
       const message = loadError.message || "Unable to load website sections.";
       setError(message);

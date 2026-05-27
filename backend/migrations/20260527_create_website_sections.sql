@@ -35,7 +35,6 @@ SELECT * FROM (
     SELECT 'hero', 'Hero', 'Medinnovate', 'International Healthcare Innovation Hackathon', TRUE, 1, 'default', 'fade', ''
     UNION ALL SELECT 'about', 'About', 'About MedInnovate', 'A global healthcare innovation platform for student teams.', TRUE, 2, 'light', 'slide-up', ''
     UNION ALL SELECT 'stats', 'Stats', 'Global participation', 'Event highlights and participation metrics.', TRUE, 3, 'default', 'fade', ''
-    UNION ALL SELECT 'competition', 'Competition', 'Competition Tracks', 'Research, posters, innovation pitches, and case presentations.', TRUE, 4, 'light', 'slide-up', ''
     UNION ALL SELECT 'speakers', 'Speakers', 'Speakers', 'Meet keynote speakers and session leaders.', TRUE, 5, 'default', 'fade', ''
     UNION ALL SELECT 'judges', 'Judges', 'Judges', 'Reviewers, evaluators, and panel members.', TRUE, 6, 'light', 'fade', ''
     UNION ALL SELECT 'sponsors', 'Sponsors', 'Sponsors', 'Partners and supporting organisations.', FALSE, 7, 'default', 'fade', ''

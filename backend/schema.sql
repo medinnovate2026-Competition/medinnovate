@@ -110,27 +110,6 @@ CREATE TABLE IF NOT EXISTS judges (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS competition_tracks (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  title VARCHAR(255) NOT NULL,
-  slug VARCHAR(255),
-  short_description TEXT,
-  full_description LONGTEXT,
-  category ENUM('research', 'poster', 'innovation', 'case', 'oral', 'other') DEFAULT 'research',
-  eligibility TEXT,
-  rules LONGTEXT,
-  judging_criteria LONGTEXT,
-  prizes TEXT,
-  submission_deadline DATETIME,
-  max_participants INT,
-  registration_fee DECIMAL(10,2),
-  display_order INT DEFAULT 0,
-  featured BOOLEAN DEFAULT FALSE,
-  active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
 CREATE TABLE IF NOT EXISTS sponsors (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
@@ -171,7 +150,6 @@ SELECT * FROM (
   SELECT 'hero', 'Hero', 'Medinnovate', 'International Healthcare Innovation Hackathon', TRUE, 1, 'default', 'fade', ''
   UNION ALL SELECT 'about', 'About', 'About MedInnovate', 'A global healthcare innovation platform for student teams.', TRUE, 2, 'light', 'slide-up', ''
   UNION ALL SELECT 'stats', 'Stats', 'Global participation', 'Event highlights and participation metrics.', TRUE, 3, 'default', 'fade', ''
-  UNION ALL SELECT 'competition', 'Competition', 'Competition Tracks', 'Research, posters, innovation pitches, and case presentations.', TRUE, 4, 'light', 'slide-up', ''
   UNION ALL SELECT 'speakers', 'Speakers', 'Speakers', 'Meet keynote speakers and session leaders.', TRUE, 5, 'default', 'fade', ''
   UNION ALL SELECT 'judges', 'Judges', 'Judges', 'Reviewers, evaluators, and panel members.', TRUE, 6, 'light', 'fade', ''
   UNION ALL SELECT 'sponsors', 'Sponsors', 'Sponsors', 'Partners and supporting organisations.', FALSE, 7, 'default', 'fade', ''
@@ -213,7 +191,6 @@ SELECT * FROM (
   UNION ALL SELECT 'sponsors_enabled', 'false', 'boolean'
   UNION ALL SELECT 'judges_enabled', 'true', 'boolean'
   UNION ALL SELECT 'speakers_enabled', 'true', 'boolean'
-  UNION ALL SELECT 'competition_enabled', 'true', 'boolean'
   UNION ALL SELECT 'committee_enabled', 'true', 'boolean'
   UNION ALL SELECT 'faq_enabled', 'true', 'boolean'
   UNION ALL SELECT 'community_enabled', 'true', 'boolean'

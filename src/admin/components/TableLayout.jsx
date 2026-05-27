@@ -4,7 +4,7 @@ const rows = [
   ["Innovation Sprint", "Published", "Homepage", "2 min ago"],
   ["Workshop Registration", "Draft", "Workshops", "18 min ago"],
   ["Sponsor Showcase", "Review", "Website", "1 hr ago"],
-  ["Judges Panel", "Published", "Competitions", "Today"],
+  ["Judges Panel", "Published", "Website", "Today"],
 ];
 
 function StatusPill({ status }) {

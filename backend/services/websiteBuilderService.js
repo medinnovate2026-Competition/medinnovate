@@ -1,6 +1,7 @@
 const db = require("../config/database");
 
 const backgroundTypes = new Set(["default", "light", "dark", "gradient", "transparent"]);
+const removedSectionKeys = new Set(["competition"]);
 
 const sectionFields = [
   "section_key",
@@ -31,6 +32,10 @@ function serializeSection(row) {
   };
 }
 
+function isSupportedSection(row) {
+  return !removedSectionKeys.has(String(row.section_key || "").trim().toLowerCase());
+}
+
 function normalizeSectionPayload(body) {
   const displayOrder = Number(body.display_order ?? 0);
   const backgroundType = String(body.background_type || "default").trim().toLowerCase();
@@ -52,14 +57,14 @@ function normalizeSectionPayload(body) {
 
 async function listSections() {
   const [rows] = await db.query("SELECT * FROM website_sections ORDER BY display_order ASC, id ASC");
-  return rows.map(serializeSection);
+  return rows.filter(isSupportedSection).map(serializeSection);
 }
 
 async function listVisibleSections() {
   const [rows] = await db.query(
     "SELECT * FROM website_sections WHERE visible = TRUE OR section_key IN ('hero', 'footer') ORDER BY display_order ASC, id ASC",
   );
-  return rows.map(serializeSection);
+  return rows.filter(isSupportedSection).map(serializeSection);
 }
 
 async function getSectionById(id) {

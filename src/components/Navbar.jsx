@@ -8,7 +8,6 @@ const navLinks = [
   { label: 'About', href: '#about' },
   { label: 'Reach', href: '#global' },
   { label: 'Sponsors', href: '#sponsors' },
-  { label: 'Competition', href: '#competition' },
   { label: 'Timeline', href: '#timeline' },
   { label: 'Judges', href: '#judges' },
   { label: 'FAQ', href: '#faq' },
