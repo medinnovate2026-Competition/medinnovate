@@ -19,7 +19,6 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const ORIGINAL_PRICE = 10;
 const DEFAULT_PAYMENT_QR_IMAGE = "https://i.postimg.cc/Hkj3MqWr/qr1000.jpg";
-const LEGACY_PAYMENT_QR_IMAGE = "https://i.postimg.cc/sg82803c/1500QR.jpg";
 const DEFAULT_PAYSTACK_QR_IMAGE = "https://i.postimg.cc/BnMcnsrT/Paystack-QR.jpg";
 const DEFAULT_PAYSTACK_PAYMENT_LINK = "https://paystack.com/buy/medinnovate-20-dhnwdw";
 const PAYMENTS_DIR = path.join(__dirname, "public", "payments");
@@ -307,18 +306,12 @@ async function ensureSchema() {
   `, [DEFAULT_PAYMENT_QR_IMAGE, DEFAULT_PAYSTACK_QR_IMAGE, DEFAULT_PAYSTACK_PAYMENT_LINK]);
 
   await db.query(
-    "UPDATE payment_settings SET default_qr_image = ? WHERE id = 1 AND default_qr_image = ?",
-    [DEFAULT_PAYMENT_QR_IMAGE, LEGACY_PAYMENT_QR_IMAGE],
-  );
-
-  await db.query(
-    "UPDATE payment_settings SET paystack_qr_url = ? WHERE id = 1 AND (paystack_qr_url IS NULL OR paystack_qr_url = '')",
-    [DEFAULT_PAYSTACK_QR_IMAGE],
-  );
-
-  await db.query(
-    "UPDATE payment_settings SET paystack_payment_link = ? WHERE id = 1 AND (paystack_payment_link IS NULL OR paystack_payment_link = '')",
-    [DEFAULT_PAYSTACK_PAYMENT_LINK],
+    `UPDATE payment_settings
+     SET default_qr_image = ?,
+         paystack_qr_url = ?,
+         paystack_payment_link = ?
+     WHERE id = 1`,
+    [DEFAULT_PAYMENT_QR_IMAGE, DEFAULT_PAYSTACK_QR_IMAGE, DEFAULT_PAYSTACK_PAYMENT_LINK],
   );
 
   await db.query(`
