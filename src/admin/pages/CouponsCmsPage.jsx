@@ -16,12 +16,14 @@ const initialForm = {
 const COUPONS_KEY = "medinnovate_coupons_cms";
 const PAYMENT_SETTINGS_KEY = "medinnovate_payment_settings_cms";
 const ORIGINAL_PRICE = 10;
+const DEFAULT_PAYSTACK_QR_IMAGE = "https://i.postimg.cc/BnMcnsrT/Paystack-QR.jpg";
+const DEFAULT_PAYSTACK_PAYMENT_LINK = "https://paystack.com/buy/medinnovate-20-dhnwdw";
 const defaultPaymentSettings = {
-  default_qr_image: "https://i.postimg.cc/sg82803c/1500QR.jpg",
+  default_qr_image: "https://i.postimg.cc/Hkj3MqWr/qr1000.jpg",
   upi_enabled: true,
   paystack_enabled: false,
-  paystack_qr_url: "",
-  paystack_payment_link: "",
+  paystack_qr_url: DEFAULT_PAYSTACK_QR_IMAGE,
+  paystack_payment_link: DEFAULT_PAYSTACK_PAYMENT_LINK,
   paystack_instructions: "For African delegates please use Paystack.",
 };
 const seedCoupons = [

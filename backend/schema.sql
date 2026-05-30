@@ -31,8 +31,13 @@ CREATE TABLE IF NOT EXISTS payment_settings (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-INSERT INTO payment_settings (id, default_qr_image)
-VALUES (1, 'https://i.postimg.cc/sg82803c/1500QR.jpg')
+INSERT INTO payment_settings (id, default_qr_image, paystack_qr_url, paystack_payment_link)
+VALUES (
+  1,
+  'https://i.postimg.cc/Hkj3MqWr/qr1000.jpg',
+  'https://i.postimg.cc/BnMcnsrT/Paystack-QR.jpg',
+  'https://paystack.com/buy/medinnovate-20-dhnwdw'
+)
 ON DUPLICATE KEY UPDATE id = id;
 
 CREATE TABLE IF NOT EXISTS organising_committee (

@@ -8,7 +8,9 @@ const ORIGINAL_PRICE = 10;
 const MIN_TEAM_SIZE = 3;
 const MAX_TEAM_SIZE = 5;
 const REQUIRED_TEAMMATES = MIN_TEAM_SIZE - 1;
-const DEFAULT_QR_IMAGE = "https://i.postimg.cc/sg82803c/1500QR.jpg";
+const DEFAULT_QR_IMAGE = "https://i.postimg.cc/Hkj3MqWr/qr1000.jpg";
+const DEFAULT_PAYSTACK_QR_IMAGE = "https://i.postimg.cc/BnMcnsrT/Paystack-QR.jpg";
+const DEFAULT_PAYSTACK_PAYMENT_LINK = "https://paystack.com/buy/medinnovate-20-dhnwdw";
 const LEGACY_LOCAL_COUPON_QR = "https://i.postimg.cc/7h71GTXp/fcrits-QR.jpg";
 const LOCAL_COUPONS = {
   MEDIN10: {
@@ -26,9 +28,9 @@ const defaultPaymentSettings = {
   default_qr_image: DEFAULT_QR_IMAGE,
   upi_enabled: true,
   paystack_enabled: false,
-  paystack_qr_url: "",
-  paystackQrUrl: "",
-  paystack_payment_link: "",
+  paystack_qr_url: DEFAULT_PAYSTACK_QR_IMAGE,
+  paystackQrUrl: DEFAULT_PAYSTACK_QR_IMAGE,
+  paystack_payment_link: DEFAULT_PAYSTACK_PAYMENT_LINK,
   paystack_instructions: "For African delegates please use Paystack.",
 };
 
