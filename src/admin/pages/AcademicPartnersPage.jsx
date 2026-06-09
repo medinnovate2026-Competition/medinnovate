@@ -4,7 +4,7 @@ import PageHeader from "../components/PageHeader";
 import StatusBadge from "../components/StatusBadge";
 import { cmsFetchJson, isCmsApiUnavailable, readLocalCms, writeLocalCms } from "../utils/cmsApi";
 import { resolveAssetUrl } from "../../config";
-import partnerCategoryConfig from "../../../shared/partnerCategories.json";
+import partnerCategoryConfig from "../../../backend/config/partnerCategories.json";
 
 const STORAGE_KEY = "medinnovate_academic_partners_cms";
 const partnerTypeOptions = partnerCategoryConfig.categories;

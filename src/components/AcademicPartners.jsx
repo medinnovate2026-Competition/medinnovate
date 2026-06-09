@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ExternalLink, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { API_BASE_URL, resolveAssetUrl } from "../config";
-import partnerCategoryConfig from "../../shared/partnerCategories.json";
+import partnerCategoryConfig from "../../backend/config/partnerCategories.json";
 
 const partnerSections = partnerCategoryConfig.categories.map(({ value, label, aliases = [] }) => ({ key: value, title: label, aliases }));
 const defaultPartnerType = partnerCategoryConfig.defaultType;

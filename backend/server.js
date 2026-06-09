@@ -25,7 +25,7 @@ const PAYMENTS_DIR = path.join(__dirname, "public", "payments");
 const MEDIA_DIR = path.join(__dirname, "public", "media");
 const JSON_FIELDS = new Set(["social_links", "theme_colors", "highlights", "stats", "announcements", "metadata", "stats_json", "timeline_json", "why_participate_json", "contact_json"]);
 const DEFAULT_WHATSAPP_INVITE_LINK = "https://chat.whatsapp.com/KaUGYIbIMDr2HASOrnD7vp?mode=gi_t";
-const partnerCategoryConfig = require("../shared/partnerCategories.json");
+const partnerCategoryConfig = require("./config/partnerCategories.json");
 
 const db = require("./config/database");
 const cloudinary = require("./config/cloudinary");
