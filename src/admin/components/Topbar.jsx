@@ -10,7 +10,7 @@ const searchableSections = [
   { title: "Site Settings", description: "Brand, SEO, footer, socials, announcement", path: "/admin/site-settings", tags: "website settings theme contact logo favicon" },
   { title: "Navigation", description: "Navbar, footer links, visibility, ordering", path: "/admin/navigation", tags: "menu links footer navbar" },
   { title: "Website Builder", description: "Homepage section visibility, ordering, titles, backgrounds, and animations", path: "/admin/website-builder", tags: "website builder homepage sections visibility order background animation" },
-  { title: "Partner Sections", description: "Academic, research, innovation, title, knowledge, Gergian regional, and outreach partners", path: "/admin/academic-partners", tags: "partners institutions academic research innovation title knowledge gergian regional outreach logos" },
+  { title: "Partner Sections", description: "Academic, research, innovation, title, knowledge, Georgian regional, and outreach partners", path: "/admin/academic-partners", tags: "partners institutions academic research innovation title knowledge georgian regional outreach logos" },
   { title: "Sponsors", description: "Sponsor tiers, logos, booths, links, featured sponsors, and sessions", path: "/admin/sponsors", tags: "sponsors partners exhibitors support logo tier booth session" },
   { title: "Judges", description: "Judges, reviewers, evaluators, expertise, and panel members", path: "/admin/judges", tags: "judges reviewers evaluators panel faculty industry research sponsor external expertise" },
   { title: "Speakers", description: "Speaker profiles, featured status, sessions, and social links", path: "/admin/speakers", tags: "speakers judges keynote sessions experts panel" },

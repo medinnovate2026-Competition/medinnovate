@@ -2,16 +2,21 @@ import { useEffect, useState } from "react";
 import { ExternalLink, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { API_BASE_URL, resolveAssetUrl } from "../config";
+import partnerCategoryConfig from "../../shared/partnerCategories.json";
 
-const partnerSections = [
-  { key: "academic", title: "Academic partners" },
-  { key: "research", title: "Research partner" },
-  { key: "innovation", title: "Innovation partner" },
-  { key: "title", title: "Title partner" },
-  { key: "knowledge", title: "Knowledge partner" },
-  { key: "gergian_regional", title: "Gergian Regional Partner" },
-  { key: "outreach", title: "Outreach Partner" },
-];
+const partnerSections = partnerCategoryConfig.categories.map(({ value, label, aliases = [] }) => ({ key: value, title: label, aliases }));
+const defaultPartnerType = partnerCategoryConfig.defaultType;
+const partnerTypeAliases = new Map(
+  partnerSections.flatMap((section) => [
+    [section.key, section.key],
+    ...section.aliases.map((alias) => [alias, section.key]),
+  ]),
+);
+
+function normalizePartnerType(type) {
+  const normalized = String(type || defaultPartnerType).trim().toLowerCase();
+  return partnerTypeAliases.get(normalized) || defaultPartnerType;
+}
 
 function AcademicPartners() {
   const [partners, setPartners] = useState([]);
@@ -59,7 +64,7 @@ function AcademicPartners() {
 
         <div className="mx-auto mt-16 space-y-14">
           {partnerSections.map((section) => {
-            const sectionPartners = partners.filter((partner) => (partner.partner_type || "academic") === section.key);
+            const sectionPartners = partners.filter((partner) => normalizePartnerType(partner.partner_type) === section.key);
             if (sectionPartners.length === 0) return null;
 
             return (

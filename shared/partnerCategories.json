@@ -1,0 +1,34 @@
+{
+  "defaultType": "academic",
+  "categories": [
+    {
+      "value": "academic",
+      "label": "Academic partners"
+    },
+    {
+      "value": "research",
+      "label": "Research partner"
+    },
+    {
+      "value": "innovation",
+      "label": "Innovation partner"
+    },
+    {
+      "value": "title",
+      "label": "Title partner"
+    },
+    {
+      "value": "knowledge",
+      "label": "Knowledge partner"
+    },
+    {
+      "value": "georgian_regional",
+      "label": "Georgian Regional Partner",
+      "aliases": ["gergian_regional"]
+    },
+    {
+      "value": "outreach",
+      "label": "Outreach Partner"
+    }
+  ]
+}

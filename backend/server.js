@@ -25,6 +25,7 @@ const PAYMENTS_DIR = path.join(__dirname, "public", "payments");
 const MEDIA_DIR = path.join(__dirname, "public", "media");
 const JSON_FIELDS = new Set(["social_links", "theme_colors", "highlights", "stats", "announcements", "metadata", "stats_json", "timeline_json", "why_participate_json", "contact_json"]);
 const DEFAULT_WHATSAPP_INVITE_LINK = "https://chat.whatsapp.com/KaUGYIbIMDr2HASOrnD7vp?mode=gi_t";
+const partnerCategoryConfig = require("../shared/partnerCategories.json");
 
 const db = require("./config/database");
 const cloudinary = require("./config/cloudinary");
@@ -2186,12 +2187,17 @@ app.delete("/api/admin/navigation/:id", async (req, res) => {
   return res.json({ success: true });
 });
 
-const DEFAULT_PARTNER_TYPE = "academic";
-const PARTNER_TYPES = new Set([DEFAULT_PARTNER_TYPE, "research", "innovation", "title", "knowledge", "gergian_regional", "outreach"]);
+const DEFAULT_PARTNER_TYPE = partnerCategoryConfig.defaultType;
+const PARTNER_TYPE_ALIASES = new Map(
+  partnerCategoryConfig.categories.flatMap((category) => [
+    [category.value, category.value],
+    ...(category.aliases || []).map((alias) => [alias, category.value]),
+  ]),
+);
 
 function normalizePartnerType(type) {
   const normalized = String(type || DEFAULT_PARTNER_TYPE).trim().toLowerCase();
-  return PARTNER_TYPES.has(normalized) ? normalized : DEFAULT_PARTNER_TYPE;
+  return PARTNER_TYPE_ALIASES.get(normalized) || DEFAULT_PARTNER_TYPE;
 }
 
 function serializeAcademicPartner(row) {
