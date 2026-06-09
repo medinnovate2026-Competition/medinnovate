@@ -8,11 +8,8 @@ import { resolveAssetUrl } from "../../config";
 const STORAGE_KEY = "medinnovate_academic_partners_cms";
 
 const partnerTypeOptions = [
-  { value: "academic", label: "Academic partners" },
-  { value: "research", label: "Research partner" },
-  { value: "innovation", label: "Innovation partner" },
-  { value: "title", label: "Title partner" },
-  { value: "knowledge", label: "Knowledge partner" },
+  { value: "gergian_regional", label: "Gergian Regional Partner" },
+  { value: "outreach", label: "Outreach Partner" },
 ];
 
 const emptyPartner = {
@@ -21,13 +18,13 @@ const emptyPartner = {
   description: "",
   logo_url: "",
   website: "",
-  partner_type: "academic",
+  partner_type: "gergian_regional",
   display_order: 0,
   is_visible: true,
 };
 
 function getPartnerTypeLabel(type) {
-  return partnerTypeOptions.find((option) => option.value === type)?.label || "Academic partners";
+  return partnerTypeOptions.find((option) => option.value === type)?.label || "Gergian Regional Partner";
 }
 
 function normalizePartner(partner, index = 0) {
@@ -35,7 +32,7 @@ function normalizePartner(partner, index = 0) {
     ...emptyPartner,
     ...partner,
     id: partner.id || `local-${Date.now()}-${index}`,
-    partner_type: partner.partner_type || "academic",
+    partner_type: partnerTypeOptions.some((option) => option.value === partner.partner_type) ? partner.partner_type : "gergian_regional",
     display_order: Number(partner.display_order ?? index + 1),
     is_visible: Boolean(partner.is_visible ?? true),
   };
@@ -247,7 +244,7 @@ function AcademicPartnersPage() {
       <PageHeader
         eyebrow="Admin / Academic Partners"
         title="Partner Sections"
-        description="Control academic, research, innovation, title, and knowledge partner cards on the public website."
+        description="Control Gergian regional and outreach partner cards on the public website."
         actions={(
           <button onClick={startCreate} className="admin-primary-button">
             <Plus size={18} />

@@ -384,7 +384,7 @@ CREATE TABLE IF NOT EXISTS academic_partners (
   description TEXT NULL,
   logo_url TEXT NULL,
   website TEXT NULL,
-  partner_type VARCHAR(100) NOT NULL DEFAULT 'academic',
+  partner_type VARCHAR(100) NOT NULL DEFAULT 'gergian_regional',
   display_order INT NOT NULL DEFAULT 0,
   is_visible BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
