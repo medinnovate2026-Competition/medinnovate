@@ -649,7 +649,7 @@ async function ensureSchema() {
       description TEXT NULL,
       logo_url TEXT NULL,
       website TEXT NULL,
-      partner_type VARCHAR(100) NOT NULL DEFAULT 'gergian_regional',
+      partner_type VARCHAR(100) NOT NULL DEFAULT 'academic',
       display_order INT NOT NULL DEFAULT 0,
       is_visible BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -657,7 +657,7 @@ async function ensureSchema() {
   `);
 
   if (!(await columnExists("academic_partners", "partner_type"))) {
-    await db.query("ALTER TABLE academic_partners ADD COLUMN partner_type VARCHAR(100) NOT NULL DEFAULT 'gergian_regional'");
+    await db.query("ALTER TABLE academic_partners ADD COLUMN partner_type VARCHAR(100) NOT NULL DEFAULT 'academic'");
   }
 
   await db.query(`
@@ -2186,8 +2186,8 @@ app.delete("/api/admin/navigation/:id", async (req, res) => {
   return res.json({ success: true });
 });
 
-const DEFAULT_PARTNER_TYPE = "gergian_regional";
-const PARTNER_TYPES = new Set([DEFAULT_PARTNER_TYPE, "outreach"]);
+const DEFAULT_PARTNER_TYPE = "academic";
+const PARTNER_TYPES = new Set([DEFAULT_PARTNER_TYPE, "research", "innovation", "title", "knowledge", "gergian_regional", "outreach"]);
 
 function normalizePartnerType(type) {
   const normalized = String(type || DEFAULT_PARTNER_TYPE).trim().toLowerCase();
