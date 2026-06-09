@@ -25,6 +25,33 @@ const PAYMENTS_DIR = path.join(__dirname, "public", "payments");
 const MEDIA_DIR = path.join(__dirname, "public", "media");
 const JSON_FIELDS = new Set(["social_links", "theme_colors", "highlights", "stats", "announcements", "metadata", "stats_json", "timeline_json", "why_participate_json", "contact_json"]);
 const DEFAULT_WHATSAPP_INVITE_LINK = "https://chat.whatsapp.com/KaUGYIbIMDr2HASOrnD7vp?mode=gi_t";
+const REQUIRED_DB_ENV = [
+  ["DB_HOST", "MYSQL_HOST"],
+  ["DB_USER", "MYSQL_USER"],
+  ["DB_NAME", "MYSQL_DATABASE"],
+];
+
+const dbEnv = {
+  host: process.env.DB_HOST || process.env.MYSQL_HOST,
+  port: process.env.DB_PORT || process.env.MYSQL_PORT,
+  user: process.env.DB_USER || process.env.MYSQL_USER,
+  password: process.env.DB_PASSWORD || process.env.MYSQL_PASSWORD,
+  database: process.env.DB_NAME || process.env.MYSQL_DATABASE,
+};
+
+console.log("MYSQL_HOST exists?", Boolean(dbEnv.host));
+console.log("MYSQL_USER exists?", Boolean(dbEnv.user));
+console.log("MYSQL_DATABASE exists?", Boolean(dbEnv.database));
+console.log("DB_PORT:", dbEnv.port || "default");
+
+const missingDbEnv = REQUIRED_DB_ENV.filter(([dbKey, mysqlKey]) => !process.env[dbKey] && !process.env[mysqlKey]);
+
+if (missingDbEnv.length > 0) {
+  console.error(
+    "Missing database environment variables:",
+    missingDbEnv.map(([dbKey, mysqlKey]) => `${dbKey} or ${mysqlKey}`).join(", "),
+  );
+}
 
 const db = require("./config/database");
 const cloudinary = require("./config/cloudinary");
@@ -2342,23 +2369,14 @@ createCollectionRoutes({
   orderBy: "created_at DESC, id DESC",
 });
 
-async function startServer() {
-  try {
-    await db.verifyDatabaseConnection();
-    await ensureSchema();
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on ${PORT}`);
+});
+
+ensureSchema()
+  .then(() => {
     console.log("Database schema initialized");
-
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on ${PORT}`);
-    });
-  } catch (error) {
-    console.error("Failed to initialize MedInnovate backend:", {
-      code: error.code,
-      message: error.message,
-      stack: error.stack,
-    });
-    process.exit(1);
-  }
-}
-
-startServer();
+  })
+  .catch((error) => {
+    console.error("Failed to initialize MedInnovate backend:", error);
+  });
