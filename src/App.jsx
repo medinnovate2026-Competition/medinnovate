@@ -34,6 +34,7 @@ import WebsiteBuilderPage from './admin/pages/WebsiteBuilderPage';
 import MasterCmsPage from './admin/pages/MasterCmsPage';
 import AnalyticsPage from './admin/pages/AnalyticsPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import { TermsPage, PrivacyPage, ShippingPage, ContactPage, RefundsPage } from './pages/PolicyPage';
 import { API_BASE_URL } from './config';
 import { defaultCommunitySection, normalizeCommunitySection } from './data/communitySection';
 import { defaultHomepageContent, normalizeHomepageContent } from './data/homepageContent';
@@ -431,6 +432,11 @@ function App() {
         }
       />
       <Route path="/organising-committee" element={<OrganisingCommittee />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/shipping" element={<ShippingPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/refunds" element={<RefundsPage />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin" element={
         <ProtectedRoute>

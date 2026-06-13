@@ -159,9 +159,18 @@ function Footer({ content }) {
           </section>
         </div>
 
-        <div className="mt-8 flex flex-col gap-2 rounded-3xl border border-white/70 bg-white/70 px-6 py-5 text-sm font-semibold text-slate-500 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 MedInnovate</p>
-          <p>All rights reserved.</p>
+        <div className="mt-8 rounded-3xl border border-white/70 bg-white/70 px-6 py-5 shadow-sm backdrop-blur">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-bold text-slate-500">
+            <a href="/medinnovate/terms" className="hover:text-[#7C3AED] transition">Terms &amp; Conditions</a>
+            <a href="/medinnovate/privacy" className="hover:text-[#7C3AED] transition">Privacy Policy</a>
+            <a href="/medinnovate/shipping" className="hover:text-[#7C3AED] transition">Shipping Policy</a>
+            <a href="/medinnovate/contact" className="hover:text-[#7C3AED] transition">Contact Us</a>
+            <a href="/medinnovate/refunds" className="hover:text-[#7C3AED] transition">Cancellation &amp; Refunds</a>
+          </div>
+          <div className="mt-4 flex flex-col gap-1 text-center text-sm font-semibold text-slate-500 sm:flex-row sm:justify-between">
+            <p>© 2026 MedInnovate</p>
+            <p>All rights reserved.</p>
+          </div>
         </div>
       </motion.div>
     </footer>
