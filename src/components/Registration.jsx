@@ -37,6 +37,7 @@ const defaultPaymentSettings = {
   cashfree_qr_url: DEFAULT_CASHFREE_QR_IMAGE,
   cashfreeQrUrl: DEFAULT_CASHFREE_QR_IMAGE,
   cashfree_instructions: "Use Cashfree QR, then enter your transaction ID.",
+  razorpay_enabled: false,
 };
 
 const steps = ["Referral", "Leader", "Team", "Review", "Payment"];
@@ -252,13 +253,15 @@ function RegistrationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [razorpayMeta, setRazorpayMeta] = useState(null);
 
   const finalAmount = appliedCoupon?.finalAmount || ORIGINAL_PRICE;
   const savedAmount = appliedCoupon?.savedAmount || 0;
   const upiEnabled = paymentSettings.upi_enabled !== false;
   const paystackEnabled = Boolean(paymentSettings.paystack_enabled);
   const cashfreeEnabled = Boolean(paymentSettings.cashfree_enabled);
-  const hasPaymentMethod = (paymentMethod === "upi" && upiEnabled) || (paymentMethod === "paystack" && paystackEnabled) || (paymentMethod === "cashfree" && cashfreeEnabled);
+  const razorpayEnabled = Boolean(paymentSettings.razorpay_enabled);
+  const hasPaymentMethod = (paymentMethod === "upi" && upiEnabled) || (paymentMethod === "paystack" && paystackEnabled) || (paymentMethod === "cashfree" && cashfreeEnabled) || (paymentMethod === "razorpay" && razorpayEnabled);
   const upiQrImage = appliedCoupon?.qrImage || paymentSettings.defaultQrImage || paymentSettings.default_qr_image || defaultQrImage;
   const paystackQrImage = paymentSettings.paystackQrUrl || paymentSettings.paystack_qr_url || "";
   const cashfreeQrImage = appliedCoupon?.qrImage || paymentSettings.cashfreeQrUrl || paymentSettings.cashfree_qr_url || DEFAULT_CASHFREE_QR_IMAGE;
@@ -294,7 +297,14 @@ function RegistrationForm() {
       enabled: cashfreeEnabled,
       backendMethod: "cashfree",
     },
-  ], [cashfreeEnabled, paystackEnabled, upiEnabled]);
+    {
+      id: "razorpay",
+      label: "Card / International",
+      description: "Credit/Debit card, international payments via Razorpay.",
+      enabled: razorpayEnabled,
+      backendMethod: "razorpay",
+    },
+  ], [cashfreeEnabled, paystackEnabled, upiEnabled, razorpayEnabled]);
   const selectedPaymentChannel = useMemo(
     () => paymentChannels.find((channel) => channel.id === paymentChannel && channel.enabled) || paymentChannels.find((channel) => channel.enabled),
     [paymentChannel, paymentChannels],
@@ -364,6 +374,56 @@ function RegistrationForm() {
     if (paymentMethod !== selectedPaymentChannel.backendMethod) setPaymentMethod(selectedPaymentChannel.backendMethod);
   }, [paymentChannel, paymentMethod, selectedPaymentChannel]);
 
+  useEffect(() => {
+    if (!razorpayEnabled) return;
+    if (document.getElementById("razorpay-checkout-js")) return;
+    const script = document.createElement("script");
+    script.id = "razorpay-checkout-js";
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    document.body.appendChild(script);
+  }, [razorpayEnabled]);
+
+  const handleRazorpayPayment = async () => {
+    setSubmitError("");
+    try {
+      const orderRes = await fetch(`${API_BASE_URL}/api/razorpay/create-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: finalAmount }),
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) throw new Error(orderData.error || "Failed to create payment order.");
+
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "MedInnovate 2026",
+        description: "Team Registration Fee",
+        order_id: orderData.orderId,
+        handler(response) {
+          setUtr(response.razorpay_payment_id);
+          setRazorpayMeta({
+            orderId: response.razorpay_order_id,
+            paymentId: response.razorpay_payment_id,
+            signature: response.razorpay_signature,
+          });
+        },
+        prefill: {
+          name: leader.fullName,
+          email: leader.email,
+          contact: leader.phone,
+        },
+        theme: { color: "#7C3AED" },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      setSubmitError(error.message || "Payment failed. Please try again.");
+    }
+  };
+
   const updateLeader = (field, value) => setLeader((current) => ({ ...current, [field]: value }));
   const updatePaymentDetails = (field, value) => setPaymentDetails((current) => ({ ...current, [field]: value }));
   const selectPaymentChannel = (channel) => {
@@ -428,7 +488,7 @@ function RegistrationForm() {
   const hasPartialTeammate = members.some((member) => memberHasAnyDetails(member) && !memberIsComplete(member));
   const totalTeamSize = 1 + completeTeammates.length;
   const teammatesComplete = completeTeammates.length >= REQUIRED_TEAMMATES && totalTeamSize <= MAX_TEAM_SIZE && !hasPartialTeammate;
-  const paymentComplete = utr.trim() && termsAccepted && hasPaymentMethod;
+  const paymentComplete = termsAccepted && hasPaymentMethod && (paymentMethod === "razorpay" ? Boolean(razorpayMeta) : utr.trim());
 
   const openPaystackPayment = () => {
     if (payNowDisabled) return;
@@ -494,6 +554,8 @@ function RegistrationForm() {
       discount_amount: savedAmount,
       final_amount: finalAmount,
       payment_method: paymentMethod,
+      razorpay_order_id: razorpayMeta?.orderId || "",
+      razorpay_signature: razorpayMeta?.signature || "",
     };
 
     setIsSubmitting(true);
@@ -877,7 +939,29 @@ function RegistrationForm() {
                         </div>
                       </div>
 
-                      <TextInput label="Transaction ID" value={utr} onChange={setUtr} required />
+                      {paymentChannel === "razorpay" && (
+                        <div className="rounded-3xl border border-violet-100 bg-white p-5 text-center">
+                          <h4 className="text-sm font-black text-[#111827]">Pay with Card or International</h4>
+                          <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
+                            Click below to open the Razorpay checkout. Supports credit/debit cards and international payments.
+                          </p>
+                          {razorpayMeta ? (
+                            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
+                              Payment successful. ID: {razorpayMeta.paymentId}
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={handleRazorpayPayment}
+                              className="mt-4 inline-flex rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-7 py-3 text-sm font-black uppercase tracking-wide text-white"
+                            >
+                              Pay Now
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {paymentChannel !== "razorpay" && <TextInput label="Transaction ID" value={utr} onChange={setUtr} required />}
                       <label className="flex items-start gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-slate-600">
                         <input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} className="mt-1 h-4 w-4 accent-[#7C3AED]" />
                         I confirm that the details and payment information are accurate.

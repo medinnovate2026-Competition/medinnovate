@@ -27,6 +27,7 @@ const MEDIA_DIR = path.join(__dirname, "public", "media");
 const JSON_FIELDS = new Set(["social_links", "theme_colors", "highlights", "stats", "announcements", "metadata", "stats_json", "timeline_json", "why_participate_json", "contact_json"]);
 const DEFAULT_WHATSAPP_INVITE_LINK = "https://chat.whatsapp.com/KaUGYIbIMDr2HASOrnD7vp?mode=gi_t";
 const partnerCategoryConfig = require("./config/partnerCategories.json");
+const Razorpay = require("razorpay");
 
 const db = require("./config/database");
 const cloudinary = require("./config/cloudinary");
@@ -128,6 +129,7 @@ function serializePaymentSettings(row = {}) {
     cashfree_qr_url: row.cashfree_qr_url || "",
     cashfreeQrUrl: toPublicQrPath(row.cashfree_qr_url),
     cashfree_instructions: row.cashfree_instructions || "",
+    razorpay_enabled: Boolean(row.razorpay_enabled),
   };
 }
 
@@ -276,6 +278,7 @@ async function ensureSchema() {
     ["cashfree_enabled", "BOOLEAN DEFAULT FALSE"],
     ["cashfree_qr_url", "TEXT"],
     ["cashfree_instructions", "TEXT"],
+    ["razorpay_enabled", "BOOLEAN DEFAULT FALSE"],
   ];
 
   for (const [column, definition] of paymentSettingsColumns) {
@@ -353,9 +356,13 @@ async function ensureSchema() {
   }
 
   if (!(await columnExists("teams", "payment_method"))) {
-    await db.query("ALTER TABLE teams ADD COLUMN payment_method ENUM('upi', 'paystack', 'cashfree') DEFAULT 'upi' AFTER payment_qr_type");
+    await db.query("ALTER TABLE teams ADD COLUMN payment_method ENUM('upi', 'paystack', 'cashfree', 'razorpay') DEFAULT 'upi' AFTER payment_qr_type");
   } else {
-    await db.query("ALTER TABLE teams MODIFY COLUMN payment_method ENUM('upi', 'paystack', 'cashfree') DEFAULT 'upi'");
+    await db.query("ALTER TABLE teams MODIFY COLUMN payment_method ENUM('upi', 'paystack', 'cashfree', 'razorpay') DEFAULT 'upi'");
+  }
+
+  if (!(await columnExists("teams", "razorpay_order_id"))) {
+    await db.query("ALTER TABLE teams ADD COLUMN razorpay_order_id VARCHAR(255) NULL");
   }
 
   if ((await columnExists("teams", "transaction_ref"))) {
@@ -1270,12 +1277,13 @@ app.put("/api/admin/payment-settings", async (req, res) => {
   const cashfreeEnabled = Boolean(req.body.cashfree_enabled);
   const cashfreeQrUrl = String(req.body.cashfree_qr_url || "").trim();
   const cashfreeInstructions = String(req.body.cashfree_instructions || "").trim();
+  const razorpayEnabled = Boolean(req.body.razorpay_enabled);
 
   if (!defaultQrImage) {
     return res.status(400).json({ message: "Default QR image URL is required." });
   }
 
-  if (!upiEnabled && !paystackEnabled && !cashfreeEnabled) {
+  if (!upiEnabled && !paystackEnabled && !cashfreeEnabled && !razorpayEnabled) {
     return res.status(400).json({ message: "At least one payment method must be enabled." });
   }
 
@@ -1289,13 +1297,45 @@ app.put("/api/admin/payment-settings", async (req, res) => {
          paystack_instructions = ?,
          cashfree_enabled = ?,
          cashfree_qr_url = ?,
-         cashfree_instructions = ?
+         cashfree_instructions = ?,
+         razorpay_enabled = ?
      WHERE id = 1`,
-    [defaultQrImage, upiEnabled, paystackEnabled, paystackQrUrl, paystackPaymentLink, paystackInstructions, cashfreeEnabled, cashfreeQrUrl, cashfreeInstructions],
+    [defaultQrImage, upiEnabled, paystackEnabled, paystackQrUrl, paystackPaymentLink, paystackInstructions, cashfreeEnabled, cashfreeQrUrl, cashfreeInstructions, razorpayEnabled],
   );
 
   const [rows] = await db.query("SELECT * FROM payment_settings WHERE id = 1");
   res.json({ settings: serializePaymentSettings(rows[0]) });
+});
+
+app.post("/api/razorpay/create-order", async (req, res) => {
+  try {
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      return res.status(500).json({ error: "Razorpay is not configured on the server." });
+    }
+
+    const amount = Number(req.body.amount);
+    if (!amount || amount <= 0) return res.status(400).json({ error: "Invalid amount." });
+
+    const razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+
+    const order = await razorpay.orders.create({
+      amount: Math.round(amount * 100),
+      currency: "USD",
+      receipt: `receipt_${Date.now()}`,
+    });
+
+    return res.json({
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId: process.env.RAZORPAY_KEY_ID,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || "Failed to create Razorpay order." });
+  }
 });
 
 app.get("/api/admin/coupons", async (_req, res) => {
@@ -1399,6 +1439,8 @@ app.post("/api/register-upi", async (req, res) => {
     ? amountPaid
     : Number(req.body.final_amount);
   const paymentMethod = String(req.body.payment_method || "upi").trim().toLowerCase();
+  const razorpayOrderId = String(req.body.razorpay_order_id || "").trim();
+  const razorpaySignature = String(req.body.razorpay_signature || "").trim();
 
   if (!teamName || !utr || members.length === 0 || Number.isNaN(amountPaid)) {
     return res.status(400).json({ error: "Team name, members, UTR, and amount paid are required." });
@@ -1412,7 +1454,7 @@ app.post("/api/register-upi", async (req, res) => {
     return res.status(400).json({ error: "Discount amount must be zero or higher." });
   }
 
-  if (!["upi", "paystack", "cashfree"].includes(paymentMethod)) {
+  if (!["upi", "paystack", "cashfree", "razorpay"].includes(paymentMethod)) {
     return res.status(400).json({ error: "Choose a valid payment method." });
   }
 
@@ -1426,6 +1468,25 @@ app.post("/api/register-upi", async (req, res) => {
   }
   if (paymentMethod === "cashfree" && !paymentSettings.cashfree_enabled) {
     return res.status(400).json({ error: "Cashfree payments are currently disabled." });
+  }
+  if (paymentMethod === "razorpay" && !paymentSettings.razorpay_enabled) {
+    return res.status(400).json({ error: "Razorpay payments are currently disabled." });
+  }
+
+  if (paymentMethod === "razorpay") {
+    if (!razorpayOrderId || !razorpaySignature) {
+      return res.status(400).json({ error: "Razorpay order ID and signature are required." });
+    }
+    if (!process.env.RAZORPAY_KEY_SECRET) {
+      return res.status(500).json({ error: "Razorpay is not configured on the server." });
+    }
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpayOrderId}|${utr}`)
+      .digest("hex");
+    if (expectedSignature !== razorpaySignature) {
+      return res.status(400).json({ error: "Payment verification failed. Invalid signature." });
+    }
   }
 
   if (members.length < 3 || members.length > 5) {
@@ -1458,10 +1519,11 @@ app.post("/api/register-upi", async (req, res) => {
   try {
     await connection.beginTransaction();
 
+    const isRazorpay = paymentMethod === "razorpay";
     const [teamResult] = await connection.query(
-      `INSERT INTO teams (team_name, utr, coupon_code, referral_code, total_paid, discount_amount, final_amount, payment_method, team_size)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [teamName, utr, couponCode || null, referralCode || null, finalAmount, discountAmount, finalAmount, paymentMethod, members.length],
+      `INSERT INTO teams (team_name, utr, coupon_code, referral_code, total_paid, discount_amount, final_amount, payment_method, team_size, razorpay_order_id, payment_verified, verified_amount, verified_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [teamName, utr, couponCode || null, referralCode || null, finalAmount, discountAmount, finalAmount, paymentMethod, members.length, razorpayOrderId || null, isRazorpay, isRazorpay ? finalAmount : null, isRazorpay ? new Date() : null],
     );
 
     const teamId = teamResult.insertId;
