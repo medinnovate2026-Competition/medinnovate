@@ -29,6 +29,7 @@ const defaultPaymentSettings = {
   cashfree_enabled: false,
   cashfree_qr_url: DEFAULT_CASHFREE_QR_IMAGE,
   cashfree_instructions: "Use Cashfree QR, then enter your transaction ID.",
+  razorpay_enabled: false,
 };
 const seedCoupons = [
   {
@@ -111,7 +112,7 @@ function CouponsCmsPage() {
 
     let nextPaymentSettings = { ...paymentSettings };
 
-    if (!nextPaymentSettings.upi_enabled && !nextPaymentSettings.paystack_enabled && !nextPaymentSettings.cashfree_enabled) {
+    if (!nextPaymentSettings.upi_enabled && !nextPaymentSettings.paystack_enabled && !nextPaymentSettings.cashfree_enabled && !nextPaymentSettings.razorpay_enabled) {
       setError("At least one payment method must be enabled.");
       setSavingSettings(false);
       return;
@@ -173,6 +174,7 @@ function CouponsCmsPage() {
           cashfree_enabled: nextPaymentSettings.cashfree_enabled,
           cashfree_qr_url: nextPaymentSettings.cashfree_qr_url,
           cashfree_instructions: nextPaymentSettings.cashfree_instructions,
+          razorpay_enabled: nextPaymentSettings.razorpay_enabled,
         }),
       });
 
@@ -345,6 +347,15 @@ function CouponsCmsPage() {
                 className="h-4 w-4 accent-[#7C3AED]"
               />
               Enable Cashfree
+            </label>
+            <label className="flex items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-black text-slate-600">
+              <input
+                type="checkbox"
+                checked={Boolean(paymentSettings.razorpay_enabled)}
+                onChange={(event) => setPaymentSettings({ ...paymentSettings, razorpay_enabled: event.target.checked })}
+                className="h-4 w-4 accent-[#7C3AED]"
+              />
+              Enable Razorpay (Card / International)
             </label>
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-[96px_1fr] sm:items-center">
