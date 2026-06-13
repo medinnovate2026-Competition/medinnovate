@@ -18,6 +18,7 @@ const PAYMENT_SETTINGS_KEY = "medinnovate_payment_settings_cms";
 const ORIGINAL_PRICE = 10;
 const DEFAULT_PAYSTACK_QR_IMAGE = "https://i.postimg.cc/BnMcnsrT/Paystack-QR.jpg";
 const DEFAULT_PAYSTACK_PAYMENT_LINK = "https://paystack.com/buy/medinnovate-20-dhnwdw";
+const DEFAULT_CASHFREE_QR_IMAGE = "https://i.postimg.cc/Hkj3MqWr/qr1000.jpg";
 const defaultPaymentSettings = {
   default_qr_image: "https://i.postimg.cc/Hkj3MqWr/qr1000.jpg",
   upi_enabled: true,
@@ -25,6 +26,9 @@ const defaultPaymentSettings = {
   paystack_qr_url: DEFAULT_PAYSTACK_QR_IMAGE,
   paystack_payment_link: DEFAULT_PAYSTACK_PAYMENT_LINK,
   paystack_instructions: "For African delegates please use Paystack.",
+  cashfree_enabled: false,
+  cashfree_qr_url: DEFAULT_CASHFREE_QR_IMAGE,
+  cashfree_instructions: "Use Cashfree QR, then enter your transaction ID.",
 };
 const seedCoupons = [
   {
@@ -54,6 +58,7 @@ function CouponsCmsPage() {
   const [saving, setSaving] = useState(false);
   const [paymentSettings, setPaymentSettings] = useState(defaultPaymentSettings);
   const [paystackQrFile, setPaystackQrFile] = useState(null);
+  const [cashfreeQrFile, setCashfreeQrFile] = useState(null);
   const [savingSettings, setSavingSettings] = useState(false);
   const [deletingCouponId, setDeletingCouponId] = useState(null);
   const [message, setMessage] = useState("");
@@ -106,7 +111,7 @@ function CouponsCmsPage() {
 
     let nextPaymentSettings = { ...paymentSettings };
 
-    if (!nextPaymentSettings.upi_enabled && !nextPaymentSettings.paystack_enabled) {
+    if (!nextPaymentSettings.upi_enabled && !nextPaymentSettings.paystack_enabled && !nextPaymentSettings.cashfree_enabled) {
       setError("At least one payment method must be enabled.");
       setSavingSettings(false);
       return;
@@ -124,6 +129,23 @@ function CouponsCmsPage() {
         nextPaymentSettings = { ...nextPaymentSettings, paystack_qr_url: upload.url || upload.path || nextPaymentSettings.paystack_qr_url };
       } catch (uploadError) {
         setError(uploadError.message || "Unable to upload Paystack QR.");
+        setSavingSettings(false);
+        return;
+      }
+    }
+
+    if (cashfreeQrFile && !usingFallback) {
+      try {
+        const formData = new FormData();
+        formData.append("file", cashfreeQrFile);
+        formData.append("folder", "payments");
+        const upload = await cmsFetchJson("/api/admin/media/upload", {
+          method: "POST",
+          body: formData,
+        });
+        nextPaymentSettings = { ...nextPaymentSettings, cashfree_qr_url: upload.url || upload.path || nextPaymentSettings.cashfree_qr_url };
+      } catch (uploadError) {
+        setError(uploadError.message || "Unable to upload Cashfree QR.");
         setSavingSettings(false);
         return;
       }
@@ -148,11 +170,15 @@ function CouponsCmsPage() {
           paystack_qr_url: nextPaymentSettings.paystack_qr_url,
           paystack_payment_link: nextPaymentSettings.paystack_payment_link,
           paystack_instructions: nextPaymentSettings.paystack_instructions,
+          cashfree_enabled: nextPaymentSettings.cashfree_enabled,
+          cashfree_qr_url: nextPaymentSettings.cashfree_qr_url,
+          cashfree_instructions: nextPaymentSettings.cashfree_instructions,
         }),
       });
 
       setPaymentSettings({ ...defaultPaymentSettings, ...data.settings });
       setPaystackQrFile(null);
+      setCashfreeQrFile(null);
       setMessage("Payment methods updated.");
     } catch (settingsError) {
       setError(settingsError.message || "Unable to save payment methods.");
@@ -291,8 +317,8 @@ function CouponsCmsPage() {
         <div className="space-y-6">
         <div className="rounded-[28px] border border-white/70 bg-white/82 p-6 shadow-[0_24px_70px_rgba(124,58,237,0.12)] backdrop-blur">
           <h2 className="text-xl font-black text-slate-950">Payment Methods</h2>
-          <p className="mt-1 text-sm text-slate-500">Control whether participants can pay by UPI, Paystack, or both.</p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <p className="mt-1 text-sm text-slate-500">Control whether participants can pay by UPI, Paystack, Cashfree, or a combination.</p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <label className="flex items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-black text-slate-600">
               <input
                 type="checkbox"
@@ -310,6 +336,15 @@ function CouponsCmsPage() {
                 className="h-4 w-4 accent-[#7C3AED]"
               />
               Enable Paystack
+            </label>
+            <label className="flex items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-black text-slate-600">
+              <input
+                type="checkbox"
+                checked={Boolean(paymentSettings.cashfree_enabled)}
+                onChange={(event) => setPaymentSettings({ ...paymentSettings, cashfree_enabled: event.target.checked })}
+                className="h-4 w-4 accent-[#7C3AED]"
+              />
+              Enable Cashfree
             </label>
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-[96px_1fr] sm:items-center">
@@ -368,6 +403,43 @@ function CouponsCmsPage() {
               value={paymentSettings.paystack_instructions || ""}
               onChange={(event) => setPaymentSettings({ ...paymentSettings, paystack_instructions: event.target.value })}
               placeholder="For African delegates please use Paystack."
+              className="min-h-24 w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-fuchsia-300"
+            />
+          </label>
+          <div className="mt-5 grid gap-4 sm:grid-cols-[96px_1fr] sm:items-center">
+            <div className="grid h-24 w-24 place-items-center overflow-hidden rounded-2xl border border-violet-100 bg-fuchsia-50">
+              {paymentSettings.cashfree_qr_url ? (
+                <img src={resolveAssetUrl(paymentSettings.cashfree_qr_url)} alt="Cashfree QR" className="h-full w-full object-cover" />
+              ) : (
+                <span className="px-3 text-center text-xs font-black text-slate-400">Cashfree QR</span>
+              )}
+            </div>
+            <div className="grid gap-3">
+              <label className="space-y-2">
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Cashfree QR upload</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => setCashfreeQrFile(event.target.files?.[0] || null)}
+                  className="w-full rounded-2xl border border-dashed border-violet-200 bg-white px-4 py-3 text-sm font-bold text-slate-500 file:mr-3 file:rounded-full file:border-0 file:bg-violet-100 file:px-3 file:py-1.5 file:text-xs file:font-black file:text-violet-700"
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Or Cashfree QR URL</span>
+                <input
+                  value={paymentSettings.cashfree_qr_url || ""}
+                  onChange={(event) => setPaymentSettings({ ...paymentSettings, cashfree_qr_url: event.target.value })}
+                  className="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-fuchsia-300"
+                />
+              </label>
+            </div>
+          </div>
+          <label className="mt-5 block space-y-2">
+            <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Cashfree instructions</span>
+            <textarea
+              value={paymentSettings.cashfree_instructions || ""}
+              onChange={(event) => setPaymentSettings({ ...paymentSettings, cashfree_instructions: event.target.value })}
+              placeholder="Use Cashfree QR, then enter your transaction ID."
               className="min-h-24 w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-fuchsia-300"
             />
           </label>

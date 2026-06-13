@@ -28,15 +28,19 @@ CREATE TABLE IF NOT EXISTS payment_settings (
   paystack_qr_url TEXT,
   paystack_payment_link TEXT,
   paystack_instructions TEXT,
+  cashfree_enabled BOOLEAN DEFAULT FALSE,
+  cashfree_qr_url TEXT,
+  cashfree_instructions TEXT,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-INSERT INTO payment_settings (id, default_qr_image, paystack_qr_url, paystack_payment_link)
+INSERT INTO payment_settings (id, default_qr_image, paystack_qr_url, paystack_payment_link, cashfree_qr_url)
 VALUES (
   1,
   'https://i.postimg.cc/Hkj3MqWr/qr1000.jpg',
   'https://i.postimg.cc/BnMcnsrT/Paystack-QR.jpg',
-  'https://paystack.com/buy/medinnovate-20-dhnwdw'
+  'https://paystack.com/buy/medinnovate-20-dhnwdw',
+  'https://i.postimg.cc/Hkj3MqWr/qr1000.jpg'
 )
 ON DUPLICATE KEY UPDATE id = id;
 
@@ -215,7 +219,7 @@ CREATE TABLE IF NOT EXISTS teams (
   verified_amount DECIMAL(10, 2) NULL,
   verified_at TIMESTAMP NULL,
   payment_qr_type VARCHAR(50) NULL,
-  payment_method ENUM('upi', 'paystack') DEFAULT 'upi',
+  payment_method ENUM('upi', 'paystack', 'cashfree') DEFAULT 'upi',
   team_size INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

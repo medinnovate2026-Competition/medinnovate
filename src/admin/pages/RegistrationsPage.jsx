@@ -26,10 +26,17 @@ function StatusPill({ status }) {
 }
 
 function PaymentMethodBadge({ method }) {
-  const paystack = String(method || "upi").toLowerCase() === "paystack";
+  const normalizedMethod = String(method || "upi").toLowerCase();
+  const paymentMethods = {
+    paystack: { label: "PAYSTACK", className: "bg-emerald-100 text-emerald-700" },
+    cashfree: { label: "CASHFREE", className: "bg-fuchsia-100 text-fuchsia-700" },
+    upi: { label: "UPI", className: "bg-violet-100 text-violet-700" },
+  };
+  const activeMethod = paymentMethods[normalizedMethod] || paymentMethods.upi;
+
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-black ${paystack ? "bg-emerald-100 text-emerald-700" : "bg-violet-100 text-violet-700"}`}>
-      {paystack ? "PAYSTACK" : "UPI"}
+    <span className={`rounded-full px-3 py-1 text-xs font-black ${activeMethod.className}`}>
+      {activeMethod.label}
     </span>
   );
 }

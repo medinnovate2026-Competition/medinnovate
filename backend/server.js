@@ -21,6 +21,7 @@ const ORIGINAL_PRICE = 10;
 const DEFAULT_PAYMENT_QR_IMAGE = "https://i.postimg.cc/Hkj3MqWr/qr1000.jpg";
 const DEFAULT_PAYSTACK_QR_IMAGE = "https://i.postimg.cc/BnMcnsrT/Paystack-QR.jpg";
 const DEFAULT_PAYSTACK_PAYMENT_LINK = "https://paystack.com/buy/medinnovate-20-dhnwdw";
+const DEFAULT_CASHFREE_QR_IMAGE = DEFAULT_PAYMENT_QR_IMAGE;
 const PAYMENTS_DIR = path.join(__dirname, "public", "payments");
 const MEDIA_DIR = path.join(__dirname, "public", "media");
 const JSON_FIELDS = new Set(["social_links", "theme_colors", "highlights", "stats", "announcements", "metadata", "stats_json", "timeline_json", "why_participate_json", "contact_json"]);
@@ -123,6 +124,10 @@ function serializePaymentSettings(row = {}) {
     paystackQrUrl: toPublicQrPath(row.paystack_qr_url),
     paystack_payment_link: row.paystack_payment_link || "",
     paystack_instructions: row.paystack_instructions || "",
+    cashfree_enabled: Boolean(row.cashfree_enabled),
+    cashfree_qr_url: row.cashfree_qr_url || "",
+    cashfreeQrUrl: toPublicQrPath(row.cashfree_qr_url),
+    cashfree_instructions: row.cashfree_instructions || "",
   };
 }
 
@@ -255,6 +260,9 @@ async function ensureSchema() {
       paystack_qr_url TEXT,
       paystack_payment_link TEXT,
       paystack_instructions TEXT,
+      cashfree_enabled BOOLEAN DEFAULT FALSE,
+      cashfree_qr_url TEXT,
+      cashfree_instructions TEXT,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `);
@@ -265,6 +273,9 @@ async function ensureSchema() {
     ["paystack_qr_url", "TEXT"],
     ["paystack_payment_link", "TEXT"],
     ["paystack_instructions", "TEXT"],
+    ["cashfree_enabled", "BOOLEAN DEFAULT FALSE"],
+    ["cashfree_qr_url", "TEXT"],
+    ["cashfree_instructions", "TEXT"],
   ];
 
   for (const [column, definition] of paymentSettingsColumns) {
@@ -274,18 +285,19 @@ async function ensureSchema() {
   }
 
   await db.query(`
-    INSERT INTO payment_settings (id, default_qr_image, paystack_qr_url, paystack_payment_link)
-    VALUES (1, ?, ?, ?)
+    INSERT INTO payment_settings (id, default_qr_image, paystack_qr_url, paystack_payment_link, cashfree_qr_url)
+    VALUES (1, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE id = id
-  `, [DEFAULT_PAYMENT_QR_IMAGE, DEFAULT_PAYSTACK_QR_IMAGE, DEFAULT_PAYSTACK_PAYMENT_LINK]);
+  `, [DEFAULT_PAYMENT_QR_IMAGE, DEFAULT_PAYSTACK_QR_IMAGE, DEFAULT_PAYSTACK_PAYMENT_LINK, DEFAULT_CASHFREE_QR_IMAGE]);
 
   await db.query(
     `UPDATE payment_settings
      SET default_qr_image = ?,
          paystack_qr_url = ?,
-         paystack_payment_link = ?
+         paystack_payment_link = ?,
+         cashfree_qr_url = COALESCE(NULLIF(cashfree_qr_url, ''), ?)
      WHERE id = 1`,
-    [DEFAULT_PAYMENT_QR_IMAGE, DEFAULT_PAYSTACK_QR_IMAGE, DEFAULT_PAYSTACK_PAYMENT_LINK],
+    [DEFAULT_PAYMENT_QR_IMAGE, DEFAULT_PAYSTACK_QR_IMAGE, DEFAULT_PAYSTACK_PAYMENT_LINK, DEFAULT_CASHFREE_QR_IMAGE],
   );
 
   await db.query(`
@@ -341,7 +353,9 @@ async function ensureSchema() {
   }
 
   if (!(await columnExists("teams", "payment_method"))) {
-    await db.query("ALTER TABLE teams ADD COLUMN payment_method ENUM('upi', 'paystack') DEFAULT 'upi' AFTER payment_qr_type");
+    await db.query("ALTER TABLE teams ADD COLUMN payment_method ENUM('upi', 'paystack', 'cashfree') DEFAULT 'upi' AFTER payment_qr_type");
+  } else {
+    await db.query("ALTER TABLE teams MODIFY COLUMN payment_method ENUM('upi', 'paystack', 'cashfree') DEFAULT 'upi'");
   }
 
   if ((await columnExists("teams", "transaction_ref"))) {
@@ -1253,12 +1267,15 @@ app.put("/api/admin/payment-settings", async (req, res) => {
   const paystackQrUrl = String(req.body.paystack_qr_url || "").trim();
   const paystackPaymentLink = String(req.body.paystack_payment_link || "").trim();
   const paystackInstructions = String(req.body.paystack_instructions || "").trim();
+  const cashfreeEnabled = Boolean(req.body.cashfree_enabled);
+  const cashfreeQrUrl = String(req.body.cashfree_qr_url || "").trim();
+  const cashfreeInstructions = String(req.body.cashfree_instructions || "").trim();
 
   if (!defaultQrImage) {
     return res.status(400).json({ message: "Default QR image URL is required." });
   }
 
-  if (!upiEnabled && !paystackEnabled) {
+  if (!upiEnabled && !paystackEnabled && !cashfreeEnabled) {
     return res.status(400).json({ message: "At least one payment method must be enabled." });
   }
 
@@ -1269,9 +1286,12 @@ app.put("/api/admin/payment-settings", async (req, res) => {
          paystack_enabled = ?,
          paystack_qr_url = ?,
          paystack_payment_link = ?,
-         paystack_instructions = ?
+         paystack_instructions = ?,
+         cashfree_enabled = ?,
+         cashfree_qr_url = ?,
+         cashfree_instructions = ?
      WHERE id = 1`,
-    [defaultQrImage, upiEnabled, paystackEnabled, paystackQrUrl, paystackPaymentLink, paystackInstructions],
+    [defaultQrImage, upiEnabled, paystackEnabled, paystackQrUrl, paystackPaymentLink, paystackInstructions, cashfreeEnabled, cashfreeQrUrl, cashfreeInstructions],
   );
 
   const [rows] = await db.query("SELECT * FROM payment_settings WHERE id = 1");
@@ -1392,7 +1412,7 @@ app.post("/api/register-upi", async (req, res) => {
     return res.status(400).json({ error: "Discount amount must be zero or higher." });
   }
 
-  if (!["upi", "paystack"].includes(paymentMethod)) {
+  if (!["upi", "paystack", "cashfree"].includes(paymentMethod)) {
     return res.status(400).json({ error: "Choose a valid payment method." });
   }
 
@@ -1403,6 +1423,9 @@ app.post("/api/register-upi", async (req, res) => {
   }
   if (paymentMethod === "paystack" && !paymentSettings.paystack_enabled) {
     return res.status(400).json({ error: "Paystack payments are currently disabled." });
+  }
+  if (paymentMethod === "cashfree" && !paymentSettings.cashfree_enabled) {
+    return res.status(400).json({ error: "Cashfree payments are currently disabled." });
   }
 
   if (members.length < 3 || members.length > 5) {
@@ -1536,7 +1559,12 @@ function serializeRegistration(team, members = []) {
 }
 
 async function resolveVerifiedPayment(team) {
-  const methodLabel = team.payment_method === "paystack" ? "Paystack" : "UPI";
+  const paymentMethodLabels = {
+    paystack: "Paystack",
+    cashfree: "Cashfree",
+    upi: "UPI",
+  };
+  const methodLabel = paymentMethodLabels[team.payment_method] || "UPI";
   const submittedAmount = team.final_amount === null || team.final_amount === undefined
     ? Number(team.total_paid || ORIGINAL_PRICE)
     : Number(team.final_amount || 0);
