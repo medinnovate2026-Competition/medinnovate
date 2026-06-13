@@ -1322,8 +1322,8 @@ app.post("/api/razorpay/create-order", async (req, res) => {
     });
 
     const order = await razorpay.orders.create({
-      amount: Math.round(amount * 100),
-      currency: "USD",
+      amount: Math.round(amount * 8500),
+      currency: "INR",
       receipt: `receipt_${Date.now()}`,
     });
 
