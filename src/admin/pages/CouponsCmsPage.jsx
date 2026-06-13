@@ -359,15 +359,6 @@ function CouponsCmsPage() {
               />
               Enable Razorpay (Card / International)
             </label>
-            <label className="block space-y-2">
-              <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Razorpay Payment Link</span>
-              <input
-                value={paymentSettings.razorpay_payment_link || ""}
-                onChange={(event) => setPaymentSettings({ ...paymentSettings, razorpay_payment_link: event.target.value })}
-                placeholder="https://rzp.io/rzp/xxxxx"
-                className="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-fuchsia-300"
-              />
-            </label>
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-[96px_1fr] sm:items-center">
             <div className="grid h-24 w-24 place-items-center overflow-hidden rounded-2xl border border-violet-100 bg-fuchsia-50">
@@ -463,6 +454,15 @@ function CouponsCmsPage() {
               onChange={(event) => setPaymentSettings({ ...paymentSettings, cashfree_instructions: event.target.value })}
               placeholder="Use Cashfree QR, then enter your transaction ID."
               className="min-h-24 w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-fuchsia-300"
+            />
+          </label>
+          <label className="mt-5 block space-y-2">
+            <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Razorpay Payment Link</span>
+            <input
+              value={paymentSettings.razorpay_payment_link || ""}
+              onChange={(event) => setPaymentSettings({ ...paymentSettings, razorpay_payment_link: event.target.value })}
+              placeholder="https://rzp.io/rzp/xxxxx"
+              className="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-fuchsia-300"
             />
           </label>
           <button
