@@ -38,6 +38,7 @@ const defaultPaymentSettings = {
   cashfreeQrUrl: DEFAULT_CASHFREE_QR_IMAGE,
   cashfree_instructions: "Use Cashfree QR, then enter your transaction ID.",
   razorpay_enabled: false,
+  razorpay_payment_link: "",
 };
 
 const steps = ["Referral", "Leader", "Team", "Review", "Payment"];
@@ -268,6 +269,7 @@ function RegistrationForm() {
   const qrImage = paymentMethod === "paystack" ? paystackQrImage : paymentMethod === "cashfree" ? cashfreeQrImage : upiQrImage;
   const couponNeedsValidation = hasCoupon === "yes" && couponCode.trim() && !appliedCoupon;
   const paystackPaymentLink = paymentSettings.paystack_payment_link || "";
+  const razorpayPaymentLink = paymentSettings.razorpay_payment_link || "";
   const paymentChannels = useMemo(() => [
     {
       id: "upi",
@@ -488,7 +490,7 @@ function RegistrationForm() {
   const hasPartialTeammate = members.some((member) => memberHasAnyDetails(member) && !memberIsComplete(member));
   const totalTeamSize = 1 + completeTeammates.length;
   const teammatesComplete = completeTeammates.length >= REQUIRED_TEAMMATES && totalTeamSize <= MAX_TEAM_SIZE && !hasPartialTeammate;
-  const paymentComplete = termsAccepted && hasPaymentMethod && (paymentMethod === "razorpay" ? Boolean(razorpayMeta) : utr.trim());
+  const paymentComplete = termsAccepted && hasPaymentMethod && utr.trim();
 
   const openPaystackPayment = () => {
     if (payNowDisabled) return;
@@ -940,28 +942,25 @@ function RegistrationForm() {
                       </div>
 
                       {paymentChannel === "razorpay" && (
-                        <div className="rounded-3xl border border-violet-100 bg-white p-5 text-center">
-                          <h4 className="text-sm font-black text-[#111827]">Pay with Card or International</h4>
+                        <div className="rounded-3xl border border-violet-100 bg-white p-5">
+                          <h4 className="text-sm font-black text-[#111827]">International Card Payment</h4>
                           <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
-                            Click below to open the Razorpay checkout. Supports credit/debit cards and international payments.
+                            Click Pay Now to open Razorpay. Complete payment of ₹850 (~$10), then paste your Payment ID below.
                           </p>
-                          {razorpayMeta ? (
-                            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
-                              Payment successful. ID: {razorpayMeta.paymentId}
-                            </div>
-                          ) : (
+                          <div className="mt-4 text-center">
                             <button
                               type="button"
-                              onClick={handleRazorpayPayment}
-                              className="mt-4 inline-flex rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-7 py-3 text-sm font-black uppercase tracking-wide text-white"
+                              onClick={() => razorpayPaymentLink && window.open(razorpayPaymentLink, "_blank", "noopener,noreferrer")}
+                              disabled={!razorpayPaymentLink}
+                              className="inline-flex rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-7 py-3 text-sm font-black uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               Pay Now
                             </button>
-                          )}
+                          </div>
                         </div>
                       )}
 
-                      {paymentChannel !== "razorpay" && <TextInput label="Transaction ID" value={utr} onChange={setUtr} required />}
+                      <TextInput label="Transaction ID" value={utr} onChange={setUtr} required />
                       <label className="flex items-start gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-slate-600">
                         <input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} className="mt-1 h-4 w-4 accent-[#7C3AED]" />
                         I confirm that the details and payment information are accurate.

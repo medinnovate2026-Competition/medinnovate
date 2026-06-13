@@ -130,6 +130,7 @@ function serializePaymentSettings(row = {}) {
     cashfreeQrUrl: toPublicQrPath(row.cashfree_qr_url),
     cashfree_instructions: row.cashfree_instructions || "",
     razorpay_enabled: Boolean(row.razorpay_enabled),
+    razorpay_payment_link: row.razorpay_payment_link || "",
   };
 }
 
@@ -279,6 +280,7 @@ async function ensureSchema() {
     ["cashfree_qr_url", "TEXT"],
     ["cashfree_instructions", "TEXT"],
     ["razorpay_enabled", "BOOLEAN DEFAULT FALSE"],
+    ["razorpay_payment_link", "TEXT"],
   ];
 
   for (const [column, definition] of paymentSettingsColumns) {
@@ -1278,6 +1280,7 @@ app.put("/api/admin/payment-settings", async (req, res) => {
   const cashfreeQrUrl = String(req.body.cashfree_qr_url || "").trim();
   const cashfreeInstructions = String(req.body.cashfree_instructions || "").trim();
   const razorpayEnabled = Boolean(req.body.razorpay_enabled);
+  const razorpayPaymentLink = String(req.body.razorpay_payment_link || "").trim();
 
   if (!defaultQrImage) {
     return res.status(400).json({ message: "Default QR image URL is required." });
@@ -1298,9 +1301,10 @@ app.put("/api/admin/payment-settings", async (req, res) => {
          cashfree_enabled = ?,
          cashfree_qr_url = ?,
          cashfree_instructions = ?,
-         razorpay_enabled = ?
+         razorpay_enabled = ?,
+         razorpay_payment_link = ?
      WHERE id = 1`,
-    [defaultQrImage, upiEnabled, paystackEnabled, paystackQrUrl, paystackPaymentLink, paystackInstructions, cashfreeEnabled, cashfreeQrUrl, cashfreeInstructions, razorpayEnabled],
+    [defaultQrImage, upiEnabled, paystackEnabled, paystackQrUrl, paystackPaymentLink, paystackInstructions, cashfreeEnabled, cashfreeQrUrl, cashfreeInstructions, razorpayEnabled, razorpayPaymentLink],
   );
 
   const [rows] = await db.query("SELECT * FROM payment_settings WHERE id = 1");
