@@ -1262,6 +1262,7 @@ app.post("/api/coupons/validate", async (req, res) => {
     savedAmount: Number(coupon.saved_amount),
     finalAmount: Number(coupon.final_price),
     qrImage: toPublicQrPath(coupon.qr_image),
+    razorpayPaymentLink: coupon.razorpay_payment_link || "",
     message: `Congratulations! You saved $${Number(coupon.saved_amount).toFixed(2)}`,
   });
 });
