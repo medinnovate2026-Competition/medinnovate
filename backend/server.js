@@ -276,6 +276,15 @@ async function ensureSchema() {
     await db.query("ALTER TABLE coupons ADD COLUMN razorpay_payment_link VARCHAR(500) NULL");
   }
 
+  await db.query(`
+    UPDATE coupons SET razorpay_payment_link = 'https://rzp.io/rzp/x2DLXds'
+    WHERE code IN ('MEDIN10', 'MED10') AND (razorpay_payment_link IS NULL OR razorpay_payment_link = '')
+  `);
+  await db.query(`
+    UPDATE coupons SET razorpay_payment_link = 'https://rzp.io/rzp/z4H3wX1'
+    WHERE code = 'MEDIN5' AND (razorpay_payment_link IS NULL OR razorpay_payment_link = '')
+  `);
+
   const paymentSettingsColumns = [
     ["upi_enabled", "BOOLEAN DEFAULT TRUE"],
     ["paystack_enabled", "BOOLEAN DEFAULT FALSE"],
