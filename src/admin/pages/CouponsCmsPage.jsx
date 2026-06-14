@@ -10,6 +10,7 @@ const initialForm = {
   finalPrice: "",
   qrImageUrl: "",
   qrImageFile: null,
+  razorpayPaymentLink: "",
   active: true,
 };
 
@@ -234,6 +235,7 @@ function CouponsCmsPage() {
           qrImageDataUrl,
           qrImageName: form.qrImageFile?.name || "",
           qrImageUrl: form.qrImageUrl,
+          razorpayPaymentLink: form.razorpayPaymentLink,
           active: form.active,
         }),
       });
@@ -545,6 +547,15 @@ function CouponsCmsPage() {
                 value={form.qrImageUrl}
                 onChange={(event) => setForm({ ...form, qrImageUrl: event.target.value })}
                 placeholder="https://i.postimg.cc/7h71GTXp/fcrits-QR.jpg"
+                className="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-fuchsia-300"
+              />
+            </label>
+            <label className="space-y-2 sm:col-span-2">
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Razorpay Payment Link (for Card / International)</span>
+              <input
+                value={form.razorpayPaymentLink}
+                onChange={(event) => setForm({ ...form, razorpayPaymentLink: event.target.value })}
+                placeholder="https://rzp.io/rzp/xxxxx"
                 className="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-fuchsia-300"
               />
             </label>

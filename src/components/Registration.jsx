@@ -269,7 +269,11 @@ function RegistrationForm() {
   const qrImage = paymentMethod === "paystack" ? paystackQrImage : paymentMethod === "cashfree" ? cashfreeQrImage : upiQrImage;
   const couponNeedsValidation = hasCoupon === "yes" && couponCode.trim() && !appliedCoupon;
   const paystackPaymentLink = paymentSettings.paystack_payment_link || "";
-  const razorpayPaymentLink = paymentSettings.razorpay_payment_link || "";
+  const baseRazorpayPaymentLink = paymentSettings.razorpay_payment_link || "";
+  const razorpayPaymentLink = (appliedCoupon?.razorpayPaymentLink) || baseRazorpayPaymentLink;
+  const razorpayBaseInr = Math.round(finalAmount * 100);
+  const razorpayFeeInr = paymentMethod === "razorpay" ? Math.ceil(razorpayBaseInr * 0.03) : 0;
+  const razorpayTotalInr = razorpayBaseInr + razorpayFeeInr;
   const paymentChannels = useMemo(() => [
     {
       id: "upi",
@@ -944,9 +948,20 @@ function RegistrationForm() {
                       {paymentChannel === "razorpay" && (
                         <div className="rounded-3xl border border-violet-100 bg-white p-5">
                           <h4 className="text-sm font-black text-[#111827]">International Card Payment</h4>
-                          <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
-                            Click Pay Now to open Razorpay. Complete payment of ₹850 (~$10), then paste your Payment ID below.
-                          </p>
+                          <div className="mt-3 space-y-1 rounded-2xl bg-slate-50 px-4 py-3 text-sm">
+                            <div className="flex justify-between font-semibold text-slate-600">
+                              <span>Registration fee</span>
+                              <span>₹{razorpayBaseInr}</span>
+                            </div>
+                            <div className="flex justify-between font-semibold text-slate-500">
+                              <span>Processing fee (3%)</span>
+                              <span>₹{razorpayFeeInr}</span>
+                            </div>
+                            <div className="flex justify-between border-t border-slate-200 pt-1 font-black text-[#111827]">
+                              <span>Total payable</span>
+                              <span>₹{razorpayTotalInr}</span>
+                            </div>
+                          </div>
                           <div className="mt-4 text-center">
                             <button
                               type="button"
@@ -954,7 +969,7 @@ function RegistrationForm() {
                               disabled={!razorpayPaymentLink}
                               className="inline-flex rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-7 py-3 text-sm font-black uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                              Pay Now
+                              Pay ₹{razorpayTotalInr}
                             </button>
                           </div>
                         </div>

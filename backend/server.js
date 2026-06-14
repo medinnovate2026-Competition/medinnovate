@@ -113,6 +113,7 @@ function serializeCoupon(coupon) {
     finalPrice: Number(coupon.final_price),
     qrImage: coupon.qr_image,
     active: Boolean(coupon.active),
+    razorpayPaymentLink: coupon.razorpay_payment_link || "",
   };
 }
 
@@ -270,6 +271,10 @@ async function ensureSchema() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `);
+
+  if (!(await columnExists("coupons", "razorpay_payment_link"))) {
+    await db.query("ALTER TABLE coupons ADD COLUMN razorpay_payment_link VARCHAR(500) NULL");
+  }
 
   const paymentSettingsColumns = [
     ["upi_enabled", "BOOLEAN DEFAULT TRUE"],
@@ -1372,17 +1377,19 @@ app.post("/api/admin/coupons", async (req, res) => {
     }
 
     const savedAmount = Math.max(0, ORIGINAL_PRICE - finalPrice);
+    const razorpayPaymentLink = String(req.body.razorpayPaymentLink || "").trim();
 
     await db.query(
-      `INSERT INTO coupons (code, discount_percentage, saved_amount, final_price, qr_image, active)
-       VALUES (?, ?, ?, ?, ?, ?)
+      `INSERT INTO coupons (code, discount_percentage, saved_amount, final_price, qr_image, active, razorpay_payment_link)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
          discount_percentage = VALUES(discount_percentage),
          saved_amount = VALUES(saved_amount),
          final_price = VALUES(final_price),
          qr_image = VALUES(qr_image),
-         active = VALUES(active)`,
-      [code, discountPercentage, savedAmount, finalPrice, qrImage, Boolean(req.body.active)],
+         active = VALUES(active),
+         razorpay_payment_link = VALUES(razorpay_payment_link)`,
+      [code, discountPercentage, savedAmount, finalPrice, qrImage, Boolean(req.body.active), razorpayPaymentLink || null],
     );
 
     const [savedCoupons] = await db.query("SELECT * FROM coupons WHERE code = ? LIMIT 1", [code]);
