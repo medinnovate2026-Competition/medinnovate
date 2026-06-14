@@ -21,6 +21,7 @@ const ORIGINAL_PRICE = 10;
 const DEFAULT_PAYMENT_QR_IMAGE = "https://i.postimg.cc/Hkj3MqWr/qr1000.jpg";
 const DEFAULT_PAYSTACK_QR_IMAGE = "https://i.postimg.cc/BnMcnsrT/Paystack-QR.jpg";
 const DEFAULT_PAYSTACK_PAYMENT_LINK = "https://paystack.com/buy/medinnovate-20-dhnwdw";
+const DEFAULT_RAZORPAY_PAYMENT_LINK = "https://rzp.io/rzp/mes0HBY";
 const DEFAULT_CASHFREE_QR_IMAGE = DEFAULT_PAYMENT_QR_IMAGE;
 const PAYMENTS_DIR = path.join(__dirname, "public", "payments");
 const MEDIA_DIR = path.join(__dirname, "public", "media");
@@ -300,9 +301,10 @@ async function ensureSchema() {
      SET default_qr_image = ?,
          paystack_qr_url = ?,
          paystack_payment_link = ?,
-         cashfree_qr_url = COALESCE(NULLIF(cashfree_qr_url, ''), ?)
+         cashfree_qr_url = COALESCE(NULLIF(cashfree_qr_url, ''), ?),
+         razorpay_payment_link = COALESCE(NULLIF(razorpay_payment_link, ''), ?)
      WHERE id = 1`,
-    [DEFAULT_PAYMENT_QR_IMAGE, DEFAULT_PAYSTACK_QR_IMAGE, DEFAULT_PAYSTACK_PAYMENT_LINK, DEFAULT_CASHFREE_QR_IMAGE],
+    [DEFAULT_PAYMENT_QR_IMAGE, DEFAULT_PAYSTACK_QR_IMAGE, DEFAULT_PAYSTACK_PAYMENT_LINK, DEFAULT_CASHFREE_QR_IMAGE, DEFAULT_RAZORPAY_PAYMENT_LINK],
   );
 
   await db.query(`

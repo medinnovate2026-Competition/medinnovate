@@ -65,6 +65,8 @@ function CouponsCmsPage() {
   const [deletingCouponId, setDeletingCouponId] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [settingsMessage, setSettingsMessage] = useState("");
+  const [settingsError, setSettingsError] = useState("");
   const [usingFallback, setUsingFallback] = useState(false);
 
   const loadCoupons = async () => {
@@ -108,13 +110,13 @@ function CouponsCmsPage() {
 
   const savePaymentSettings = async () => {
     setSavingSettings(true);
-    setMessage("");
-    setError("");
+    setSettingsMessage("");
+    setSettingsError("");
 
     let nextPaymentSettings = { ...paymentSettings };
 
     if (!nextPaymentSettings.upi_enabled && !nextPaymentSettings.paystack_enabled && !nextPaymentSettings.cashfree_enabled && !nextPaymentSettings.razorpay_enabled) {
-      setError("At least one payment method must be enabled.");
+      setSettingsError("At least one payment method must be enabled.");
       setSavingSettings(false);
       return;
     }
@@ -156,7 +158,7 @@ function CouponsCmsPage() {
     if (usingFallback) {
       writeLocalCms(PAYMENT_SETTINGS_KEY, nextPaymentSettings);
       setPaymentSettings(nextPaymentSettings);
-      setMessage("Payment methods saved locally. Deploy the latest backend to save this to Railway.");
+      setSettingsError("Backend unreachable — saved to browser only. Changes won't show on the live site until Railway is connected.");
       setSavingSettings(false);
       return;
     }
@@ -183,9 +185,9 @@ function CouponsCmsPage() {
       setPaymentSettings({ ...defaultPaymentSettings, ...data.settings });
       setPaystackQrFile(null);
       setCashfreeQrFile(null);
-      setMessage("Payment methods updated.");
+      setSettingsMessage("Saved to database.");
     } catch (settingsError) {
-      setError(settingsError.message || "Unable to save payment methods.");
+      setSettingsError(settingsError.message || "Unable to save payment methods.");
     } finally {
       setSavingSettings(false);
     }
@@ -465,6 +467,8 @@ function CouponsCmsPage() {
               className="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-fuchsia-300"
             />
           </label>
+          {settingsMessage && <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-green-700">{settingsMessage}</div>}
+          {settingsError && <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{settingsError}</div>}
           <button
             type="button"
             onClick={savePaymentSettings}
