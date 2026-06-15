@@ -9,8 +9,6 @@ const MIN_TEAM_SIZE = 3;
 const MAX_TEAM_SIZE = 5;
 const REQUIRED_TEAMMATES = MIN_TEAM_SIZE - 1;
 const DEFAULT_QR_IMAGE = "https://i.postimg.cc/Hkj3MqWr/qr1000.jpg";
-const DEFAULT_PAYSTACK_QR_IMAGE = "https://i.postimg.cc/BnMcnsrT/Paystack-QR.jpg";
-const DEFAULT_PAYSTACK_PAYMENT_LINK = "https://paystack.com/buy/medinnovate-20-dhnwdw";
 const DEFAULT_CASHFREE_QR_IMAGE = DEFAULT_QR_IMAGE;
 const LEGACY_LOCAL_COUPON_QR = "https://i.postimg.cc/7h71GTXp/fcrits-QR.jpg";
 const LOCAL_COUPONS = {
@@ -28,11 +26,6 @@ const defaultPaymentSettings = {
   defaultQrImage: DEFAULT_QR_IMAGE,
   default_qr_image: DEFAULT_QR_IMAGE,
   upi_enabled: true,
-  paystack_enabled: false,
-  paystack_qr_url: DEFAULT_PAYSTACK_QR_IMAGE,
-  paystackQrUrl: DEFAULT_PAYSTACK_QR_IMAGE,
-  paystack_payment_link: DEFAULT_PAYSTACK_PAYMENT_LINK,
-  paystack_instructions: "For African delegates please use Paystack.",
   cashfree_enabled: false,
   cashfree_qr_url: DEFAULT_CASHFREE_QR_IMAGE,
   cashfreeQrUrl: DEFAULT_CASHFREE_QR_IMAGE,
@@ -100,16 +93,13 @@ function formatCurrency(value) {
 
 function normalizePaymentChannel(channel, method = "upi") {
   if (channel === "wallet") return "cashfree";
-  if (channel === "netbanking") return "paystack";
   if (channel) return channel;
-  if (method === "paystack") return "card";
   if (method === "cashfree") return "cashfree";
   return "upi";
 }
 
 function formatPaymentMethod(method) {
   const labels = {
-    paystack: "Paystack",
     cashfree: "Cashfree",
     upi: "UPI",
   };
@@ -259,18 +249,15 @@ function RegistrationForm() {
   const finalAmount = appliedCoupon?.finalAmount || ORIGINAL_PRICE;
   const savedAmount = appliedCoupon?.savedAmount || 0;
   const upiEnabled = paymentSettings.upi_enabled !== false;
-  const paystackEnabled = Boolean(paymentSettings.paystack_enabled);
   const cashfreeEnabled = Boolean(paymentSettings.cashfree_enabled);
   const razorpayEnabled = Boolean(paymentSettings.razorpay_enabled);
   const selarEnabled = Boolean(paymentSettings.selar_enabled);
   const selarPaymentLink = appliedCoupon?.selarPaymentLink || paymentSettings.selar_payment_link || "";
-  const hasPaymentMethod = (paymentMethod === "upi" && upiEnabled) || (paymentMethod === "paystack" && paystackEnabled) || (paymentMethod === "cashfree" && cashfreeEnabled) || (paymentMethod === "razorpay" && razorpayEnabled) || (paymentMethod === "selar" && selarEnabled);
+  const hasPaymentMethod = (paymentMethod === "upi" && upiEnabled) || (paymentMethod === "cashfree" && cashfreeEnabled) || (paymentMethod === "razorpay" && razorpayEnabled) || (paymentMethod === "selar" && selarEnabled);
   const upiQrImage = appliedCoupon?.qrImage || paymentSettings.defaultQrImage || paymentSettings.default_qr_image || defaultQrImage;
-  const paystackQrImage = paymentSettings.paystackQrUrl || paymentSettings.paystack_qr_url || "";
   const cashfreeQrImage = appliedCoupon?.qrImage || paymentSettings.cashfreeQrUrl || paymentSettings.cashfree_qr_url || DEFAULT_CASHFREE_QR_IMAGE;
-  const qrImage = paymentMethod === "paystack" ? paystackQrImage : paymentMethod === "cashfree" ? cashfreeQrImage : upiQrImage;
+  const qrImage = paymentMethod === "cashfree" ? cashfreeQrImage : upiQrImage;
   const couponNeedsValidation = hasCoupon === "yes" && couponCode.trim() && !appliedCoupon;
-  const paystackPaymentLink = paymentSettings.paystack_payment_link || "";
   const baseRazorpayPaymentLink = paymentSettings.razorpay_payment_link || "";
   const razorpayPaymentLink = (appliedCoupon?.razorpayPaymentLink) || baseRazorpayPaymentLink;
   const razorpayBaseInr = Math.round(finalAmount * 100);
@@ -283,20 +270,6 @@ function RegistrationForm() {
       description: "Scan the official QR and enter your transaction ID.",
       enabled: upiEnabled,
       backendMethod: "upi",
-    },
-    {
-      id: "card",
-      label: "Credit/Debit Card",
-      description: "Continue through the card payment gateway.",
-      enabled: paystackEnabled,
-      backendMethod: "paystack",
-    },
-    {
-      id: "paystack",
-      label: "Paystack",
-      description: "Open Paystack and complete payment securely.",
-      enabled: paystackEnabled,
-      backendMethod: "paystack",
     },
     {
       id: "cashfree",
@@ -319,16 +292,12 @@ function RegistrationForm() {
       enabled: selarEnabled,
       backendMethod: "selar",
     },
-  ], [cashfreeEnabled, paystackEnabled, upiEnabled, razorpayEnabled, selarEnabled]);
+  ], [cashfreeEnabled, upiEnabled, razorpayEnabled, selarEnabled]);
   const selectedPaymentChannel = useMemo(
     () => paymentChannels.find((channel) => channel.id === paymentChannel && channel.enabled) || paymentChannels.find((channel) => channel.enabled),
     [paymentChannel, paymentChannels],
   );
-  const payNowDisabled = paymentMethod === "paystack" && (
-    !paystackPaymentLink ||
-    isCouponLoading ||
-    Boolean(couponNeedsValidation)
-  );
+  const payNowDisabled = false;
 
   useEffect(() => {
     let active = true;
@@ -341,13 +310,10 @@ function RegistrationForm() {
         setPaymentSettings(nextSettings);
         setDefaultQrImage(nextSettings.defaultQrImage || nextSettings.default_qr_image || DEFAULT_QR_IMAGE);
 
-        if (!nextSettings.upi_enabled && !nextSettings.paystack_enabled && nextSettings.cashfree_enabled) {
+        if (!nextSettings.upi_enabled && nextSettings.cashfree_enabled) {
           setPaymentMethod("cashfree");
           setPaymentChannel("cashfree");
-        } else if (!nextSettings.upi_enabled && nextSettings.paystack_enabled) {
-          setPaymentMethod("paystack");
-          setPaymentChannel((current) => ["upi", "cashfree"].includes(current) ? "card" : current);
-        } else if (nextSettings.upi_enabled && !nextSettings.paystack_enabled && !nextSettings.cashfree_enabled) {
+        } else if (nextSettings.upi_enabled && !nextSettings.cashfree_enabled) {
           setPaymentMethod("upi");
           setPaymentChannel("upi");
         }
@@ -504,11 +470,6 @@ function RegistrationForm() {
   const totalTeamSize = 1 + completeTeammates.length;
   const teammatesComplete = completeTeammates.length >= REQUIRED_TEAMMATES && totalTeamSize <= MAX_TEAM_SIZE && !hasPartialTeammate;
   const paymentComplete = termsAccepted && hasPaymentMethod && utr.trim();
-
-  const openPaystackPayment = () => {
-    if (payNowDisabled) return;
-    window.open(paystackPaymentLink, "_blank", "noopener,noreferrer");
-  };
 
   const goNext = () => {
     setSubmitError("");
@@ -761,7 +722,7 @@ function RegistrationForm() {
                           </button>
                         ))}
                       </div>
-                      {!upiEnabled && !paystackEnabled && !cashfreeEnabled && (
+                      {!upiEnabled && !cashfreeEnabled && !razorpayEnabled && !selarEnabled && (
                         <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
                           Payments are temporarily unavailable.
                         </div>
@@ -840,11 +801,9 @@ function RegistrationForm() {
                       <div>
                         <h3 className="text-lg font-black text-[#111827]">Payment Details</h3>
                         <p className="mt-2 text-sm leading-6 text-slate-600">
-                          {paymentMethod === "paystack"
-                            ? paymentSettings.paystack_instructions || "For African delegates please use Paystack."
-                            : paymentMethod === "cashfree"
-                              ? paymentSettings.cashfree_instructions || "Use Cashfree QR, then enter your transaction ID."
-                              : `Pay exactly ${formatCurrency(finalAmount)}. Use the coupon-specific QR shown here if a coupon was applied.`}
+                          {paymentMethod === "cashfree"
+                            ? paymentSettings.cashfree_instructions || "Use Cashfree QR, then enter your transaction ID."
+                            : `Pay exactly ${formatCurrency(finalAmount)}. Use the coupon-specific QR shown here if a coupon was applied.`}
                         </p>
                       </div>
                       <div className="rounded-full bg-white px-4 py-2 text-sm font-black text-[#EC4899] shadow-sm">
@@ -905,33 +864,6 @@ function RegistrationForm() {
                           <p className="mt-4 text-sm font-semibold leading-6 text-slate-500">
                             Transfer the final amount to this account, then enter the transaction ID below.
                           </p>
-                        </div>
-                      )}
-
-                      {paymentChannel === "paystack" && (
-                        <div className="rounded-3xl border border-violet-100 bg-white p-5">
-                          <h4 className="text-sm font-black text-[#111827]">Paystack checkout</h4>
-                          <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
-                            Continue to Paystack, complete the payment for {formatCurrency(finalAmount)}, then paste the transaction ID below.
-                          </p>
-                        </div>
-                      )}
-
-                      {paymentChannel === "paystack" && paymentMethod === "paystack" && (
-                        <div className="rounded-3xl border border-violet-100 bg-white p-5 text-center">
-                          <button
-                            type="button"
-                            onClick={openPaystackPayment}
-                            disabled={payNowDisabled}
-                            className="inline-flex rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-7 py-3 text-sm font-black uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            PAY NOW
-                          </button>
-                          {payNowDisabled && (
-                            <p className="mt-3 text-xs font-bold text-slate-500">
-                              {couponNeedsValidation ? "Apply the coupon or choose no coupon before paying." : "Paystack link is not configured yet."}
-                            </p>
-                          )}
                         </div>
                       )}
 
