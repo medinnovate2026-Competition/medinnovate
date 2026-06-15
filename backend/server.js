@@ -277,6 +277,9 @@ async function ensureSchema() {
   if (!(await columnExists("coupons", "razorpay_payment_link"))) {
     await db.query("ALTER TABLE coupons ADD COLUMN razorpay_payment_link VARCHAR(500) NULL");
   }
+  if (!(await columnExists("coupons", "selar_payment_link"))) {
+    await db.query("ALTER TABLE coupons ADD COLUMN selar_payment_link VARCHAR(500) NULL");
+  }
 
   await db.query(`
     UPDATE coupons SET razorpay_payment_link = 'https://rzp.io/rzp/x2DLXds'
@@ -285,6 +288,10 @@ async function ensureSchema() {
   await db.query(`
     UPDATE coupons SET razorpay_payment_link = 'https://rzp.io/rzp/z4H3wX1'
     WHERE code = 'MEDIN5' AND (razorpay_payment_link IS NULL OR razorpay_payment_link = '')
+  `);
+  await db.query(`
+    UPDATE coupons SET selar_payment_link = 'https://selar.com/1qah82s851'
+    WHERE code = 'MEDIN10' AND (selar_payment_link IS NULL OR selar_payment_link = '')
   `);
 
   const paymentSettingsColumns = [
@@ -1276,6 +1283,7 @@ app.post("/api/coupons/validate", async (req, res) => {
     finalAmount: Number(coupon.final_price),
     qrImage: toPublicQrPath(coupon.qr_image),
     razorpayPaymentLink: coupon.razorpay_payment_link || "",
+    selarPaymentLink: coupon.selar_payment_link || "",
     message: `Congratulations! You saved $${Number(coupon.saved_amount).toFixed(2)}`,
   });
 });

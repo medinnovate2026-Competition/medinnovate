@@ -263,7 +263,7 @@ function RegistrationForm() {
   const cashfreeEnabled = Boolean(paymentSettings.cashfree_enabled);
   const razorpayEnabled = Boolean(paymentSettings.razorpay_enabled);
   const selarEnabled = Boolean(paymentSettings.selar_enabled);
-  const selarPaymentLink = paymentSettings.selar_payment_link || "";
+  const selarPaymentLink = appliedCoupon?.selarPaymentLink || paymentSettings.selar_payment_link || "";
   const hasPaymentMethod = (paymentMethod === "upi" && upiEnabled) || (paymentMethod === "paystack" && paystackEnabled) || (paymentMethod === "cashfree" && cashfreeEnabled) || (paymentMethod === "razorpay" && razorpayEnabled) || (paymentMethod === "selar" && selarEnabled);
   const upiQrImage = appliedCoupon?.qrImage || paymentSettings.defaultQrImage || paymentSettings.default_qr_image || defaultQrImage;
   const paystackQrImage = paymentSettings.paystackQrUrl || paymentSettings.paystack_qr_url || "";
