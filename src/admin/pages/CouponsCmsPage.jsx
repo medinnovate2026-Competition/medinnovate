@@ -32,6 +32,8 @@ const defaultPaymentSettings = {
   cashfree_instructions: "Use Cashfree QR, then enter your transaction ID.",
   razorpay_enabled: false,
   razorpay_payment_link: "",
+  selar_enabled: false,
+  selar_payment_link: "",
 };
 const seedCoupons = [
   {
@@ -116,7 +118,7 @@ function CouponsCmsPage() {
 
     let nextPaymentSettings = { ...paymentSettings };
 
-    if (!nextPaymentSettings.upi_enabled && !nextPaymentSettings.paystack_enabled && !nextPaymentSettings.cashfree_enabled && !nextPaymentSettings.razorpay_enabled) {
+    if (!nextPaymentSettings.upi_enabled && !nextPaymentSettings.paystack_enabled && !nextPaymentSettings.cashfree_enabled && !nextPaymentSettings.razorpay_enabled && !nextPaymentSettings.selar_enabled) {
       setSettingsError("At least one payment method must be enabled.");
       setSavingSettings(false);
       return;
@@ -180,6 +182,8 @@ function CouponsCmsPage() {
           cashfree_instructions: nextPaymentSettings.cashfree_instructions,
           razorpay_enabled: nextPaymentSettings.razorpay_enabled,
           razorpay_payment_link: nextPaymentSettings.razorpay_payment_link,
+          selar_enabled: nextPaymentSettings.selar_enabled,
+          selar_payment_link: nextPaymentSettings.selar_payment_link,
         }),
       });
 
@@ -363,6 +367,15 @@ function CouponsCmsPage() {
               />
               Enable Razorpay (Card / International)
             </label>
+            <label className="flex items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-black text-slate-600">
+              <input
+                type="checkbox"
+                checked={Boolean(paymentSettings.selar_enabled)}
+                onChange={(event) => setPaymentSettings({ ...paymentSettings, selar_enabled: event.target.checked })}
+                className="h-4 w-4 accent-[#7C3AED]"
+              />
+              Enable Selar (Georgian / International)
+            </label>
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-[96px_1fr] sm:items-center">
             <div className="grid h-24 w-24 place-items-center overflow-hidden rounded-2xl border border-violet-100 bg-fuchsia-50">
@@ -466,6 +479,15 @@ function CouponsCmsPage() {
               value={paymentSettings.razorpay_payment_link || ""}
               onChange={(event) => setPaymentSettings({ ...paymentSettings, razorpay_payment_link: event.target.value })}
               placeholder="https://rzp.io/rzp/xxxxx"
+              className="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-fuchsia-300"
+            />
+          </label>
+          <label className="mt-5 block space-y-2">
+            <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Selar Payment Link</span>
+            <input
+              value={paymentSettings.selar_payment_link || ""}
+              onChange={(event) => setPaymentSettings({ ...paymentSettings, selar_payment_link: event.target.value })}
+              placeholder="https://selar.com/xxxxx"
               className="w-full rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-fuchsia-300"
             />
           </label>

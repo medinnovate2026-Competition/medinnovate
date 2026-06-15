@@ -262,7 +262,9 @@ function RegistrationForm() {
   const paystackEnabled = Boolean(paymentSettings.paystack_enabled);
   const cashfreeEnabled = Boolean(paymentSettings.cashfree_enabled);
   const razorpayEnabled = Boolean(paymentSettings.razorpay_enabled);
-  const hasPaymentMethod = (paymentMethod === "upi" && upiEnabled) || (paymentMethod === "paystack" && paystackEnabled) || (paymentMethod === "cashfree" && cashfreeEnabled) || (paymentMethod === "razorpay" && razorpayEnabled);
+  const selarEnabled = Boolean(paymentSettings.selar_enabled);
+  const selarPaymentLink = paymentSettings.selar_payment_link || "";
+  const hasPaymentMethod = (paymentMethod === "upi" && upiEnabled) || (paymentMethod === "paystack" && paystackEnabled) || (paymentMethod === "cashfree" && cashfreeEnabled) || (paymentMethod === "razorpay" && razorpayEnabled) || (paymentMethod === "selar" && selarEnabled);
   const upiQrImage = appliedCoupon?.qrImage || paymentSettings.defaultQrImage || paymentSettings.default_qr_image || defaultQrImage;
   const paystackQrImage = paymentSettings.paystackQrUrl || paymentSettings.paystack_qr_url || "";
   const cashfreeQrImage = appliedCoupon?.qrImage || paymentSettings.cashfreeQrUrl || paymentSettings.cashfree_qr_url || DEFAULT_CASHFREE_QR_IMAGE;
@@ -310,7 +312,14 @@ function RegistrationForm() {
       enabled: razorpayEnabled,
       backendMethod: "razorpay",
     },
-  ], [cashfreeEnabled, paystackEnabled, upiEnabled, razorpayEnabled]);
+    {
+      id: "selar",
+      label: "Selar (Georgia / International)",
+      description: "Pay securely via Selar for Georgian and international delegates.",
+      enabled: selarEnabled,
+      backendMethod: "selar",
+    },
+  ], [cashfreeEnabled, paystackEnabled, upiEnabled, razorpayEnabled, selarEnabled]);
   const selectedPaymentChannel = useMemo(
     () => paymentChannels.find((channel) => channel.id === paymentChannel && channel.enabled) || paymentChannels.find((channel) => channel.enabled),
     [paymentChannel, paymentChannels],
@@ -970,6 +979,25 @@ function RegistrationForm() {
                               className="inline-flex rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-7 py-3 text-sm font-black uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               Pay ₹{razorpayTotalInr}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {paymentChannel === "selar" && (
+                        <div className="rounded-3xl border border-violet-100 bg-white p-5">
+                          <h4 className="text-sm font-black text-[#111827]">Selar Payment</h4>
+                          <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
+                            Click Pay Now to open Selar. Complete your payment, then paste your Order ID or receipt number below.
+                          </p>
+                          <div className="mt-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => selarPaymentLink && window.open(selarPaymentLink, "_blank", "noopener,noreferrer")}
+                              disabled={!selarPaymentLink}
+                              className="inline-flex rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-7 py-3 text-sm font-black uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Pay Now
                             </button>
                           </div>
                         </div>

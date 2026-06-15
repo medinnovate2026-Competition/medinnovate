@@ -133,6 +133,8 @@ function serializePaymentSettings(row = {}) {
     cashfree_instructions: row.cashfree_instructions || "",
     razorpay_enabled: Boolean(row.razorpay_enabled),
     razorpay_payment_link: row.razorpay_payment_link || "",
+    selar_enabled: Boolean(row.selar_enabled),
+    selar_payment_link: row.selar_payment_link || "",
   };
 }
 
@@ -296,6 +298,8 @@ async function ensureSchema() {
     ["cashfree_instructions", "TEXT"],
     ["razorpay_enabled", "BOOLEAN DEFAULT FALSE"],
     ["razorpay_payment_link", "TEXT"],
+    ["selar_enabled", "BOOLEAN DEFAULT FALSE"],
+    ["selar_payment_link", "TEXT"],
   ];
 
   for (const [column, definition] of paymentSettingsColumns) {
@@ -1298,12 +1302,14 @@ app.put("/api/admin/payment-settings", async (req, res) => {
   const cashfreeInstructions = String(req.body.cashfree_instructions || "").trim();
   const razorpayEnabled = Boolean(req.body.razorpay_enabled);
   const razorpayPaymentLink = String(req.body.razorpay_payment_link || "").trim();
+  const selarEnabled = Boolean(req.body.selar_enabled);
+  const selarPaymentLink = String(req.body.selar_payment_link || "").trim();
 
   if (!defaultQrImage) {
     return res.status(400).json({ message: "Default QR image URL is required." });
   }
 
-  if (!upiEnabled && !paystackEnabled && !cashfreeEnabled && !razorpayEnabled) {
+  if (!upiEnabled && !paystackEnabled && !cashfreeEnabled && !razorpayEnabled && !selarEnabled) {
     return res.status(400).json({ message: "At least one payment method must be enabled." });
   }
 
@@ -1319,9 +1325,11 @@ app.put("/api/admin/payment-settings", async (req, res) => {
          cashfree_qr_url = ?,
          cashfree_instructions = ?,
          razorpay_enabled = ?,
-         razorpay_payment_link = ?
+         razorpay_payment_link = ?,
+         selar_enabled = ?,
+         selar_payment_link = ?
      WHERE id = 1`,
-    [defaultQrImage, upiEnabled, paystackEnabled, paystackQrUrl, paystackPaymentLink, paystackInstructions, cashfreeEnabled, cashfreeQrUrl, cashfreeInstructions, razorpayEnabled, razorpayPaymentLink],
+    [defaultQrImage, upiEnabled, paystackEnabled, paystackQrUrl, paystackPaymentLink, paystackInstructions, cashfreeEnabled, cashfreeQrUrl, cashfreeInstructions, razorpayEnabled, razorpayPaymentLink, selarEnabled, selarPaymentLink],
   );
 
   const [rows] = await db.query("SELECT * FROM payment_settings WHERE id = 1");
