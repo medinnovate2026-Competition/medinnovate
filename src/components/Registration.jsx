@@ -287,8 +287,8 @@ function RegistrationForm() {
     },
     {
       id: "selar",
-      label: "Selar (Georgia / International)",
-      description: "Pay securely via Selar for Georgian and international delegates.",
+      label: "Selar (International)",
+      description: "Pay securely via Selar for international delegates.",
       enabled: selarEnabled,
       backendMethod: "selar",
     },
