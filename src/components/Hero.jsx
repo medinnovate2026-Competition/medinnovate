@@ -53,7 +53,7 @@ function Hero({ content }) {
           </div>
 
           <div className="mx-auto mt-8 grid max-w-sm gap-3 text-sm text-slate-600 sm:flex sm:max-w-none sm:flex-wrap sm:justify-center lg:mx-0 lg:justify-start">
-            <span className="rounded-full border border-violet-100 bg-white/80 px-4 py-2 text-center shadow-sm">Date: Announcing Soon</span>
+            <span className="rounded-full border border-violet-100 bg-white/80 px-4 py-2 text-center shadow-sm">Date: 18th July</span>
             <span className="rounded-full border border-violet-100 bg-white/80 px-4 py-2 text-center shadow-sm">Mode: Online / Hybrid</span>
           </div>
 
