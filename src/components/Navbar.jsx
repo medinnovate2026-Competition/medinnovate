@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Flag, Home, Menu, Send, X } from 'lucide-react'
+import { Flag, Home, Menu, Trophy, X } from 'lucide-react'
 
 const CURRENT_PHASE = 'PHASE 1'
 
@@ -66,10 +66,10 @@ function Navbar() {
               Current Phase: {CURRENT_PHASE}
             </div>
             <Link
-              to="/registration"
+              to="/round-1-results"
               className="rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-5 py-2.5 text-sm font-black text-white shadow-[0_12px_34px_rgba(168,85,247,0.28)] transition hover:-translate-y-0.5"
             >
-              Submit Idea
+              View Results
             </Link>
           </div>
         </nav>
@@ -116,9 +116,9 @@ function Navbar() {
             <Menu size={24} />
             <span className="mt-1 text-[10px] font-black uppercase tracking-wide">More</span>
           </button>
-          <Link to="/registration" onClick={closeMore} className="grid min-h-14 place-items-center rounded-3xl bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] text-white shadow-[0_12px_34px_rgba(168,85,247,0.28)]" aria-label="Submit idea">
-            <Send size={22} />
-            <span className="mt-1 text-[10px] font-black uppercase tracking-wide">Submit</span>
+          <Link to="/round-1-results" onClick={closeMore} className="grid min-h-14 place-items-center rounded-3xl bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] text-white shadow-[0_12px_34px_rgba(168,85,247,0.28)]" aria-label="View results">
+            <Trophy size={22} />
+            <span className="mt-1 text-[10px] font-black uppercase tracking-wide">Results</span>
           </Link>
         </div>
       </nav>

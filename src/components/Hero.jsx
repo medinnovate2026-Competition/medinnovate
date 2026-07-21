@@ -7,9 +7,7 @@ const currentPhase = 'PHASE 1'
 function Hero({ content }) {
   const homepage = normalizeHomepageContent(content)
   const highlights = homepage.stats_json.length > 0 ? homepage.stats_json : defaultHomepageContent.stats_json
-  const primaryHref = homepage.primary_cta_url?.startsWith("http")
-    ? homepage.primary_cta_url
-    : `${import.meta.env.BASE_URL}${String(homepage.primary_cta_url || "/registration").replace(/^\//, "")}`
+  const resultsHref = `${import.meta.env.BASE_URL}round-1-results`
 
   return (
     <motion.section
@@ -42,10 +40,13 @@ function Hero({ content }) {
           <p className="mx-auto mt-5 max-w-md text-base leading-8 text-slate-600 sm:max-w-2xl sm:text-lg lg:mx-0">
             {homepage.hero_description}
           </p>
+          <p className="mx-auto mt-5 max-w-md rounded-3xl border border-violet-100 bg-white/82 px-5 py-3 text-sm font-black uppercase tracking-[0.14em] text-[#7C3AED] shadow-[0_14px_34px_rgba(124,58,237,0.08)] backdrop-blur sm:max-w-2xl lg:mx-0">
+            Registrations are closed for Phase 1.
+          </p>
 
           <div className="mx-auto mt-8 flex max-w-sm flex-col items-center gap-4 sm:max-w-none sm:flex-row lg:mx-0 lg:justify-start">
-            <a href={primaryHref} className="w-full rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-8 py-4 text-center text-sm font-black uppercase tracking-wide text-white shadow-[0_18px_45px_rgba(168,85,247,0.28)] transition hover:-translate-y-1 sm:w-auto">
-              {homepage.primary_cta_label}
+            <a href={resultsHref} className="w-full rounded-full bg-gradient-to-r from-[#7C3AED] via-[#A855F7] to-[#EC4899] px-8 py-4 text-center text-sm font-black uppercase tracking-wide text-white shadow-[0_18px_45px_rgba(168,85,247,0.28)] transition hover:-translate-y-1 sm:w-auto">
+              View Results
             </a>
             <div className="w-full rounded-full border border-violet-100 bg-white/85 px-8 py-4 text-center text-sm font-black uppercase tracking-wide text-[#7C3AED] shadow-sm backdrop-blur sm:w-auto">
               {homepage.secondary_cta_label || `Current Phase: ${currentPhase}`}

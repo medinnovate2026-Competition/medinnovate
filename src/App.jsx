@@ -15,6 +15,8 @@ import Sponsors from './components/Sponsors';
 import Timeline from './components/Timeline';
 import Footer from './components/Footer';
 import OrganisingCommittee from './pages/OrganisingCommittee';
+import Round1Results from './pages/Round1Results';
+import Round2Details from './pages/Round2Details';
 import AdminLayout from './admin/AdminLayout';
 import AdminLogin from './admin/AdminLogin';
 import Dashboard from './admin/Dashboard';
@@ -431,6 +433,8 @@ function App() {
           </>
         }
       />
+      <Route path="/round-1-results" element={<Round1Results />} />
+      <Route path="/round-2-details" element={<Round2Details />} />
       <Route path="/organising-committee" element={<OrganisingCommittee />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
